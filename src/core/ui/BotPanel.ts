@@ -109,7 +109,7 @@ export class BotPanel {
         el("tbody", null, [
           el("tr", null, [
             el("td", { class: "thead", colspan: 2 }, [
-              el("strong", null, `HF Gambling Suite: ${options.gameName}`),
+              el("strong", null, `HF Gaming Suite: ${options.gameName}`),
               el("div", { class: "float_right" }, settingsLink),
             ]),
           ]),

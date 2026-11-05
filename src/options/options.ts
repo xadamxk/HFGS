@@ -106,7 +106,7 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
   root.replaceChildren(
     el("header", null, [
       el("img", { src: "assets/icons/icon48.png", alt: "", width: 32 }),
-      el("h1", null, "HF Gambling Suite"),
+      el("h1", null, "HF Gaming Suite"),
     ]),
     el("h2", { class: "group" }, "Settings"),
     el("section", { "data-game": "global" }, [

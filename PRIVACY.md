@@ -2,7 +2,7 @@
 
 _Last updated: November 5, 2026_
 
-HF Gambling Suite (HFGS) is a browser extension for Hack Forums' βytes games (blackjack and slots). It adds a panel with a bot, totals and recent results under each game. This policy explains what data it handles and where that data goes.
+HF Gaming Suite (HFGS) is a browser extension for Hack Forums' βytes games (blackjack and slots). It adds a panel with a bot, totals and recent results under each game. This policy explains what data it handles and where that data goes.
 
 **In short: the extension only talks to Hack Forums. The developer receives no data at all.**
 
@@ -34,4 +34,4 @@ The developer does not collect, sell, transfer or share any user data, does not 
 
 If this policy changes, the updated version will be published in this repository with a new date. Questions can be asked by opening an issue at <https://github.com/xadamxk/HFGS/issues>.
 
-HF Gambling Suite is not affiliated with or endorsed by Hack Forums.
+HF Gaming Suite is not affiliated with or endorsed by Hack Forums.

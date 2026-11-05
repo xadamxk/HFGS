@@ -4,7 +4,7 @@ Text to paste into the Chrome Web Store and Firefox Add-ons (AMO) dashboards.
 
 ## Name
 
-HF Gambling Suite
+HF Gaming Suite
 
 ## Summary (132 characters max)
 
@@ -12,7 +12,7 @@ Bots, stats and history for Hack Forums' βytes games: blackjack by basic strate
 
 ## Description
 
-HF Gambling Suite adds a panel under Hack Forums' βytes blackjack and slots games with a bot, session and overall totals, and your recent results.
+HF Gaming Suite adds a panel under Hack Forums' βytes blackjack and slots games with a bot, session and overall totals, and your recent results.
 
 βytes are Hack Forums' internal reward points. They can't be bought, deposited, withdrawn or exchanged for money; this extension does not involve real-money gambling.
 

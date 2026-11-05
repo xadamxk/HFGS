@@ -1,7 +1,7 @@
 {
   "name": "hfgs",
   "version": "2.0.0",
-  "description": "HF Gambling Suite: bots, stats and history for HF's βytes games.",
+  "description": "HF Gaming Suite: bots, stats and history for HF's βytes games.",
   "private": true,
   "scripts": {
     "dev": "webpack --config=config/webpack.dev.ts",

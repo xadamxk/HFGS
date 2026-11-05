@@ -1,4 +1,4 @@
-# Building HF Gambling Suite
+# Building HF Gaming Suite
 
 These steps rebuild the extension exactly as it's published.
 
