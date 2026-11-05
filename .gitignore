@@ -1,5 +1,8 @@
 .vscode/*
 node_modules/
+dist/
+coverage/
+releases/
 *.log
 # Chrome for Testing and its profile (holds sign-in cookies) for `npm run browser`
 .chrome-for-testing/

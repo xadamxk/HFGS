@@ -7,7 +7,8 @@ const path = require("path");
 const puppeteer = require("puppeteer-core");
 
 const PORT = Number(process.env.CDP_PORT) || 9222;
-const MATCH = /hackforums\.net\/(blackjack\/blackjack_action\.php|slots\/[^?]*\.php)/;
+const MATCH =
+  /hackforums\.net\/(blackjack\/blackjack_action\.php|slots\/[^?]*\.php)/;
 const outDir = path.join(__dirname, "..", "fixtures", "responses");
 const redact = (s) => (s || "").replace(/(my_post_key=)[^&]*/g, "$1REDACTED");
 
@@ -33,10 +34,14 @@ function watch(page) {
       /* not JSON */
     }
     // Error responses can be full HTML pages that embed the post key, so scrub it from the body too.
-    const postKey = (request.postData() || "").match(/my_post_key=([^&]+)/)?.[1];
-    if (postKey && typeof body === "string") body = body.split(postKey).join("REDACTED");
+    const postKey = (request.postData() || "").match(
+      /my_post_key=([^&]+)/
+    )?.[1];
+    if (postKey && typeof body === "string")
+      body = body.split(postKey).join("REDACTED");
     const url = new URL(request.url());
-    const action = url.searchParams.get("action") || path.basename(url.pathname, ".php");
+    const action =
+      url.searchParams.get("action") || path.basename(url.pathname, ".php");
     const entry = {
       capturedAt: new Date().toISOString(),
       method: request.method(),
@@ -50,26 +55,43 @@ function watch(page) {
         title: (body || "").match(/<title>([^<]*)/)?.[1] ?? null,
       },
     };
-    const file = path.join(outDir, `${String(++count).padStart(3, "0")}-${action}.json`);
+    const file = path.join(
+      outDir,
+      `${String(++count).padStart(3, "0")}-${action}.json`
+    );
     fs.writeFileSync(file, JSON.stringify(entry, null, 2));
-    const outcome = json?.data ? ` outcome1=${json.data.outcome1} turn=${json.data.turn}` : "";
-    console.log(`${action} ${response.status()}${outcome} -> ${path.relative(process.cwd(), file)}`);
+    const outcome = json?.data
+      ? ` outcome1=${json.data.outcome1} turn=${json.data.turn}`
+      : "";
+    console.log(
+      `${action} ${response.status()}${outcome} -> ${path.relative(process.cwd(), file)}`
+    );
   });
 }
 
 async function main() {
-  const browser = await puppeteer.connect({ browserURL: `http://127.0.0.1:${PORT}`, defaultViewport: null });
+  const browser = await puppeteer.connect({
+    browserURL: `http://127.0.0.1:${PORT}`,
+    defaultViewport: null,
+  });
   fs.mkdirSync(outDir, { recursive: true });
   // Continue numbering after existing captures so earlier fixtures are never overwritten.
-  count = Math.max(0, ...fs.readdirSync(outDir).map((f) => parseInt(f, 10) || 0));
+  count = Math.max(
+    0,
+    ...fs.readdirSync(outDir).map((f) => parseInt(f, 10) || 0)
+  );
   for (const page of await browser.pages()) watch(page);
   browser.on("targetcreated", async (target) => {
     const page = await target.page();
     if (page) watch(page);
   });
-  console.log("Capturing HF blackjack/slots requests. Play in the test browser; Ctrl+C to stop.");
+  console.log(
+    "Capturing HF blackjack/slots requests. Play in the test browser; Ctrl+C to stop."
+  );
   process.on("SIGINT", () => {
-    console.log(`\nCaptured ${count} responses into ${path.relative(process.cwd(), outDir)}`);
+    console.log(
+      `\nCaptured ${count} responses into ${path.relative(process.cwd(), outDir)}`
+    );
     browser.disconnect();
     process.exit(0);
   });

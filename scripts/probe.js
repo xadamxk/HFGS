@@ -13,10 +13,16 @@ const PAGES = {
   slots: "https://hackforums.net/slots.php",
 };
 const outDir = path.join(__dirname, "..", "fixtures", "phase0");
-const probeSource = fs.readFileSync(path.join(__dirname, "phase0-probe.js"), "utf8");
+const probeSource = fs.readFileSync(
+  path.join(__dirname, "phase0-probe.js"),
+  "utf8"
+);
 
 async function main() {
-  const browser = await puppeteer.connect({ browserURL: `http://127.0.0.1:${PORT}`, defaultViewport: null });
+  const browser = await puppeteer.connect({
+    browserURL: `http://127.0.0.1:${PORT}`,
+    defaultViewport: null,
+  });
   fs.mkdirSync(outDir, { recursive: true });
   try {
     for (const [name, url] of Object.entries(PAGES)) {
@@ -29,16 +35,20 @@ async function main() {
         }
         const report = await page.evaluate(probeSource);
         // Full markup, for designing selectors offline. my_post_key is a per-session CSRF token: redact it.
-        const postKey = await page.evaluate(() => window.my_post_key || "");
+        const postKey = await page.evaluate(() => globalThis.my_post_key || "");
         const markup = await page.content();
         // Also scrub every other token-shaped value (logoutkey, signed URLs, etc.): 32+ hex chars.
-        report.html = (postKey ? markup.split(postKey).join("REDACTED") : markup)
+        report.html = (
+          postKey ? markup.split(postKey).join("REDACTED") : markup
+        )
           .replace(/\b[0-9a-f]{32,}\b/gi, "REDACTED")
           .replace(/((?:logoutkey|token|key)=)[^&"'\s\\]+/gi, "$1REDACTED");
         const file = path.join(outDir, `${name}.json`);
         fs.writeFileSync(file, JSON.stringify(report, null, 2));
         const { html, ...summary } = report;
-        console.log(`\n=== ${name} (${page.url()})\n` + JSON.stringify(summary, null, 2));
+        console.log(
+          `\n=== ${name} (${page.url()})\n` + JSON.stringify(summary, null, 2)
+        );
         console.log(`Saved ${path.relative(process.cwd(), file)}`);
       } finally {
         await page.close();

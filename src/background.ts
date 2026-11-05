@@ -1,0 +1,14 @@
+import { Logger } from "./core/Logger";
+import { migrateStorage } from "./core/storage";
+
+// Upgrade stored data on install and on every extension update.
+chrome.runtime.onInstalled.addListener(() => {
+  migrateStorage().catch((error) =>
+    Logger.error(`Storage migration failed: ${error?.message}`, error)
+  );
+});
+
+// The toolbar button opens the settings page.
+chrome.action.onClicked.addListener(() => {
+  chrome.runtime.openOptionsPage();
+});
