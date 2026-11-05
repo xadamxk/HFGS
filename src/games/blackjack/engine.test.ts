@@ -67,6 +67,7 @@ function engineWith(
     windowId: "1",
     openGameState: null,
     blackjackPayout: 2.5,
+    machineName: null,
     ...options.page,
   };
   const status = jest.fn();

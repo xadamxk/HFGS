@@ -15,6 +15,8 @@ export interface PageState {
   openGameState: Record<string, unknown> | null;
   /** Blackjack: total returned on a natural (2.5 = 3:2). */
   blackjackPayout: number | null;
+  /** Slots: the machine HF's page spins ("default"). */
+  machineName: string | null;
 }
 
 function isPageState(value: unknown): value is PageState {
@@ -25,7 +27,8 @@ function isPageState(value: unknown): value is PageState {
     (state.windowId === null || typeof state.windowId === "string") &&
     (state.openGameState === null || typeof state.openGameState === "object") &&
     (state.blackjackPayout === null ||
-      typeof state.blackjackPayout === "number")
+      typeof state.blackjackPayout === "number") &&
+    (state.machineName === null || typeof state.machineName === "string")
   );
 }
 
@@ -65,6 +68,7 @@ export function readPageState(timeoutMs = 2000): Promise<PageState> {
           windowId: null,
           openGameState: null,
           blackjackPayout: null,
+          machineName: null,
         }),
       timeoutMs
     );

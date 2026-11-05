@@ -6,6 +6,14 @@ export interface SlotsSettings {
   runUntilStopped: boolean;
 }
 
+/**
+ * The bets HF's own bet buttons can produce (slots.js change_bet: 1, 2, 3, 5,
+ * 10, 20, 25, 50, 100, then steps of 100 up to maxBet 1000), checked 2026-11-05.
+ */
+export const SLOTS_BETS = [
+  1, 2, 3, 5, 10, 20, 25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000,
+];
+
 export const slots: GameDefinition<SlotsSettings> = {
   id: "slots",
   name: "Slots",
@@ -16,13 +24,14 @@ export const slots: GameDefinition<SlotsSettings> = {
       type: "number",
       id: "bet",
       label: "Bet",
-      // HF's machine starts at 1 (#bet); its maximum isn't shown on the page.
-      description: "The bet for each spin.",
+      description:
+        "The bet for each spin. HF's machine takes 1, 2, 3, 5, 10, 20, 25, 50, 100, then hundreds up to 1000; other amounts snap to the nearest.",
       default: 1,
       min: 1,
       max: 1000,
       step: 1,
       unit: "βytes",
+      allowed: SLOTS_BETS,
     },
     {
       type: "number",

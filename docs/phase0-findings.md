@@ -108,3 +108,9 @@ Slots spin response, captured:
 - At 2000 ms: 4 hands, 10 requests, **0 flood pages**. Every decision matched basic strategy (14 v 4 stand, soft 17 v 10 hit then stand, 17 v 5 stand, 20 v 3 stand).
 - The interrupted hand from the 1 s run was resumed from `openGameState` and settled correctly.
 - Accounting: 5 hands, wagered 10, returned 6, net −4; HF's balance went 2886 → 2882.
+
+## First live slots run (Phase 4, 2026-11-05)
+
+- HF's slots page globals: `minBet = 1`, `maxBet = 1000`, `machineName = 'default'`. HF's bet buttons step 1, 2, 3, 5, 10, 20, 25, 50, 100, then by 100 (the bet setting snaps to these).
+- 5 spins at 1 with 2 s spacing: 0 flood pages, requests identical to HF's own client (`bet, windowID, machine_name, my_post_key`).
+- All 5 lost (no prize), so the win path is covered by the replayed fixture (`002`), not live. Panel net −5 matched HF's credits 2882 → 2877 after a reload.

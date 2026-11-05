@@ -11,6 +11,7 @@ type HfWindow = Window & {
   windowID?: unknown;
   openGameState?: unknown;
   blackjackPayout?: unknown;
+  machineName?: unknown;
 };
 
 function snapshot(): PageState {
@@ -28,6 +29,7 @@ function snapshot(): PageState {
         : null,
     blackjackPayout:
       typeof page.blackjackPayout === "number" ? page.blackjackPayout : null,
+    machineName: typeof page.machineName === "string" ? page.machineName : null,
   };
 }
 

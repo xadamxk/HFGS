@@ -12,6 +12,7 @@ const page = {
   windowId: "1",
   openGameState: null,
   blackjackPayout: null,
+  machineName: null,
 };
 const flush = async () => {
   for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));

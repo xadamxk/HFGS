@@ -142,7 +142,7 @@ export class GameController {
       onStop: (reason) => {
         this.panel.setStatus(describeStop(reason), reason.kind === "error");
         if (reason.kind === "error")
-          Logger.warn(`${game.name} bot stopped`, reason);
+          Logger.warn(`${game.name} bot ${describeStop(reason)}`);
       },
     });
     this.runner = runner;

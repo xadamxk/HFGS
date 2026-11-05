@@ -48,6 +48,8 @@ export interface NumberDefinition<T> extends BaseDefinition<
   step: number;
   /** Shown after the input, e.g. "βytes" or "ms". */
   unit?: string;
+  /** Only these values are valid (e.g. a game's bet steps); input snaps to the nearest. */
+  allowed?: number[];
 }
 
 export type SettingDefinition<T> =
@@ -61,16 +63,25 @@ export function defaultsOf<T>(definitions: SettingDefinition<T>[]): T {
 
 /**
  * A number setting's value from user or stored input: clamped to min/max and
- * rounded to the step. Returns null when the input isn't a number.
+ * rounded to the step, or snapped to the nearest allowed value (the lower one
+ * on a tie). Returns null when the input isn't a number.
  */
 export function normalizeNumber(
-  definition: Pick<NumberDefinition<unknown>, "min" | "max" | "step">,
+  definition: Pick<
+    NumberDefinition<unknown>,
+    "min" | "max" | "step" | "allowed"
+  >,
   input: unknown
 ): number | null {
   if (input === "" || input === null || typeof input === "boolean") return null;
   const number = Number(input);
   if (!Number.isFinite(number)) return null;
-  const { min, max, step } = definition;
+  const { min, max, step, allowed } = definition;
+  if (allowed?.length) {
+    return allowed.reduce((best, value) =>
+      Math.abs(value - number) < Math.abs(best - number) ? value : best
+    );
+  }
   const stepped = min + Math.round((number - min) / step) * step;
   const decimals = (String(step).split(".")[1] || "").length;
   const rounded = Number(stepped.toFixed(decimals));

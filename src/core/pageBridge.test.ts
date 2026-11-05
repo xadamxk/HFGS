@@ -5,6 +5,7 @@ const STATE = {
   windowId: "123",
   openGameState: null,
   blackjackPayout: 2.5,
+  machineName: null,
 };
 
 function reply(data: unknown, source: MessageEventSource | null = window) {
@@ -45,6 +46,7 @@ describe("readPageState", () => {
       windowId: null,
       openGameState: null,
       blackjackPayout: null,
+      machineName: null,
     });
   });
 });

@@ -68,9 +68,9 @@ describe("normalizeSettings", () => {
 describe("storage", () => {
   it("round-trips through chrome.storage.local", async () => {
     const settings = defaultSettings();
-    settings.games.slots.bet = 7;
+    settings.games.slots.bet = 25;
     await saveSettings(settings);
-    expect((await loadSettings()).games.slots.bet).toBe(7);
+    expect((await loadSettings()).games.slots.bet).toBe(25);
   });
 
   it("notifies watchers with normalized settings, until unsubscribed", async () => {
@@ -88,5 +88,22 @@ describe("storage", () => {
     stop();
     await saveSettings(defaultSettings());
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("allowed values", () => {
+  const bets = { min: 1, max: 1000, step: 1, allowed: [1, 2, 3, 5, 10, 100] };
+
+  it("snaps to the nearest allowed value, the lower one on a tie", () => {
+    expect(normalizeNumber(bets, 4)).toBe(3);
+    expect(normalizeNumber(bets, 8)).toBe(10);
+    expect(normalizeNumber(bets, 55)).toBe(10);
+    expect(normalizeNumber(bets, 99999)).toBe(100);
+    expect(normalizeNumber(bets, "abc")).toBeNull();
+  });
+
+  it("applies to stored slots bets", () => {
+    const settings = normalizeSettings({ games: { slots: { bet: 7 } } });
+    expect(settings.games.slots.bet).toBe(5);
   });
 });
