@@ -19,6 +19,8 @@ export const slots: GameDefinition<SlotsSettings> = {
   name: "Slots",
   description: "Spins HF's slot machine at a fixed bet.",
   path: "/slots.php",
+  describeResult: (details) =>
+    Array.isArray(details.reels) ? `Reels ${details.reels.join(" ")}` : "",
   settings: [
     {
       type: "number",

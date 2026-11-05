@@ -13,7 +13,10 @@ import {
   BLACKJACK_MIN_BET,
   BlackjackSettings,
 } from "./definition";
+import { formatCard, formatCards } from "./cards";
 import { Action, getAdvice, handTotal, visibleCards } from "./strategy";
+
+export { formatCard, formatCards };
 
 export interface BjHand {
   action: string;
@@ -47,23 +50,6 @@ export interface BjResponse {
 const ACTION_URL = "/blackjack/blackjack_action.php?action=";
 /** A hand never needs this many actions; more means something is off. */
 const MAX_ACTIONS_PER_HAND = 12;
-
-const RANKS: Record<string, string> = {
-  "1": "A",
-  "11": "J",
-  "12": "Q",
-  "13": "K",
-};
-const SUITS: Record<string, string> = { c: "♣", d: "♦", h: "♥", s: "♠" };
-
-/** "12h" -> "Q♥", "XX" -> "?" */
-export function formatCard(card: string): string {
-  if (card === "XX") return "?";
-  const rank = card.slice(0, -1);
-  return `${RANKS[rank] ?? rank}${SUITS[card.slice(-1)] ?? ""}`;
-}
-
-export const formatCards = (cards: string[]) => cards.map(formatCard).join(" ");
 
 function isEnded(state: BjGameState): boolean {
   return state.turn === "ended" || String(state.ended) === "1";

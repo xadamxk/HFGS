@@ -42,6 +42,8 @@ export interface BotPanelOptions {
   onStart: () => void;
   onStop: () => void;
   onOpenSettings: () => void;
+  /** Cards, reels etc. for a result, shown when hovering its row. */
+  describeResult?: (details: Record<string, unknown>) => string;
 }
 
 export function formatAmount(n: number, signed = false): string {
@@ -245,25 +247,29 @@ export class BotPanel {
     }
     this.historyBody.replaceChildren(
       ...entries.slice(0, limit).map((entry) =>
-        el("tr", null, [
-          el(
-            "td",
-            null,
-            new Date(entry.at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            })
-          ),
-          el("td", { class: signClass(entry.net) }, entry.outcome),
-          el("td", null, formatAmount(entry.wagered)),
-          el("td", null, formatAmount(entry.returned)),
-          el(
-            "td",
-            { class: signClass(entry.net) },
-            formatAmount(entry.net, true)
-          ),
-        ])
+        el(
+          "tr",
+          { title: this.options.describeResult?.(entry.details ?? {}) || null },
+          [
+            el(
+              "td",
+              null,
+              new Date(entry.at).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })
+            ),
+            el("td", { class: signClass(entry.net) }, entry.outcome),
+            el("td", null, formatAmount(entry.wagered)),
+            el("td", null, formatAmount(entry.returned)),
+            el(
+              "td",
+              { class: signClass(entry.net) },
+              formatAmount(entry.net, true)
+            ),
+          ]
+        )
       )
     );
   }

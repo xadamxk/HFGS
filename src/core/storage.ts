@@ -19,8 +19,8 @@ type Migration = () => Promise<void>;
 
 /**
  * MIGRATIONS[n] upgrades stored data from version n to n + 1. Version 0 means
- * nothing stored yet (a new install, or the MV2 extension, which kept its data
- * in hackforums.net's localStorage; that import happens in the content script).
+ * nothing stored yet (a new install). The MV2 extension's data, kept in
+ * hackforums.net's localStorage, is deliberately not imported.
  */
 const MIGRATIONS: Record<number, Migration> = {
   0: async () => {

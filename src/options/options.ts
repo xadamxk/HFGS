@@ -1,6 +1,7 @@
 import { el } from "../core/Dom";
-import { removeItem, STORAGE_KEYS } from "../core/storage";
+import { loadHistory } from "../core/history";
 import { GAMES } from "../games/registry";
+import { download, HistorySection, renderHistorySection } from "./history";
 import {
   defaultsOf,
   normalizeNumber,
@@ -79,30 +80,69 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
     await renderOptions(root);
   });
 
+  // History sections listen for storage changes; drop the old ones on re-render.
+  activeHistory.forEach((section) => section.dispose());
+  activeHistory = await Promise.all(
+    GAMES.map((game) => renderHistorySection(game, showStatus))
+  );
+
+  const exportAll = el(
+    "button",
+    { type: "button", class: "secondary" },
+    "Export everything (JSON)"
+  );
+  exportAll.addEventListener("click", async () => {
+    try {
+      download(
+        `hfgs-backup-${new Date().toISOString().slice(0, 10)}.json`,
+        "application/json",
+        JSON.stringify(await exportEverything(), null, 2)
+      );
+    } catch (error) {
+      showStatus(`Couldn't export: ${(error as Error)?.message}`, true);
+    }
+  });
+
   root.replaceChildren(
     el("header", null, [
       el("img", { src: "assets/icons/icon48.png", alt: "", width: 32 }),
       el("h1", null, "HF Gambling Suite"),
     ]),
+    el("h2", { class: "group" }, "Settings"),
     el("section", { "data-game": "global" }, [
       el("h2", null, "All games"),
       globalForm,
     ]),
     ...gameSections,
-    el("section", null, [
-      el("h2", null, "Stored data"),
-      ...GAMES.map((game) =>
-        storageRow(
-          STORAGE_KEYS.history(game.id),
-          `${game.name} history`,
-          `Every ${game.name.toLowerCase()} result and the overall totals (this browser only).`,
-          showStatus
-        )
-      ),
-    ]),
     reset,
+    el("h2", { class: "group" }, "History"),
+    el(
+      "p",
+      { class: "description intro" },
+      "Results the bots played, kept in this browser only."
+    ),
+    ...activeHistory.map((section) => section.element),
+    el("div", { class: "actions" }, [exportAll]),
     status
   );
+}
+
+let activeHistory: HistorySection[] = [];
+
+/** Settings plus every game's history, for a backup file. */
+export async function exportEverything() {
+  return {
+    exportedAt: new Date().toISOString(),
+    version: chrome.runtime.getManifest?.().version ?? null,
+    settings: await loadSettings(),
+    history: Object.fromEntries(
+      await Promise.all(
+        GAMES.map(
+          async (game) => [game.id, await loadHistory(game.id)] as const
+        )
+      )
+    ),
+  };
 }
 
 /** A form with one row per setting; `save` gets just the changed value. */
@@ -261,28 +301,4 @@ function rowEnabler(row: HTMLElement, inputs: HTMLInputElement[]) {
     inputs.forEach((input) => (input.disabled = !enabled));
     row.classList.toggle("disabled", !enabled);
   };
-}
-
-function storageRow(
-  key: string,
-  label: string,
-  description: string,
-  showStatus: (message: string, isError?: boolean) => void
-): HTMLElement {
-  const clear = el("button", { type: "button", class: "secondary" }, "Clear");
-  clear.addEventListener("click", async () => {
-    try {
-      await removeItem(key);
-      showStatus(`${label} cleared.`);
-    } catch (error) {
-      showStatus(`Couldn't clear: ${(error as Error)?.message}`, true);
-    }
-  });
-  return el("div", { class: "row storage", "data-key": key }, [
-    el("div", null, [
-      el("strong", null, label),
-      el("p", { class: "description" }, description),
-    ]),
-    clear,
-  ]);
 }

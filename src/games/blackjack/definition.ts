@@ -1,4 +1,5 @@
 import { GameDefinition } from "../types";
+import { describeBlackjack } from "./cards";
 
 export interface BlackjackSettings {
   baseBet: number;
@@ -19,6 +20,7 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
   description:
     "Plays each hand by basic strategy for HF's table rules (dealer hits soft 17, double any two cards, one split, late surrender).",
   path: "/blackjack.php",
+  describeResult: describeBlackjack,
   settings: [
     {
       type: "number",

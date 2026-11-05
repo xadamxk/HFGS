@@ -69,6 +69,7 @@ export class GameController {
     this.panel = new BotPanel({
       gameName: options.game.name,
       botAvailable: Boolean(options.bot),
+      describeResult: options.game.describeResult,
       onStart: () =>
         this.start().catch((error) => Logger.error("Start failed", error)),
       onStop: () => this.runner?.stop(),

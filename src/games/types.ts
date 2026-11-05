@@ -14,4 +14,6 @@ export interface GameDefinition<T = SettingValues> {
   /** The game's page on hackforums.net, e.g. "/blackjack.php". */
   path: string;
   settings: SettingDefinition<T>[];
+  /** A result's details as short text for history tables (cards, reels). */
+  describeResult?: (details: Record<string, unknown>) => string;
 }

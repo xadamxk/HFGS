@@ -1,4 +1,3 @@
-import { setItem, getItem, STORAGE_KEYS } from "../core/storage";
 import { GAMES } from "../games/registry";
 import { loadSettings } from "../settings";
 import { renderOptions } from "./options";
@@ -70,13 +69,15 @@ describe("options page", () => {
     expect(multiplier.disabled).toBe(false);
   });
 
-  it("clears a game's stored history", async () => {
-    await setItem(STORAGE_KEYS.history("slots"), { results: [1] });
+  it("lists settings first, then each game's history", async () => {
     const root = await render();
-    root
-      .querySelector<HTMLButtonElement>(`[data-key="history:slots"] button`)!
-      .click();
-    await flush();
-    expect(await getItem(STORAGE_KEYS.history("slots"))).toBeUndefined();
+    const groups = [...root.querySelectorAll("h2.group")].map(
+      (h) => h.textContent
+    );
+    expect(groups).toEqual(["Settings", "History"]);
+    const history = [...root.querySelectorAll("section[data-history]")].map(
+      (section) => section.getAttribute("data-history")
+    );
+    expect(history).toEqual(GAMES.map((game) => game.id));
   });
 });
