@@ -177,6 +177,8 @@ const table = {
   hard: {},
   soft: {},
   split: {},
+  // The dealer's final total for each upcard (given no blackjack when peeking), for the assistant.
+  dealer: {},
 };
 for (let t = 4; t <= 21; t++) table.hard[t] = {};
 for (let t = 12; t <= 21; t++) table.soft[t] = {};
@@ -184,7 +186,13 @@ for (const r of RANKS) table.split[r === 1 ? "A" : r] = {};
 
 for (const up of UPCARDS) {
   const u = UPCARD_KEY(up);
-  const { row, splitEV } = playerEVs(dealerGivenUpcard(up));
+  const dealer = dealerGivenUpcard(up);
+  const { row, splitEV } = playerEVs(dealer);
+  table.dealer[u] = roundRow(
+    Object.fromEntries(
+      ["17", "18", "19", "20", "21", "bust"].map((k) => [k, dealer[k] || 0])
+    )
+  );
   for (let t = 4; t <= 21; t++) table.hard[t][u] = roundRow(row(t, false));
   // Soft total t = ace counted as 11, so hard sum is t - 10.
   for (let t = 12; t <= 21; t++) table.soft[t][u] = roundRow(row(t - 10, true));

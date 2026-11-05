@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { blackjackPage } from "./blackjack";
 import { slotsPage } from "./slots";
+import { applyMuted, watchMuteButton } from "./sound";
 import { Loose } from "./types";
 
 const FIXTURES = path.join(__dirname, "..", "..", "fixtures", "responses");
@@ -124,7 +125,7 @@ describe("blackjack page", () => {
     expect(bj.calls).toEqual(["updateBalanceCounters"]);
   });
 
-  it("reports each hand played by hand once, when it ends", () => {
+  it("reports every answer to a game request HF's page sends, with its action", () => {
     const handlers: Loose[] = [];
     page.jQuery = () => ({ ajaxSuccess: (fn: Loose) => handlers.push(fn) });
     const report = jest.fn();
@@ -132,21 +133,19 @@ describe("blackjack page", () => {
     const send = (url: string, response: unknown) =>
       handlers[0]({}, { responseJSON: response }, { url, data: "a=1" });
 
-    send(
-      "blackjack/blackjack_action.php?action=deal",
-      fixture("013-deal.json")
-    );
-    expect(report).not.toHaveBeenCalled();
+    const deal = fixture("013-deal.json");
     const ended = fixture("019-double.json");
+    send("blackjack/blackjack_action.php?action=deal", deal);
     send("blackjack/blackjack_action.php?action=double", ended);
-    send("blackjack/blackjack_action.php?action=double", ended);
-    send("/other.php", ended);
-    expect(report).toHaveBeenCalledTimes(1);
-    expect(report).toHaveBeenCalledWith({
-      action: "ended",
-      response: ended,
-      bet: null,
+    send("blackjack/blackjack_action.php?action=hit", {
+      success: false,
+      error: "x",
     });
+    send("/other.php", ended);
+    expect(report.mock.calls).toEqual([
+      [{ action: "deal", response: deal, bet: null }],
+      [{ action: "double", response: ended, bet: null }],
+    ]);
   });
 });
 
@@ -273,5 +272,41 @@ describe("slots page", () => {
       }
     );
     expect(report).toHaveBeenCalledWith({ action: "spin", response, bet: 5 });
+  });
+});
+
+describe("HF's sound button", () => {
+  function fakeSound() {
+    document.body.innerHTML = `<div id="soundOffButton"></div>`;
+    const calls: string[] = [];
+    const ready: (() => void)[] = [];
+    page.soundManager = {
+      mute: () => calls.push("mute"),
+      unmute: () => calls.push("unmute"),
+      onready: (fn: () => void) => ready.push(fn),
+    };
+    return { calls, ready, button: document.getElementById("soundOffButton")! };
+  }
+  afterEach(() => delete page.soundManager);
+
+  it("mutes HF's sounds, including ones made when SoundManager is ready", () => {
+    const { calls, ready, button } = fakeSound();
+    applyMuted(true);
+    expect(button.classList.contains("off")).toBe(true);
+    ready.forEach((fn) => fn());
+    expect(calls).toEqual(["mute", "mute"]);
+    applyMuted(false);
+    expect(button.classList.contains("off")).toBe(false);
+    expect(calls[2]).toBe("unmute");
+  });
+
+  it("reports the button's state after HF's own click handler toggles it", async () => {
+    const { button } = fakeSound();
+    button.addEventListener("click", () => button.classList.toggle("off"));
+    const report = jest.fn();
+    watchMuteButton(report);
+    button.click();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(report).toHaveBeenCalledWith(true);
   });
 });

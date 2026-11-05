@@ -7,7 +7,8 @@
  * - reports HF's page state (post key, windowID, an unfinished hand);
  * - draws the bot's results with HF's own animations (when Headless Mode is off)
  *   or brings HF's counters up to date (when it's on);
- * - reports the rounds the user plays by hand, so the panel counts them too.
+ * - reports the rounds the user plays by hand, so the panel counts them too;
+ * - applies the saved sound setting and reports HF's sound button clicks.
  */
 import {
   BRIDGE_SOURCE,
@@ -17,6 +18,7 @@ import {
 } from "./core/pageBridge";
 import { blackjackPage } from "./page/blackjack";
 import { slotsPage } from "./page/slots";
+import { applyMuted, watchMuteButton } from "./page/sound";
 import { PageGame } from "./page/types";
 
 const PAGE_GAMES: Record<string, PageGame> = {
@@ -80,6 +82,9 @@ window.addEventListener("message", (event) => {
         );
       break;
     }
+    case "sound":
+      applyMuted(message.muted === true);
+      break;
     case "sync":
       try {
         game?.sync(Number(message.balance), message.details ?? {});
@@ -91,6 +96,7 @@ window.addEventListener("message", (event) => {
 });
 
 game?.watch((round) => post({ type: "round", game: gameId, ...round }));
+watchMuteButton((muted) => post({ type: "muted", muted }));
 
 // Announce once on load too, in case the content script asked before this ran.
 post({ type: "state", state: snapshot() });

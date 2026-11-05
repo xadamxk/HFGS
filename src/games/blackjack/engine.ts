@@ -15,6 +15,10 @@ import {
 } from "./definition";
 import { formatCard, formatCards } from "./cards";
 import { Action, getAdvice, handTotal, visibleCards } from "./strategy";
+import { offeredActions } from "./analysis";
+import { MartingaleTag } from "./martingale";
+import { MartingaleView } from "./martingaleView";
+import { BlackjackAssistant } from "./assistant";
 
 export { formatCard, formatCards };
 
@@ -46,6 +50,9 @@ export interface BjResponse {
   data: BjGameState;
   balance: number;
 }
+
+/** Keeps martingale set ids unique even within one millisecond. */
+let setCounter = 0;
 
 const ACTION_URL = "/blackjack/blackjack_action.php?action=";
 /** A hand never needs this many actions; more means something is off. */
@@ -109,6 +116,10 @@ export function settle(state: BjGameState, balance?: number): RoundResult {
 export function createBlackjackEngine(context: EngineContext): GameEngine {
   let previousBet: number | null = null;
   let previousNet: number | null = null;
+  // The martingale set in progress this session: a new one starts on the
+  // first hand and after each win (see martingale.ts).
+  let setId: string | null = null;
+  let step = 0;
 
   const post = (action: string, form: Record<string, string | number>) =>
     context.client.post<BjResponse>(ACTION_URL + action, form);
@@ -134,6 +145,7 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
         balance = response.balance;
         dealt = true;
         await show?.("deal", response, bet);
+        context.observe?.("deal", response);
       }
 
       let actions = 0;
@@ -154,10 +166,28 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
         state = response.data;
         balance = response.balance;
         await show?.(action, response, null);
+        context.observe?.(action, response);
       }
 
       const result = settle(state, balance);
       noteDealerPeek(result, dealt && actions === 0, actions > 0);
+      if (settings.martingale && dealt) {
+        if (setId === null || previousNet === null || previousNet > 0) {
+          setId = `${Date.now()}-${++setCounter}`;
+          step = 1;
+        } else {
+          step++;
+        }
+        const tag: MartingaleTag = {
+          set: setId,
+          step,
+          bet: parseFloat(state.bet) || 0,
+          cap: Math.min(settings.maxBet, BLACKJACK_MAX_BET),
+        };
+        result.details = { ...result.details, martingale: tag };
+      } else {
+        setId = null;
+      }
       previousBet = parseFloat(state.bet) || null;
       previousNet = result.returned - result.wagered;
       return result;
@@ -170,13 +200,12 @@ function decide(state: BjGameState): Action {
   const turn = state.turn === "hand2" ? "hand2" : "hand1";
   const hand = state[turn];
   if (!hand) throw new Error(`HF's game state has no ${turn}`);
-  // HF offers double, split and surrender only on hand 1's first decision.
-  const first = turn === "hand1" && state.hand1.action === "START";
-  const advice = getAdvice(hand.hand_cards, state.dealer.hand_cards, {
-    double: first,
-    split: first,
-    surrender: first,
-  });
+  // Only what HF's page offers now (double, split, surrender: hand 1's first decision)
+  const advice = getAdvice(
+    hand.hand_cards,
+    state.dealer.hand_cards,
+    offeredActions(state)
+  );
   return advice?.best ?? "stand";
 }
 
@@ -211,6 +240,9 @@ export const blackjackBot: GameBot = {
       : "";
     return `Play ${count} at ${s.baseBet} βytes${martingale}?`;
   },
+  createHistoryView: () => new MartingaleView(),
+  createAssistant: (page) =>
+    new BlackjackAssistant(page.openGameState as BjGameState | null),
   fromPage: (_action, response) => {
     const res = response as BjResponse | null;
     if (!res?.success || !res.data?.hand1 || !isEnded(res.data)) return null;

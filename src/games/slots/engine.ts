@@ -90,6 +90,7 @@ export function createSlotsEngine(context: EngineContext): GameEngine {
       }
       credits = response.credits;
       await show?.("spin", response, bet);
+      context.observe?.("spin", response);
       return settleSpin(bet, response);
     },
   };

@@ -141,6 +141,27 @@ export function syncPage(
   toBridge({ type: "sync", balance, details });
 }
 
+/** Mute or unmute HF's game sounds (and its sound button). */
+export function setPageMuted(muted: boolean): void {
+  toBridge({ type: "sound", muted });
+}
+
+/** Call `listener` when the user clicks HF's own sound button. */
+export function onMuteButton(listener: (muted: boolean) => void): () => void {
+  const onMessage = (event: MessageEvent) => {
+    if (
+      event.source === window &&
+      event.data?.source === BRIDGE_SOURCE &&
+      event.data.type === "muted" &&
+      typeof event.data.muted === "boolean"
+    ) {
+      listener(event.data.muted);
+    }
+  };
+  window.addEventListener("message", onMessage);
+  return () => window.removeEventListener("message", onMessage);
+}
+
 /** A round HF's own page played (the user playing by hand). */
 export interface ManualRound {
   game: string;

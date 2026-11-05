@@ -14,14 +14,15 @@
 
 HFGS adds a panel under each game on Hack Forums with a bot, live stats for this visit and overall, a chart of your βytes over recent results, and your recent results. Hands and spins you play yourself count too. βytes are Hack Forums' internal points; they have no cash value.
 
-- **Blackjack** plays every hand by basic strategy for HF's table rules (dealer hits soft 17, double any two cards, one split, late surrender). The strategy is a lookup table built into the extension, matched against the published basic strategy chart. Optional martingale betting with a bet cap.
+- **Blackjack** plays every hand by basic strategy for HF's table rules (dealer hits soft 17, double any two cards, one split, late surrender). The strategy is a lookup table built into the extension, matched against the published basic strategy chart. Optional martingale betting with a bet cap; while it's on, a Martingale section tracks the set in progress (next bet, distance to the cap) and how past sets ended: recovered, won short at the cap, or abandoned when the bot stopped first.
+- **Strategy assistant** (blackjack): beside the table, the strategy table's inputs (your cards, the dealer's upcard, what HF offers) and output (the best play and every option's expected value), with bust odds and the chart row, live for the bot's hands and your own. Your own decisions are checked against the table.
 - **Slots** spins at a fixed bet, using HF's own bet steps, and never bets more than your credits.
 - **Limits for every session:** a number of hands or spins (or run until stopped), stop-loss, take-profit, and a confirmation before any bet is placed.
 - **Gentle on HF:** one request at a time, at least 2 seconds apart by default. HF's flood control ("submitting too quickly") is detected and retried, and anything unexpected stops the bot instead of guessing.
 - **Headless Mode** (on by default) plays in the background and only updates HF's balance. Turn it off to watch the bot play with HF's own card and reel animations.
 - **History:** every result, whether the bot or you played it, is kept in your browser, with totals per game on the settings page and CSV/JSON export.
 
-Open the settings from the toolbar button or the panel's **Settings** link. Changes apply right away, even mid-session.
+Change settings right on the game page, in the panel's **Settings** section, or on the settings page (toolbar button or the panel's **Settings** link). Either way they save at once, show up on the other, and apply from the next round, even while the bot runs.
 
 ## Install
 

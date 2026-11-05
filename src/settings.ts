@@ -16,6 +16,7 @@ import {
 export interface GlobalSettings {
   confirmStart: boolean;
   headless: boolean;
+  muteSounds: boolean;
   actionDelayMs: number;
   stopLoss: number;
   takeProfit: number;
@@ -36,6 +37,14 @@ export const GLOBAL_SETTINGS: SettingDefinition<GlobalSettings>[] = [
     description:
       "Play in the background without drawing each hand or spin on HF's page; only HF's balance is updated. Turn it off to watch the bot play with HF's own card and reel animations (slower: each round waits for its animation).",
     default: true,
+  },
+  {
+    type: "checkbox",
+    id: "muteSounds",
+    label: "Mute game sounds",
+    description:
+      "Keep HF's blackjack and slots sounds off. Clicking HF's own sound button on a game page changes this too, so your choice is remembered next time.",
+    default: false,
   },
   {
     type: "number",

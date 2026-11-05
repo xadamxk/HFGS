@@ -37,7 +37,7 @@ export function hfWindow(): Loose {
  */
 export function onHfAjax(
   urlPart: string,
-  report: (response: unknown, requestData: URLSearchParams) => void
+  report: (response: unknown, requestData: URLSearchParams, url: URL) => void
 ): void {
   const $ = hfWindow().jQuery;
   if (typeof $ !== "function") return;
@@ -52,6 +52,10 @@ export function onHfAjax(
       }
     }
     const data = typeof settings?.data === "string" ? settings.data : "";
-    report(response, new URLSearchParams(data));
+    report(
+      response,
+      new URLSearchParams(data),
+      new URL(String(settings.url), location.href)
+    );
   });
 }

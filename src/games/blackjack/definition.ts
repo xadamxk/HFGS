@@ -8,6 +8,7 @@ export interface BlackjackSettings {
   martingale: boolean;
   martingaleMultiplier: number;
   maxBet: number;
+  showAssistant: boolean;
 }
 
 /** HF's table limits (#balanceCounterMin / #balanceCounterMax), checked 2026-11-05. */
@@ -22,6 +23,14 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
   path: "/blackjack.php",
   describeResult: describeBlackjack,
   settings: [
+    {
+      type: "checkbox",
+      id: "showAssistant",
+      label: "Strategy assistant",
+      description:
+        "Show what the strategy table is given and what it answers for every decision, with the odds, whether the bot or you is playing.",
+      default: true,
+    },
     {
       type: "number",
       id: "baseBet",

@@ -1,5 +1,5 @@
 import { GAMES } from "../games/registry";
-import { loadSettings } from "../settings";
+import { loadSettings, saveSettings } from "../settings";
 import { renderOptions } from "./options";
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -33,6 +33,28 @@ describe("options page", () => {
     bet.dispatchEvent(new Event("change"));
     await flush();
     expect((await loadSettings()).games.blackjack.baseBet).toBe(25);
+  });
+
+  it("shows settings changed on a game page, and doesn't undo them on its next save", async () => {
+    const root = await render();
+    const fromGamePage = await loadSettings();
+    fromGamePage.games.blackjack.baseBet = 40;
+    fromGamePage.global.headless = false;
+    await saveSettings(fromGamePage);
+    await flush();
+    expect(input(root, "blackjack-baseBet").value).toBe("40");
+    expect(input(root, "global-headless").checked).toBe(false);
+
+    const games = input(root, "blackjack-gamesPerSession");
+    games.value = "3";
+    games.dispatchEvent(new Event("change"));
+    await flush();
+    const saved = await loadSettings();
+    expect(saved.games.blackjack).toMatchObject({
+      baseBet: 40,
+      gamesPerSession: 3,
+    });
+    expect(saved.global.headless).toBe(false);
   });
 
   it("clamps and rounds number input to the setting's limits", async () => {

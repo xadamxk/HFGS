@@ -470,6 +470,52 @@ describe("martingale", () => {
   });
 });
 
+describe("martingale set tags", () => {
+  const ended = (outcome: string, payout: string, bet: number) =>
+    state({
+      turn: "ended",
+      ended: "1",
+      outcome1: outcome,
+      outcome2: "",
+      payout,
+      bet: `${bet}.000000`,
+      hand1: hand("STAND", ["10c", "8d"]),
+      dealer: hand("START", ["10h", "9c"]),
+    });
+
+  it("tags each hand with its set and step; a win ends the set, a push doesn't", async () => {
+    const { engine } = engineWith(
+      [
+        { action: "deal", response: ended("LOSE", "0", 2) },
+        { action: "deal", response: ended("TIE", "4", 4) },
+        { action: "deal", response: ended("WIN", "8", 4) },
+        { action: "deal", response: ended("LOSE", "0", 2) },
+      ],
+      { settings: { martingale: true, baseBet: 2, maxBet: 100 } }
+    );
+    const tags = [];
+    for (let i = 0; i < 4; i++) {
+      tags.push(
+        (await engine.playRound({ stopRequested: false })).details!.martingale
+      );
+    }
+    expect(tags.map((t) => (t as { step: number }).step)).toEqual([1, 2, 3, 1]);
+    expect(tags.map((t) => (t as { bet: number }).bet)).toEqual([2, 4, 4, 2]);
+    const sets = tags.map((t) => (t as { set: string }).set);
+    expect(sets[0]).toBe(sets[2]);
+    expect(sets[3]).not.toBe(sets[0]);
+    expect(tags[0]).toMatchObject({ cap: 100 });
+  });
+
+  it("doesn't tag hands when martingale is off", async () => {
+    const { engine } = engineWith([
+      { action: "deal", response: ended("LOSE", "0", 2) },
+    ]);
+    const result = await engine.playRound({ stopRequested: false });
+    expect(result.details!.martingale).toBeUndefined();
+  });
+});
+
 describe("blackjack on HF's page", () => {
   it("draws each response on the page, with the bet on the deal, before the next action", async () => {
     const deal = fixture("013-deal.json").response;

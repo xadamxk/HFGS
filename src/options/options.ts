@@ -2,12 +2,8 @@ import { el } from "../core/Dom";
 import { loadHistory } from "../core/history";
 import { GAMES } from "../games/registry";
 import { download, HistorySection, renderHistorySection } from "./history";
-import {
-  defaultsOf,
-  normalizeNumber,
-  SettingDefinition,
-  SettingValues,
-} from "../settings/definitions";
+import { SettingValues } from "../settings/definitions";
+import { settingsForm } from "../settings/form";
 import {
   GLOBAL_SETTINGS,
   GlobalSettings,
@@ -15,6 +11,7 @@ import {
   defaultSettings,
   loadSettings,
   saveSettings,
+  watchSettings,
 } from "../settings";
 
 /**
@@ -46,7 +43,7 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
     }
   };
 
-  const globalForm = settingsForm(
+  const globalSettingsForm = settingsForm(
     "global",
     GLOBAL_SETTINGS,
     settings.global as unknown as SettingValues,
@@ -56,11 +53,14 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
         global: { ...settings.global, ...change } as GlobalSettings,
       })
   );
-  const gameSections = GAMES.map((game) =>
-    el("section", { "data-game": game.id }, [
-      el("h2", null, game.name),
-      el("p", { class: "description intro" }, game.description),
-      settingsForm(game.id, game.settings, settings.games[game.id], (change) =>
+  const globalForm = globalSettingsForm.element;
+  const gameForms = new Map<string, ReturnType<typeof settingsForm>>();
+  const gameForm = (game: (typeof GAMES)[number]) => {
+    const form = settingsForm(
+      game.id,
+      game.settings,
+      settings.games[game.id],
+      (change) =>
         persist({
           ...settings,
           games: {
@@ -68,7 +68,15 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
             [game.id]: { ...settings.games[game.id], ...change },
           },
         })
-      ),
+    );
+    gameForms.set(game.id, form);
+    return form.element;
+  };
+  const gameSections = GAMES.map((game) =>
+    el("section", { "data-game": game.id }, [
+      el("h2", null, game.name),
+      el("p", { class: "description intro" }, game.description),
+      gameForm(game),
     ])
   );
 
@@ -78,6 +86,15 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
   reset.addEventListener("click", async () => {
     await persist(defaultSettings());
     await renderOptions(root);
+  });
+
+  // Settings changed on a game page while this page is open: show them, and
+  // build on them so the next save here doesn't undo them.
+  stopWatchingSettings?.();
+  stopWatchingSettings = watchSettings((next) => {
+    settings = next;
+    globalSettingsForm.setValues(next.global as unknown as SettingValues);
+    for (const [id, form] of gameForms) form.setValues(next.games[id]);
   });
 
   // History sections listen for storage changes; drop the old ones on re-render.
@@ -128,6 +145,7 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
 }
 
 let activeHistory: HistorySection[] = [];
+let stopWatchingSettings: (() => void) | null = null;
 
 /** Settings plus every game's history, for a backup file. */
 export async function exportEverything() {
@@ -142,163 +160,5 @@ export async function exportEverything() {
         )
       )
     ),
-  };
-}
-
-/** A form with one row per setting; `save` gets just the changed value. */
-function settingsForm<T>(
-  scope: string,
-  definitions: SettingDefinition<T>[],
-  values: SettingValues,
-  save: (change: SettingValues) => void
-): HTMLFormElement {
-  const current: SettingValues = { ...defaultsOf(definitions), ...values };
-  const form = el("form", { class: "settings", novalidate: true });
-  form.addEventListener("submit", (event) => event.preventDefault());
-
-  const rows = definitions.map((definition) =>
-    settingRow(
-      `${scope}-${definition.id}`,
-      definition as SettingDefinition<SettingValues>,
-      current,
-      (change) => {
-        Object.assign(current, change);
-        updateEnabled();
-        save(change);
-      }
-    )
-  );
-  form.append(...rows.map((row) => row.element));
-
-  // Settings that only apply while a checkbox is on are disabled while it's off.
-  const updateEnabled = () => {
-    for (const row of rows) {
-      const { enabledBy } = row.definition;
-      if (enabledBy) row.setEnabled(current[enabledBy] === true);
-    }
-  };
-  updateEnabled();
-  return form;
-}
-
-interface Row {
-  definition: SettingDefinition<SettingValues>;
-  element: HTMLElement;
-  setEnabled: (enabled: boolean) => void;
-}
-
-function settingRow(
-  inputId: string,
-  setting: SettingDefinition<SettingValues>,
-  values: SettingValues,
-  save: (change: SettingValues) => void
-): Row {
-  const description = el(
-    "p",
-    { class: "description", id: `${inputId}-description` },
-    setting.description
-  );
-
-  switch (setting.type) {
-    case "checkbox": {
-      const input = el("input", {
-        type: "checkbox",
-        id: inputId,
-        name: setting.id,
-        "aria-describedby": description.id,
-        checked: values[setting.id] === true,
-      });
-      input.addEventListener("change", () =>
-        save({ [setting.id]: input.checked })
-      );
-      const element = el("div", { class: "row checkbox" }, [
-        input,
-        el("div", null, [
-          el("label", { for: inputId }, setting.label),
-          description,
-        ]),
-      ]);
-      return {
-        definition: setting,
-        element,
-        setEnabled: rowEnabler(element, [input]),
-      };
-    }
-    case "radio": {
-      const inputs = setting.options.map((option) =>
-        el("input", {
-          type: "radio",
-          name: inputId,
-          value: option.value,
-          checked: option.value === values[setting.id],
-        })
-      );
-      inputs.forEach((input) =>
-        input.addEventListener("change", () => {
-          if (input.checked) save({ [setting.id]: input.value });
-        })
-      );
-      const element = el(
-        "fieldset",
-        { class: "row radio", "aria-describedby": description.id },
-        [
-          el("legend", null, setting.label),
-          description,
-          el(
-            "div",
-            { class: "choices" },
-            setting.options.map((option, i) =>
-              el("label", { class: "choice" }, [inputs[i], option.label])
-            )
-          ),
-        ]
-      );
-      return {
-        definition: setting,
-        element,
-        setEnabled: rowEnabler(element, inputs),
-      };
-    }
-    case "number": {
-      const input = el("input", {
-        type: "number",
-        id: inputId,
-        name: setting.id,
-        min: setting.min,
-        max: setting.max,
-        step: setting.step,
-        value: values[setting.id] as number,
-        "aria-describedby": description.id,
-      });
-      input.addEventListener("change", () => {
-        const value = normalizeNumber(setting, input.value);
-        if (value === null) {
-          input.value = String(values[setting.id]);
-          return;
-        }
-        input.value = String(value);
-        save({ [setting.id]: value });
-      });
-      const element = el("div", { class: "row number" }, [
-        el("label", { for: inputId }, setting.label),
-        description,
-        el("div", { class: "field" }, [
-          input,
-          setting.unit && el("span", { class: "unit" }, setting.unit),
-        ]),
-      ]);
-      return {
-        definition: setting,
-        element,
-        setEnabled: rowEnabler(element, [input]),
-      };
-    }
-  }
-}
-
-function rowEnabler(row: HTMLElement, inputs: HTMLInputElement[]) {
-  return (enabled: boolean) => {
-    inputs.forEach((input) => (input.disabled = !enabled));
-    row.classList.toggle("disabled", !enabled);
   };
 }

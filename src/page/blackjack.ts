@@ -86,15 +86,16 @@ export const blackjackPage: PageGame = {
   },
 
   watch(report) {
-    let lastEnded: string | null = null;
-    onHfAjax("blackjack_action.php", (response) => {
+    // Every answer, so the assistant can follow the hand; the panel records
+    // the hand once its answer says it has ended.
+    onHfAjax("blackjack_action.php", (response, _request, url) => {
       const res = response as Loose;
-      const state = res?.data;
-      if (!res?.success || !state) return;
-      const ended = state.turn === "ended" || String(state.ended) === "1";
-      if (!ended || state.game_id === lastEnded) return;
-      lastEnded = state.game_id;
-      report({ action: "ended", response: res, bet: null });
+      if (!res?.success || !res.data) return;
+      report({
+        action: url.searchParams.get("action") ?? "unknown",
+        response: res,
+        bet: null,
+      });
     });
   },
 };

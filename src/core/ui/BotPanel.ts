@@ -31,6 +31,19 @@ const CSS = `
 .hfgs-panel .hfgs-chart-zero { stroke: currentColor; stroke-opacity: 0.35; stroke-width: 1; stroke-dasharray: 4 4; }
 .hfgs-panel .hfgs-chart-cursor { stroke: currentColor; stroke-opacity: 0.5; stroke-width: 1; }
 .hfgs-panel .hfgs-chart-tooltip { position: absolute; top: 4px; padding: 4px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 11px; line-height: 1.5; pointer-events: none; white-space: nowrap; }
+.hfgs-panel .hfgs-settings-groups { display: flex; flex-direction: column; gap: 8px; }
+.hfgs-panel .hfgs-settings-group > .hfgs-settings-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; margin-bottom: 4px; }
+.hfgs-panel .hfgs-settings { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 6px 24px; margin: 0; }
+.hfgs-panel .hfgs-setting { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
+.hfgs-panel .hfgs-setting-check { justify-content: flex-start; }
+.hfgs-panel .hfgs-setting label { cursor: pointer; }
+.hfgs-panel .hfgs-setting.disabled { opacity: 0.45; }
+.hfgs-panel .hfgs-field { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+/* HF's .textbox sets its own width; keep number inputs compact */
+.hfgs-panel .hfgs-field input { width: 80px !important; min-width: 0; flex: none; box-sizing: border-box; }
+.hfgs-panel .hfgs-setting > label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hfgs-panel .hfgs-settings-note { font-size: 11px; opacity: 0.75; }
+.hfgs-panel .hfgs-settings-note .hfgs-saved { color: #00b500; margin-left: 6px; }
 /* While a bot plays, HF's own controls would send conflicting requests. */
 body.hfgs-running #buttonsContainer, body.hfgs-running #chipsContainer,
 body.hfgs-running #spinButton, body.hfgs-running #betSpinUp, body.hfgs-running #betSpinDown { pointer-events: none; opacity: 0.4; }
@@ -102,6 +115,8 @@ export class BotPanel {
   private readonly statsBody: HTMLTableSectionElement;
   private readonly historyBody: HTMLTableSectionElement;
   private readonly chart = new NetChart();
+  /** The controls row; game sections go right after it. */
+  private readonly controlsRow: HTMLTableRowElement;
   private session: Totals | null = null;
   private overall: Totals | null = null;
 
@@ -152,7 +167,7 @@ export class BotPanel {
               el("div", { class: "float_right" }, settingsLink),
             ]),
           ]),
-          el("tr", null, [
+          (this.controlsRow = el("tr", null, [
             el("td", { class: "trow1", colspan: 2 }, [
               el("div", { class: "hfgs-controls" }, [
                 this.startButton,
@@ -161,7 +176,7 @@ export class BotPanel {
                 this.status,
               ]),
             ]),
-          ]),
+          ])),
           el("tr", null, [
             el("td", { class: "tcat" }, el("strong", null, "Totals")),
             el("td", { class: "tcat" }, el("strong", null, "Recent results")),
@@ -216,6 +231,28 @@ export class BotPanel {
     );
     this.renderStats();
     this.setHistory([]);
+  }
+
+  /**
+   * Add a titled section under the controls (e.g. the strategy assistant).
+   * Returns a function that shows or hides it.
+   */
+  addSection(title: string, content: HTMLElement): (visible: boolean) => void {
+    const head = el(
+      "tr",
+      null,
+      el("td", { class: "tcat", colspan: 2 }, el("strong", null, title))
+    );
+    const body = el(
+      "tr",
+      null,
+      el("td", { class: "trow1", colspan: 2 }, content)
+    );
+    this.controlsRow.after(head, body);
+    return (visible) => {
+      head.hidden = !visible;
+      body.hidden = !visible;
+    };
   }
 
   static injectStyles(doc: Document = document): void {

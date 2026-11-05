@@ -24,6 +24,11 @@ Blackjack
 Slots
 • Spins at a fixed bet using HF's bet steps, and never bets more than your credits
 
+Strategy assistant (blackjack)
+• Beside the table: your cards, the dealer's upcard and what HF offers go in; the best play and each option's expected value come out
+• Bust odds, the dealer's final-total odds and the strategy chart row, highlighted
+• Works while you play by hand too, and checks your decisions against the table
+
 Every session
 • A set number of hands or spins, or run until you stop it
 • Stop-loss and take-profit
