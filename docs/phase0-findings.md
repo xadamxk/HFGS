@@ -100,3 +100,11 @@ Slots spin response, captured:
 - Loss: `{ reels: ["1.5","3.0","3.5"], prize: null, success: true, credits, dayWinnings, lifetimeWinnings }`
 - Win: adds `prize: { id: "8", payoutCredits: 4, payoutWinnings: 4 }` and `lastWin: 4`. `prize.id` matches `#trPrize_<id>`
 - Reel stops can be half positions ("1.5", "2.5")
+
+## First live bot run (Phase 3, 2026-11-05)
+
+- **HF has flood control.** An action sent ~1 s after the previous one gets a full HTML page: *"You are trying to submit this form too quickly. Please go back and try again."* The rejected action is **not applied** (balance unchanged after a rejected deal; the hand stayed open after a rejected stand), so it is safe to resend. This was also the cause of the Phase 0 "duplicate stand" (`016`).
+- `HfClient` now spaces requests from the end of the previous response, recognises the flood page (`kind: "flood"`), and retries it after 2 s, 4 s, 6 s. The "Delay between actions" default is 2000 ms (minimum 1000).
+- At 2000 ms: 4 hands, 10 requests, **0 flood pages**. Every decision matched basic strategy (14 v 4 stand, soft 17 v 10 hit then stand, 17 v 5 stand, 20 v 3 stand).
+- The interrupted hand from the 1 s run was resumed from `openGameState` and settled correctly.
+- Accounting: 5 hands, wagered 10, returned 6, net −4; HF's balance went 2886 → 2882.

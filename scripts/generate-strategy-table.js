@@ -213,3 +213,15 @@ console.log(
     out.length +
     " bytes)"
 );
+
+// The MV3 extension imports the table as JSON (src/games/blackjack/strategy.ts).
+const jsonTarget = path.join(
+  __dirname,
+  "..",
+  "src",
+  "games",
+  "blackjack",
+  "strategyTable.json"
+);
+fs.writeFileSync(jsonTarget, JSON.stringify(table, null, 1) + "\n");
+console.log("Wrote " + path.relative(process.cwd(), jsonTarget));

@@ -136,3 +136,83 @@ describe("HfClient", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 });
+
+/** HF's flood-control page, as captured on the first live run (trimmed). */
+const FLOOD_PAGE = `<!DOCTYPE html><html><head><title>Hack Forums</title></head><body>
+<a href="/member.php?action=logout&logoutkey=0123456789abcdef0123456789abcdef">Log out</a>
+<div id="content"><table class="tborder"><tr><td class="thead"><strong>Hack Forums</strong></td></tr>
+<tr><td class="trow1">You are trying to submit this form too quickly. Please go back and try again.</td></tr></table></div>
+</body></html>`;
+
+describe("HfClient flood control", () => {
+  it("retries a flood-rejected request after growing waits, then succeeds", async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(FLOOD_PAGE))
+      .mockResolvedValueOnce(jsonResponse(FLOOD_PAGE))
+      .mockResolvedValueOnce(jsonResponse({ success: true, data: 1 }));
+    const { instance, sleeps } = client(fetchImpl, { minIntervalMs: 2000 });
+    await expect(instance.post("/deal", { bet: 2 })).resolves.toEqual({
+      success: true,
+      data: 1,
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(instance.floodRetriesUsed).toBe(2);
+    // Backoff waits (which also cover the normal interval): 2s, then 4s
+    expect(sleeps).toEqual([2000, 4000]);
+    // The same request is resent each time
+    const bodies = fetchImpl.mock.calls.map((call) => call[1].body);
+    expect(new Set(bodies).size).toBe(1);
+  });
+
+  it("gives up after the retries with HF's message, never leaking page links", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(jsonResponse(FLOOD_PAGE));
+    const { instance } = client(fetchImpl, { floodRetries: 2 });
+    const error = (await instance
+      .post("/deal", {})
+      .catch((e: unknown) => e)) as HfError;
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(error.kind).toBe("flood");
+    expect(error.message).toBe(
+      "HF: You are trying to submit this form too quickly. Please go back and try again."
+    );
+    expect(error.message).not.toContain("logoutkey");
+  });
+
+  it("doesn't retry other HTML pages", async () => {
+    const other = FLOOD_PAGE.replace(
+      "You are trying to submit this form too quickly. Please go back and try again.",
+      "Invalid game."
+    );
+    const fetchImpl = jest.fn().mockResolvedValue(jsonResponse(other));
+    const { instance } = client(fetchImpl);
+    const error = (await instance
+      .post("/stand", {})
+      .catch((e: unknown) => e)) as HfError;
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(error.kind).toBe("nonJson");
+    expect(error.message).toBe("HF: Invalid game.");
+  });
+
+  it("spaces requests from the end of the previous response", async () => {
+    let clock = 0;
+    const sleeps: number[] = [];
+    const fetchImpl = jest.fn(async () => {
+      clock += 700; // HF takes 0.7s to answer
+      return jsonResponse({ success: true });
+    });
+    const instance = new HfClient({
+      postKey: "k",
+      minIntervalMs: 2000,
+      fetch: fetchImpl as unknown as typeof fetch,
+      now: () => clock,
+      sleep: async (ms) => {
+        sleeps.push(ms);
+        clock += ms;
+      },
+    });
+    await instance.post("/a", {});
+    await instance.post("/b", {});
+    expect(sleeps).toEqual([2000]);
+  });
+});

@@ -1,3 +1,4 @@
+import { blackjackBot } from "./blackjack/engine";
 import { GameBot } from "./engine";
 
 /**
@@ -5,6 +6,8 @@ import { GameBot } from "./engine";
  * the options page doesn't bundle bot code. A game without an entry gets its
  * panel (history and totals) but no Start button.
  *
- * Blackjack arrives in Phase 3, slots in Phase 4.
+ * Slots arrives in Phase 4.
  */
-export const BOTS: Record<string, GameBot> = {};
+export const BOTS: Record<string, GameBot> = {
+  blackjack: blackjackBot,
+};

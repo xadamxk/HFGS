@@ -244,29 +244,27 @@ export class BotPanel {
       return;
     }
     this.historyBody.replaceChildren(
-      ...entries
-        .slice(0, limit)
-        .map((entry) =>
-          el("tr", null, [
-            el(
-              "td",
-              null,
-              new Date(entry.at).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              })
-            ),
-            el("td", { class: signClass(entry.net) }, entry.outcome),
-            el("td", null, formatAmount(entry.wagered)),
-            el("td", null, formatAmount(entry.returned)),
-            el(
-              "td",
-              { class: signClass(entry.net) },
-              formatAmount(entry.net, true)
-            ),
-          ])
-        )
+      ...entries.slice(0, limit).map((entry) =>
+        el("tr", null, [
+          el(
+            "td",
+            null,
+            new Date(entry.at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })
+          ),
+          el("td", { class: signClass(entry.net) }, entry.outcome),
+          el("td", null, formatAmount(entry.wagered)),
+          el("td", null, formatAmount(entry.returned)),
+          el(
+            "td",
+            { class: signClass(entry.net) },
+            formatAmount(entry.net, true)
+          ),
+        ])
+      )
     );
   }
 

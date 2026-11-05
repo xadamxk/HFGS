@@ -124,11 +124,17 @@ export class GameController {
       page: this.options.page,
       gameSettings: () => this.gameSettings,
       globalSettings: () => this.settings.global,
+      status: (message) => this.panel.setStatus(message),
     });
     const runner = new Runner(engine, {
       onState: (state) => this.panel.setState(state),
       onRound: async (entry, session) => {
         this.panel.setSession(session);
+        try {
+          bot.afterRound?.(entry);
+        } catch (error) {
+          Logger.warn("Couldn't update HF's page after a round", error);
+        }
         this.history = await recordRound(game.id, entry);
         this.panel.setOverall(this.history.totals);
         this.panel.setHistory(this.history.entries);

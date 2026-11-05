@@ -36,7 +36,7 @@ describe("normalizeSettings", () => {
   it("fills every global and game setting with defaults", () => {
     const settings = normalizeSettings(undefined);
     expect(settings).toEqual(defaultSettings());
-    expect(settings.global.actionDelayMs).toBe(1000);
+    expect(settings.global.actionDelayMs).toBe(2000);
     expect(gameSettings<BlackjackSettings>(settings, "blackjack").baseBet).toBe(
       2
     );
@@ -56,7 +56,7 @@ describe("normalizeSettings", () => {
       },
     });
     expect(settings.global.confirmStart).toBe(false);
-    expect(settings.global.actionDelayMs).toBe(1000);
+    expect(settings.global.actionDelayMs).toBe(2000);
     expect(settings.global.stopLoss).toBe(250);
     expect(settings.games.blackjack.baseBet).toBe(1000);
     expect(settings.games.blackjack.martingale).toBe(false);

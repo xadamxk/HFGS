@@ -1,16 +1,19 @@
 /**
- * The one way game code talks to HF. Lessons from Phase 0 (docs/phase0-findings.md):
- * - Requests go one at a time, never overlapping: HF answers a repeated action
- *   with a full HTML page instead of JSON.
- * - At least `minIntervalMs` passes between requests (the "Delay between
- *   actions" setting), so bots stay gentle on HF's servers.
- * - Non-JSON answers, `success: false` and timeouts become HfError, so a bot
- *   stops instead of guessing.
+ * The one way game code talks to HF. Lessons from Phase 0 and the first live
+ * run (docs/phase0-findings.md):
+ * - HF has flood control: an action sent ~1s after the previous one gets an
+ *   HTML page saying "You are trying to submit this form too quickly" and is
+ *   NOT applied (balance and hand unchanged). So requests go one at a time, at
+ *   least `minIntervalMs` after the previous response, and a flood rejection is
+ *   retried after a growing wait.
+ * - Other non-JSON answers, `success: false` and timeouts become HfError, so a
+ *   bot stops instead of guessing.
  */
 
 export type HfErrorKind =
   | "loggedOut" // HF says the session ended
   | "hfError" // HF answered success: false with a message
+  | "flood" // HF's "submitting too quickly" page; the action wasn't applied
   | "nonJson" // An HTML page or other non-JSON answer
   | "http" // A non-2xx status
   | "network" // fetch failed or timed out
@@ -35,7 +38,12 @@ export interface HfClientOptions {
   fetch?: typeof fetch;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
+  /** Retries after a flood rejection (default 3); waits grow each time. */
+  floodRetries?: number;
 }
+
+/** HF's flood-control page. */
+const FLOOD_PATTERN = /submit\w* this form too quickly/i;
 
 export type FormValues = Record<string, string | number>;
 
@@ -51,7 +59,10 @@ export class HfClient {
   private readonly fetchImpl: typeof fetch;
   private readonly now: () => number;
   private readonly sleep: (ms: number) => Promise<void>;
+  private readonly floodRetries: number;
   minIntervalMs: number;
+  /** How many flood rejections were retried (for diagnostics). */
+  floodRetriesUsed = 0;
 
   constructor(options: HfClientOptions) {
     this.postKey = options.postKey;
@@ -61,6 +72,7 @@ export class HfClient {
     this.fetchImpl = options.fetch ?? ((input, init) => fetch(input, init));
     this.now = options.now ?? Date.now;
     this.sleep = options.sleep ?? defaultSleep;
+    this.floodRetries = options.floodRetries ?? 3;
   }
 
   /**
@@ -69,10 +81,29 @@ export class HfClient {
    * previous one to finish and for the minimum interval to pass.
    */
   post<T>(path: string, form: FormValues): Promise<T> {
-    const run = () => this.send<T>(path, form);
+    const run = () => this.sendWithRetry<T>(path, form);
     const result = this.queue.then(run, run);
     this.queue = result.catch(() => undefined);
     return result;
+  }
+
+  /** Resend after HF's flood page, waiting longer each time. */
+  private async sendWithRetry<T>(path: string, form: FormValues): Promise<T> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.send<T>(path, form);
+      } catch (error) {
+        if (
+          !(error instanceof HfError) ||
+          error.kind !== "flood" ||
+          attempt >= this.floodRetries
+        ) {
+          throw error;
+        }
+        this.floodRetriesUsed++;
+        await this.sleep(Math.max(this.minIntervalMs, 1000) * (attempt + 1));
+      }
+    }
   }
 
   private async send<T>(path: string, form: FormValues): Promise<T> {
@@ -85,11 +116,23 @@ export class HfClient {
     const wait = this.lastRequestAt + this.minIntervalMs - this.now();
     if (wait > 0) await this.sleep(wait);
     this.lastRequestAt = this.now();
+    try {
+      return await this.request<T>(path, form, this.postKey);
+    } finally {
+      // Space the next request from when HF finished answering this one.
+      this.lastRequestAt = this.now();
+    }
+  }
 
+  private async request<T>(
+    path: string,
+    form: FormValues,
+    postKey: string
+  ): Promise<T> {
     const body = new URLSearchParams();
     for (const [key, value] of Object.entries(form))
       body.set(key, String(value));
-    body.set("my_post_key", this.postKey);
+    body.set("my_post_key", postKey);
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -126,9 +169,12 @@ export class HfClient {
     try {
       json = JSON.parse(text);
     } catch {
+      const message = htmlErrorMessage(text);
       throw new HfError(
-        "nonJson",
-        "HF answered with a page instead of game data (a repeated or expired action?)"
+        FLOOD_PATTERN.test(message ?? text) ? "flood" : "nonJson",
+        message
+          ? `HF: ${message}`
+          : "HF answered with a page instead of game data (a repeated or expired action?)"
       );
     }
     const data = json as { success?: unknown; error?: unknown };
@@ -143,4 +189,25 @@ export class HfClient {
     }
     return json as T;
   }
+}
+
+/**
+ * The message from an HF (MyBB) error page, e.g. a flood-control or "invalid
+ * request" notice: the text of the error table's body cell or an error box.
+ * Returns null for pages without one. Only short visible text is kept, never
+ * markup (HF pages carry session tokens in links).
+ */
+export function htmlErrorMessage(html: string): string | null {
+  if (typeof DOMParser === "undefined" || !/<html|<body|<table/i.test(html)) {
+    return null;
+  }
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const candidates = [
+    ...doc.querySelectorAll(".error, .red_alert, #content .tborder td.trow1"),
+  ];
+  for (const node of candidates) {
+    const text = (node.textContent || "").replace(/\s+/g, " ").trim();
+    if (text) return text.length > 200 ? `${text.slice(0, 200)}…` : text;
+  }
+  return null;
 }

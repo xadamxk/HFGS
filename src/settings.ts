@@ -33,9 +33,9 @@ export const GLOBAL_SETTINGS: SettingDefinition<GlobalSettings>[] = [
     id: "actionDelayMs",
     label: "Delay between actions",
     description:
-      "Wait this long between requests to HF (each hit, stand, deal or spin). Keeps the bots gentle on HF's servers.",
-    default: 1000,
-    min: 500,
+      "Wait this long between requests to HF (each hit, stand, deal or spin). HF rejects actions sent about a second apart as too quick, so keep this at 2 seconds or more.",
+    default: 2000,
+    min: 1000,
     max: 10000,
     step: 100,
     unit: "ms",
