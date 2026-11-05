@@ -1,0 +1,19 @@
+{
+  "name": "hfgs",
+  "version": "1.1.0",
+  "description": "HF Gambling Suite: various tools for gaming on HF.",
+  "private": true,
+  "scripts": {
+    "browser": "node scripts/browser.js",
+    "probe": "node scripts/probe.js",
+    "capture": "node scripts/capture.js",
+    "strategy:generate": "node scripts/generate-strategy-table.js",
+    "test": "node scripts/test-strategy.js"
+  },
+  "author": "xadamxk",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "@puppeteer/browsers": "^3.2.6",
+    "puppeteer-core": "^25.16.0"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "capturedAt": "2026-11-05T06:52:32.213Z",
+  "method": "POST",
+  "url": "https://hackforums.net/blackjack/blackjack_action.php?action=stand",
+  "requestBody": "gameId=28491965&actionId=9122317&my_post_key=REDACTED",
+  "status": 200,
+  "response": {
+    "success": true,
+    "data": {
+      "game_id": "28491965",
+      "bet": "2.000000",
+      "is_split": "0",
+      "turn": "ended",
+      "outcome1": "WIN",
+      "outcome2": "",
+      "ended": "1",
+      "payout": "4.000000",
+      "action_id": "9122320",
+      "hand1": {
+        "action": "STAND",
+        "new_card": null,
+        "hand_value": "16",
+        "hand_cards": [
+          "6h",
+          "11s"
+        ]
+      },
+      "dealer": {
+        "action": "HIT",
+        "new_card": "8d",
+        "hand_value": "24",
+        "hand_cards": [
+          "4h",
+          "6c",
+          "6d",
+          "8d"
+        ]
+      }
+    },
+    "balance": 2875
+  }
+}

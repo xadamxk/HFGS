@@ -32,7 +32,7 @@ function hfPostRequest(url, data, cont) {
                         updateWagerAmount(jsonObj);
                         startNextGame();
                     } else {
-                        advisorPostRequest(bjAdvisorURL, generateRawData(data));
+                        playBestAction(jsonObj);
                     }
                 } else {
                     console.log("Result: " + getSingleGameResult(jsonObj) + " (" + getSingleGamePayout(jsonObj) + ")");
@@ -46,47 +46,38 @@ function hfPostRequest(url, data, cont) {
     }, 500);
 }
 
-function advisorPostRequest(url, data) {
-    //
-    $.ajax({
-        type: 'POST',
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            'Accept': "application/json, text/javascript, */*; q=0.01",
-            "X-Requested-With": "XMLHttpRequest"
-        },
-        url: url,
-        data: data,
-        crossDomain: true,
-        async: false,
-        success: function (result, textStatus, jqXHR) {
-            console.log("result: ", result);
-            var jsonObj = jQuery.parseJSON(result);
-            console.log("BEST OPTION: " + jsonObj.best);
-            setHandResult(jsonObj.best);
-            setOddsDisplay(getActionOdds(jsonObj));
-            // Set hand total value
-            updateYourHandTotal(jsonObj.sum);
-            // Desired Action - On HF
-            bestAction = jsonObj.best;
-            if (bestAction == "stand") {
-                hfPostRequest(hfActionStandURL, generateHFRawData(), false);
-            } else if (bestAction == "hit") {
-                hfPostRequest(hfActionHitURL, generateHFRawData(), true);
-            } else if (bestAction == "double") {
-                hfPostRequest(hfActionDoubleURL, generateHFRawData(), true);
-            } else if (bestAction == "split") {
-                // TODO: Additional Logic for actual split
-                hfPostRequest(hfActionStandURL, generateHFRawData(), false);
-            } else if (bestAction == "surrender") {
-                hfPostRequest(hfActionSurrenderURL, generateHFRawData(), false);
-            }
-        }
-    });
+// Decide the next action from the baked strategy table (strategy.js) and send it to HF.
+function playBestAction(jsonObj) {
+    // Split hands aren't played yet, so pick the best of the remaining actions instead.
+    var advice = HFBJStrategy.getAdvice(jsonObj.data.hand1.hand_cards, jsonObj.data.dealer.hand_cards, { canSplit: false });
+    if (!advice) {
+        console.log("No strategy advice for hand", jsonObj.data);
+        return;
+    }
+    console.log("BEST OPTION: " + advice.best, advice.ev);
+    setHandResult(advice.best);
+    setOddsDisplay(formatActionEVs(advice.ev));
+    updateYourHandTotal(String(advice.total));
+    bestAction = advice.best;
+    if (bestAction == "stand") {
+        hfPostRequest(hfActionStandURL, generateHFRawData(), false);
+    } else if (bestAction == "hit") {
+        hfPostRequest(hfActionHitURL, generateHFRawData(), true);
+    } else if (bestAction == "double") {
+        hfPostRequest(hfActionDoubleURL, generateHFRawData(), true);
+    } else if (bestAction == "surrender") {
+        hfPostRequest(hfActionSurrenderURL, generateHFRawData(), false);
+    }
 }
 
-function getActionOdds(jsonObj) {
-    return jsonObj.a;
+// { stand: -0.16468, ... } -> { stand: "-16.5%", ... } (expected return as % of the bet)
+function formatActionEVs(ev) {
+    var formatted = {};
+    Object.keys(ev).forEach(function (action) {
+        var pct = (ev[action] * 100).toFixed(1);
+        formatted[action] = (ev[action] > 0 ? "+" : "") + pct + "%";
+    });
+    return formatted;
 }
 
 function getSingleGamePayout(jsonObj) {
@@ -99,19 +90,4 @@ function getSingleGameResult(jsonObj) {
 
 function generateHFRawData() {
     return "gameId=" + gameID + "&actionId=" + actionID + "&my_post_key=" + myPostKey;
-}
-
-function generateRawData(json) {
-    var rawDataString = "dealerCard=" + parseHand(getDealerHand(json))
-        + "&playerCards=" + parseHand(getMyHand(json))
-        + "&numDecks=" + numDecks
-        + "&hitSoft17=" + hitSoft17
-        + "&double=" + double
-        + "&doubleSoft=" + doubleSoft
-        + "&doubleAfterHit=" + doubleAfterHit
-        + "&doubleAfterSplit=" + doubleAfterSplit
-        + "&resplit=" + resplit
-        + "&lateSurrender=" + lateSurrender;
-
-    return rawDataString;
 }

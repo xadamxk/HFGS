@@ -1,0 +1,42 @@
+{
+  "capturedAt": "2026-11-05T07:01:21.258Z",
+  "method": "POST",
+  "url": "https://hackforums.net/blackjack/blackjack_action.php?action=double",
+  "requestBody": "gameId=253905217&actionId=9122335&my_post_key=REDACTED",
+  "status": 200,
+  "response": {
+    "success": true,
+    "data": {
+      "game_id": "253905217",
+      "bet": "2.000000",
+      "is_split": "0",
+      "turn": "ended",
+      "outcome1": "WIN",
+      "outcome2": "",
+      "ended": "1",
+      "payout": "8.000000",
+      "action_id": "9122337",
+      "hand1": {
+        "action": "DOUBLE",
+        "new_card": "5s",
+        "hand_value": "20",
+        "hand_cards": [
+          "12h",
+          "5c",
+          "5s"
+        ]
+      },
+      "dealer": {
+        "action": "HIT",
+        "new_card": "10c",
+        "hand_value": "23",
+        "hand_cards": [
+          "3h",
+          "13h",
+          "10c"
+        ]
+      }
+    },
+    "balance": 2884
+  }
+}

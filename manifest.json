@@ -32,6 +32,8 @@
         "js/dependencies/jquery-3.2.1.js",
         "js/modules/blackjack/statsTableHelper.js",
         "js/modules/blackjack/historyTableHelper.js",
+        "js/modules/blackjack/strategyTable.js",
+        "js/modules/blackjack/strategy.js",
         "js/modules/blackjack/requestsHelper.js",
         "js/modules/blackjack/uiHelper.js",
         "js/modules/blackjack/gameHelper.js",
@@ -52,8 +54,7 @@
     }
   ],
   "permissions": [
-    "storage",
-    "https://blackjackdoc.com/*"
+    "storage"
   ],
   "web_accessible_resources": [
     "/images/collapse.gif",

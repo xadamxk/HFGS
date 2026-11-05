@@ -8,21 +8,13 @@ var wagerMultiplier; // Keep between 2-3 for consistent results
 /* ========== DO NOT CHANGE ANYTHING BELOW THIS LINE ========== */
 /* Global Constants */
 const myPostKey = document.getElementsByTagName('head')[0].innerHTML.split('my_post_key = "')[1].split('";')[0];
-const bjAdvisorURL = "https://cors-anywhere.herokuapp.com/blackjackdoc.com/calculator/advisor.json.php"; // Proxy data through CORS Anywhere
 const hfActionDealURL = "https://hackforums.net/blackjack/blackjack_action.php?action=deal";
 const hfActionStandURL = "https://hackforums.net/blackjack/blackjack_action.php?action=stand";
 const hfActionHitURL = "https://hackforums.net/blackjack/blackjack_action.php?action=hit";
 const hfActionDoubleURL = "https://hackforums.net/blackjack/blackjack_action.php?action=double";
 const hfActionSplitURL = "https://hackforums.net/blackjack/blackjack_action.php?action=split";
 const hfActionSurrenderURL = "https://hackforums.net/blackjack/blackjack_action.php?action=surrender";
-const numDecks = 4;
-const hitSoft17 = 1;
-const double = "all";
-const doubleSoft = 0;
-const doubleAfterHit = 0;
-const doubleAfterSplit = 0;
-const resplit = 1;
-const lateSurrender = 1;
+// Table rules for strategy decisions live in scripts/generate-strategy-table.js (RULES).
 /* Global Variables */
 var dealResponse;
 var gameID;

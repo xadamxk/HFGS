@@ -1,0 +1,13 @@
+{
+  "capturedAt": "2026-11-05T06:56:41.296Z",
+  "method": "POST",
+  "url": "https://hackforums.net/blackjack/blackjack_action.php?action=stand",
+  "requestBody": "gameId=557620951&actionId=9122331&my_post_key=REDACTED",
+  "status": 200,
+  "response": {
+    "nonJson": true,
+    "contentLength": 44790,
+    "title": "Hack Forums",
+    "note": "Duplicate stand (same actionId as 017) returned a full HTML page with status 200, not JSON. Body dropped: it embeds session tokens."
+  }
+}

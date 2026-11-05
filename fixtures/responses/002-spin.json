@@ -1,0 +1,24 @@
+{
+  "capturedAt": "2026-11-05T06:49:38.735Z",
+  "method": "POST",
+  "url": "https://hackforums.net/slots/spin.php",
+  "requestBody": "bet=1&windowID=836819641&machine_name=default&my_post_key=REDACTED",
+  "status": 200,
+  "response": {
+    "reels": [
+      "1.0",
+      "3.0",
+      "5.0"
+    ],
+    "prize": {
+      "id": "8",
+      "payoutCredits": 4,
+      "payoutWinnings": 4
+    },
+    "lastWin": 4,
+    "success": true,
+    "credits": 2874,
+    "dayWinnings": 0,
+    "lifetimeWinnings": 4
+  }
+}
