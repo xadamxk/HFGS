@@ -1,4 +1,4 @@
-import { HfClient, HfError } from "./HfClient";
+import { HfClient, HfError, pageFetch } from "./HfClient";
 
 function jsonResponse(body: unknown, status = 200): Response {
   return {
@@ -214,5 +214,28 @@ describe("HfClient flood control", () => {
     await instance.post("/a", {});
     await instance.post("/b", {});
     expect(sleeps).toEqual([2000]);
+  });
+});
+
+describe("pageFetch", () => {
+  const globals = globalThis as unknown as {
+    content?: { fetch: jest.Mock };
+    fetch?: jest.Mock;
+  };
+  afterEach(() => {
+    delete globals.content;
+    delete globals.fetch;
+  });
+
+  it("uses Firefox's page-context content.fetch when it exists", async () => {
+    globals.content = { fetch: jest.fn().mockResolvedValue("page") };
+    globals.fetch = jest.fn().mockResolvedValue("extension");
+    await expect(pageFetch("https://hackforums.net/a")).resolves.toBe("page");
+    expect(globals.fetch).not.toHaveBeenCalled();
+  });
+
+  it("uses the normal fetch elsewhere (Chrome)", async () => {
+    globals.fetch = jest.fn().mockResolvedValue("chrome");
+    await expect(pageFetch("https://hackforums.net/a")).resolves.toBe("chrome");
   });
 });

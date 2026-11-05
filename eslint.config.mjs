@@ -13,8 +13,10 @@ export default defineConfig(
       "node_modules/",
       ".chrome-for-testing/",
       ".browser-profile/",
-      // The MV2 extension being replaced; removed once the rewrite reaches parity
-      "js/",
+      ".firefox-for-testing/",
+      ".browser-profile-firefox/",
+      ".firefox-build/",
+      "releases/",
       "fixtures/",
     ],
   },

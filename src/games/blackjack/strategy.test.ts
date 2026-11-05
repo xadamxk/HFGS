@@ -1,7 +1,6 @@
 /**
  * Checks the strategy against the published multi-deck basic strategy chart
- * (dealer hits soft 17, no double after split, late surrender). Moved here from
- * scripts/test-strategy.js.
+ * (dealer hits soft 17, no double after split, late surrender).
  *
  * Chart codes: H hit, S stand, D double (else hit), Ds double (else stand),
  * R surrender (else hit), Rs surrender (else stand), P split, Rp surrender (else split).

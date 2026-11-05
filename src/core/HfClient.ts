@@ -47,6 +47,19 @@ const FLOOD_PATTERN = /submit\w* this form too quickly/i;
 
 export type FormValues = Record<string, string | number>;
 
+/**
+ * fetch() as the page itself would make it, so HF's session cookies go along.
+ * Chrome's content-script fetch already does; in Firefox a content script's
+ * plain fetch runs as the extension, and `content.fetch` is the page-context one.
+ */
+export const pageFetch: typeof fetch = (input, init) => {
+  const firefox = (globalThis as { content?: { fetch?: typeof fetch } })
+    .content;
+  return typeof firefox?.fetch === "function"
+    ? firefox.fetch(input, init)
+    : fetch(input, init);
+};
+
 const defaultSleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -69,7 +82,7 @@ export class HfClient {
     this.minIntervalMs = options.minIntervalMs;
     this.timeoutMs = options.timeoutMs ?? 10000;
     this.origin = options.origin ?? "https://hackforums.net";
-    this.fetchImpl = options.fetch ?? ((input, init) => fetch(input, init));
+    this.fetchImpl = options.fetch ?? pageFetch;
     this.now = options.now ?? Date.now;
     this.sleep = options.sleep ?? defaultSleep;
     this.floodRetries = options.floodRetries ?? 3;

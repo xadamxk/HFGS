@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "webpack --config=config/webpack.dev.ts",
     "build": "webpack --config=config/webpack.prod.ts",
+    "package": "npm run build && node scripts/package.js",
     "browser": "node scripts/browser.js",
+    "browser:firefox": "node scripts/browser-firefox.js",
     "probe": "node scripts/probe.js",
     "capture": "node scripts/capture.js",
     "strategy:generate": "node scripts/generate-strategy-table.js",
-    "test:strategy": "node scripts/test-strategy.js",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.jest.json",
     "lint": "eslint .",
     "format": "prettier --write .",

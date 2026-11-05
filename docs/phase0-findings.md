@@ -6,59 +6,59 @@ Game logic below is read from HF's own client scripts (`/jscripts/blackjack/blac
 
 ## Selectors
 
-| Selector | Page | Status | Notes |
-|---|---|---|---|
-| `#PageContainer`, `#PageContainerInner` | both | OK | |
-| `#balanceCounterBalance` | blackjack | OK | Siblings `#balanceCounterMin` (2) and `#balanceCounterMax` (1000) also exist |
-| `#balanceCounterBalance` | slots | **Missing** | Not used by old slots code; use `#credits` |
-| `#playerHand1`, `#playerHand2`, `#dealerHand` | blackjack | OK | `#playerHand2` hidden until split |
-| `.cardsContainer`, `.cardsValueSign`, `.cardsOutcomeSign`, `.handOutcomeSign`, `.betValueSign` | blackjack | OK | Also `.activeArrow`, `.betContainer` |
-| `#rules > ul` | blackjack | OK | Holds HF's rule list (see below); old code overwrote it with advisor odds |
-| `.card` sprite | blackjack | OK | `https://hackforums.net/images/blackjack/cards.png` |
-| `#bet`, `#credits`, `#reel1..3` | slots | OK | Also `#lastWin`, `#lifetimeWinnings`, `#betSpinUp/Down`, `#spinButton` |
-| `[id^=trPrize_]` | slots | OK | 9 prize rows; HF adds class `won` to the winning row |
-| `strong:contains("Risk your Bytes for a chance to win more!")` | both | **Broken** | HF now writes **"βytes"** (Greek beta). Anchor structurally instead: the `td.tcat` row of the `table.tborder` containing `#PageContainer` |
-| `td:contains("Disclaimer:  This blackjack table uses HF Bytes…")` | blackjack | **Broken** | "βytes" again, and the double space after "Disclaimer:" is gone. Anchor on the last `td.trow1[align=center]` of that same table |
+| Selector                                                                                       | Page      | Status      | Notes                                                                                                                                     |
+| ---------------------------------------------------------------------------------------------- | --------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `#PageContainer`, `#PageContainerInner`                                                        | both      | OK          |                                                                                                                                           |
+| `#balanceCounterBalance`                                                                       | blackjack | OK          | Siblings `#balanceCounterMin` (2) and `#balanceCounterMax` (1000) also exist                                                              |
+| `#balanceCounterBalance`                                                                       | slots     | **Missing** | Not used by old slots code; use `#credits`                                                                                                |
+| `#playerHand1`, `#playerHand2`, `#dealerHand`                                                  | blackjack | OK          | `#playerHand2` hidden until split                                                                                                         |
+| `.cardsContainer`, `.cardsValueSign`, `.cardsOutcomeSign`, `.handOutcomeSign`, `.betValueSign` | blackjack | OK          | Also `.activeArrow`, `.betContainer`                                                                                                      |
+| `#rules > ul`                                                                                  | blackjack | OK          | Holds HF's rule list (see below); old code overwrote it with advisor odds                                                                 |
+| `.card` sprite                                                                                 | blackjack | OK          | `https://hackforums.net/images/blackjack/cards.png`                                                                                       |
+| `#bet`, `#credits`, `#reel1..3`                                                                | slots     | OK          | Also `#lastWin`, `#lifetimeWinnings`, `#betSpinUp/Down`, `#spinButton`                                                                    |
+| `[id^=trPrize_]`                                                                               | slots     | OK          | 9 prize rows; HF adds class `won` to the winning row                                                                                      |
+| `strong:contains("Risk your Bytes for a chance to win more!")`                                 | both      | **Broken**  | HF now writes **"βytes"** (Greek beta). Anchor structurally instead: the `td.tcat` row of the `table.tborder` containing `#PageContainer` |
+| `td:contains("Disclaimer:  This blackjack table uses HF Bytes…")`                              | blackjack | **Broken**  | "βytes" again, and the double space after "Disclaimer:" is gone. Anchor on the last `td.trow1[align=center]` of that same table           |
 
 `:contains()` is jQuery-only anyway; the rewrite should use the structural anchors above, not text.
 
 ## Page globals (reachable from a MAIN-world script)
 
-| Global | Page | Value seen | Use |
-|---|---|---|---|
-| `my_post_key` | both | 32-hex string | CSRF token for every action. Also embedded in links (e.g. mark-read), so never log or save page HTML unredacted |
-| `windowID` | both | number (string on blackjack) | Sent with slots spins |
-| `blackjackPayout` | blackjack | `2.5` | **Total return** on a blackjack (bet × 2.5), i.e. net +1.5× |
-| `openGameState` | blackjack | `null` | Non-null when an unfinished game exists on page load. The bot must resume it, not deal |
-| `remaining_balance` | blackjack | number | HF's own balance after each response |
+| Global              | Page      | Value seen                   | Use                                                                                                             |
+| ------------------- | --------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `my_post_key`       | both      | 32-hex string                | CSRF token for every action. Also embedded in links (e.g. mark-read), so never log or save page HTML unredacted |
+| `windowID`          | both      | number (string on blackjack) | Sent with slots spins                                                                                           |
+| `blackjackPayout`   | blackjack | `2.5`                        | **Total return** on a blackjack (bet × 2.5), i.e. net +1.5×                                                     |
+| `openGameState`     | blackjack | `null`                       | Non-null when an unfinished game exists on page load. The bot must resume it, not deal                          |
+| `remaining_balance` | blackjack | number                       | HF's own balance after each response                                                                            |
 
 ## Endpoints (unchanged)
 
-| Game | Request | Body |
-|---|---|---|
-| Blackjack | `POST /blackjack/blackjack_action.php?action=deal` | `bet, my_post_key` |
-| Blackjack | `POST …?action=hit\|stand\|double\|split\|surrender` | `gameId, actionId, my_post_key` |
-| Slots | `POST /slots/spin.php` | `bet, windowID, machine_name, my_post_key` |
+| Game      | Request                                              | Body                                       |
+| --------- | ---------------------------------------------------- | ------------------------------------------ |
+| Blackjack | `POST /blackjack/blackjack_action.php?action=deal`   | `bet, my_post_key`                         |
+| Blackjack | `POST …?action=hit\|stand\|double\|split\|surrender` | `gameId, actionId, my_post_key`            |
+| Slots     | `POST /slots/spin.php`                               | `bet, windowID, machine_name, my_post_key` |
 
 Blackjack responses: `{ success, error?, data: { game_id, action_id, bet, is_split, turn, hand1, hand2?, dealer, outcome1, outcome2, ended, payout }, balance }`.
 `error == "loggedOut"` means the session expired. HF's client uses a 10 s timeout.
 
 ## Table rules vs. the strategy table
 
-HF's rules panel: *Blackjack pays 3 to 2 · Surrender gives 50% back · Dealer must hit soft 17 · Double any two cards · Split up to 2 hands.*
+HF's rules panel: _Blackjack pays 3 to 2 · Surrender gives 50% back · Dealer must hit soft 17 · Double any two cards · Split up to 2 hands._
 From HF's `showAvailableButtons`: surrender, double and split are only offered on `hand1` while `hand1.action == "START"` (the first decision); split compares card **value** (10/J/Q/K all split with each other).
 
-| Assumption in `scripts/generate-strategy-table.js` | Status |
-|---|---|
-| Dealer hits soft 17 | Confirmed |
-| Double any first two cards | Confirmed |
-| No double after split | Confirmed (double only while `hand1.action == "START"`) |
-| One split, no resplit (2 hands max) | Confirmed |
-| Late surrender, first two cards only | Confirmed (50% back, first decision only) |
-| Split by value | Confirmed; `strategy.js` already compares values |
-| Dealer peeks for blackjack | **Unknown**: server-side. Needs captured hands with an A/10 upcard |
-| Split aces can be hit | Confirmed (`015`: split ace `1d,4c` hit to `1d,4c,3h`). Table regenerated with `splitAcesOneCard: false` |
-| Ace + ten after a split is blackjack (3:2) | Confirmed, and unusually generous (`014`/`017`: split hand `1s,11c` → `BLACKJACK`, `WIN-BLACKJACK`). Table regenerated with `blackjackAfterSplit: true`. Raises A,A split EV by +0.6 to +0.8 of a bet; no decision changes |
+| Assumption in `scripts/generate-strategy-table.js` | Status                                                                                                                                                                                                                     |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dealer hits soft 17                                | Confirmed                                                                                                                                                                                                                  |
+| Double any first two cards                         | Confirmed                                                                                                                                                                                                                  |
+| No double after split                              | Confirmed (double only while `hand1.action == "START"`)                                                                                                                                                                    |
+| One split, no resplit (2 hands max)                | Confirmed                                                                                                                                                                                                                  |
+| Late surrender, first two cards only               | Confirmed (50% back, first decision only)                                                                                                                                                                                  |
+| Split by value                                     | Confirmed; `strategy.js` already compares values                                                                                                                                                                           |
+| Dealer peeks for blackjack                         | **Unknown**: server-side. Needs captured hands with an A/10 upcard                                                                                                                                                         |
+| Split aces can be hit                              | Confirmed (`015`: split ace `1d,4c` hit to `1d,4c,3h`). Table regenerated with `splitAcesOneCard: false`                                                                                                                   |
+| Ace + ten after a split is blackjack (3:2)         | Confirmed, and unusually generous (`014`/`017`: split hand `1s,11c` → `BLACKJACK`, `WIN-BLACKJACK`). Table regenerated with `blackjackAfterSplit: true`. Raises A,A split EV by +0.6 to +0.8 of a bet; no decision changes |
 
 If HF does **not** peek, the table must be regenerated with a no-peek model (it changes doubling 10/11 vs 10/A, splitting vs 10/A and surrender).
 
@@ -82,6 +82,7 @@ If HF does **not** peek, the table must be regenerated with a no-peek model (it 
 - [x] Slots: a losing spin and a winning spin (`fixtures/responses/001-003-spin.json`)
 
 Blackjack responses, captured:
+
 - **Every number is a string**: `bet: "2.000000"`, `is_split: "0"`, `ended: "1"`, `hand_value: "16"`, `payout: "4.000000"`. Only `balance` is a number. Parse everything
 - The bet is taken at the **deal**: `balance` drops by the bet in the deal response
 - `payout` is the **total return** (`"4.000000"` on a 2 win, `"0.000000"` on a loss); net = payout − bet (×2 if doubled)
@@ -97,13 +98,14 @@ Blackjack responses, captured:
 - Cards are rank (1 = ace … 13 = king) + suit. The same card (`5d`) appeared in both hands of one deal, consistent with a multi-deck shoe
 
 Slots spin response, captured:
+
 - Loss: `{ reels: ["1.5","3.0","3.5"], prize: null, success: true, credits, dayWinnings, lifetimeWinnings }`
 - Win: adds `prize: { id: "8", payoutCredits: 4, payoutWinnings: 4 }` and `lastWin: 4`. `prize.id` matches `#trPrize_<id>`
 - Reel stops can be half positions ("1.5", "2.5")
 
 ## First live bot run (Phase 3, 2026-11-05)
 
-- **HF has flood control.** An action sent ~1 s after the previous one gets a full HTML page: *"You are trying to submit this form too quickly. Please go back and try again."* The rejected action is **not applied** (balance unchanged after a rejected deal; the hand stayed open after a rejected stand), so it is safe to resend. This was also the cause of the Phase 0 "duplicate stand" (`016`).
+- **HF has flood control.** An action sent ~1 s after the previous one gets a full HTML page: _"You are trying to submit this form too quickly. Please go back and try again."_ The rejected action is **not applied** (balance unchanged after a rejected deal; the hand stayed open after a rejected stand), so it is safe to resend. This was also the cause of the Phase 0 "duplicate stand" (`016`).
 - `HfClient` now spaces requests from the end of the previous response, recognises the flood page (`kind: "flood"`), and retries it after 2 s, 4 s, 6 s. The "Delay between actions" default is 2000 ms (minimum 1000).
 - At 2000 ms: 4 hands, 10 requests, **0 flood pages**. Every decision matched basic strategy (14 v 4 stand, soft 17 v 10 hit then stand, 17 v 5 stand, 20 v 3 stand).
 - The interrupted hand from the 1 s run was resumed from `openGameState` and settled correctly.
