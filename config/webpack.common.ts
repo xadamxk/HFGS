@@ -6,6 +6,7 @@ const baseConfig: Configuration = {
   entry: {
     background: "./src/background.ts",
     content: "./src/content.ts",
+    "page-bridge": "./src/page-bridge.ts",
     options: "./src/options/index.ts",
   },
   output: {

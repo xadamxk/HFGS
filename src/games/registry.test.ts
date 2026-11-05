@@ -7,13 +7,17 @@ describe("game registry", () => {
     expect(new Set(GAMES.map((game) => game.path)).size).toBe(GAMES.length);
   });
 
-  it("matches manifest.json's content script pages exactly", () => {
-    const matches = manifest.content_scripts.flatMap(
-      (script) => script.matches
-    );
-    expect(matches.sort()).toEqual(
-      GAMES.map((game) => `https://hackforums.net${game.path}*`).sort()
-    );
+  it("matches each manifest.json content script's pages exactly", () => {
+    const expected = GAMES.map(
+      (game) => `https://hackforums.net${game.path}*`
+    ).sort();
+    expect(manifest.content_scripts.map((s) => s.js[0]).sort()).toEqual([
+      "content.js",
+      "page-bridge.js",
+    ]);
+    for (const script of manifest.content_scripts) {
+      expect([...script.matches].sort()).toEqual(expected);
+    }
   });
 
   it("gives every setting a unique id within its game", () => {

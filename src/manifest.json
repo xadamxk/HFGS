@@ -19,6 +19,17 @@
       "js": [
         "content.js"
       ]
+    },
+    {
+      "run_at": "document_idle",
+      "world": "MAIN",
+      "matches": [
+        "https://hackforums.net/blackjack.php*",
+        "https://hackforums.net/slots.php*"
+      ],
+      "js": [
+        "page-bridge.js"
+      ]
     }
   ],
   "action": {
