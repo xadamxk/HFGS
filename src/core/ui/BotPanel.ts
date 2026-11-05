@@ -7,6 +7,10 @@
 import { el } from "../Dom";
 import { HistoryEntry, Totals } from "../history";
 import { RunnerState } from "../Runner";
+import { formatAmount, formatStreak, formatWinRate } from "./format";
+import { NetChart } from "./NetChart";
+
+export { formatAmount };
 
 const CSS = `
 .hfgs-panel { margin-top: 10px; width: 100%; }
@@ -20,19 +24,58 @@ const CSS = `
 .hfgs-panel .hfgs-pos { color: #00b500; }
 .hfgs-panel .hfgs-neg { color: #ff2121; }
 .hfgs-panel .hfgs-empty { opacity: 0.7; }
+.hfgs-panel .hfgs-chart-caption { margin-bottom: 4px; }
+.hfgs-panel .hfgs-chart-area { position: relative; }
+.hfgs-panel .hfgs-chart-plot { display: block; width: 100%; height: 120px; cursor: crosshair; }
+.hfgs-panel .hfgs-chart-line { fill: none; stroke: #4a90d9; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.hfgs-panel .hfgs-chart-zero { stroke: currentColor; stroke-opacity: 0.35; stroke-width: 1; stroke-dasharray: 4 4; }
+.hfgs-panel .hfgs-chart-cursor { stroke: currentColor; stroke-opacity: 0.5; stroke-width: 1; }
+.hfgs-panel .hfgs-chart-tooltip { position: absolute; top: 4px; padding: 4px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 11px; line-height: 1.5; pointer-events: none; white-space: nowrap; }
+/* While a bot plays, HF's own controls would send conflicting requests. */
+body.hfgs-running #buttonsContainer, body.hfgs-running #chipsContainer,
+body.hfgs-running #spinButton, body.hfgs-running #betSpinUp, body.hfgs-running #betSpinDown { pointer-events: none; opacity: 0.4; }
 `;
 
 const STAT_ROWS: {
   label: string;
-  value: (t: Totals) => number;
-  signed?: boolean;
+  render: (t: Totals) => { text: string; tone?: number };
 }[] = [
-  { label: "Rounds", value: (t) => t.rounds },
-  { label: "Won / lost / push", value: () => 0 }, // filled specially
-  { label: "Wagered", value: (t) => t.wagered },
-  { label: "Returned", value: (t) => t.returned },
-  { label: "Net", value: (t) => t.net, signed: true },
-  { label: "Biggest win", value: (t) => t.biggestWin, signed: true },
+  { label: "Rounds", render: (t) => ({ text: String(t.rounds) }) },
+  {
+    label: "Won / lost / push",
+    render: (t) => ({ text: `${t.wins} / ${t.losses} / ${t.pushes}` }),
+  },
+  { label: "Win rate", render: (t) => ({ text: formatWinRate(t) }) },
+  { label: "Wagered", render: (t) => ({ text: formatAmount(t.wagered) }) },
+  { label: "Returned", render: (t) => ({ text: formatAmount(t.returned) }) },
+  {
+    label: "Net",
+    render: (t) => ({ text: formatAmount(t.net, true), tone: t.net }),
+  },
+  {
+    label: "Biggest win",
+    render: (t) => ({
+      text: formatAmount(t.biggestWin, true),
+      tone: t.biggestWin,
+    }),
+  },
+  {
+    label: "Biggest loss",
+    render: (t) => ({
+      text: formatAmount(t.biggestLoss, true),
+      tone: t.biggestLoss,
+    }),
+  },
+  {
+    label: "Streak",
+    render: (t) => ({ text: formatStreak(t.streak), tone: t.streak }),
+  },
+  {
+    label: "Longest streaks",
+    render: (t) => ({
+      text: `${t.longestWinStreak} W / ${t.longestLossStreak} L`,
+    }),
+  },
 ];
 
 export interface BotPanelOptions {
@@ -44,11 +87,6 @@ export interface BotPanelOptions {
   onOpenSettings: () => void;
   /** Cards, reels etc. for a result, shown when hovering its row. */
   describeResult?: (details: Record<string, unknown>) => string;
-}
-
-export function formatAmount(n: number, signed = false): string {
-  const text = Number.isInteger(n) ? String(n) : n.toFixed(2);
-  return signed && n > 0 ? `+${text}` : text;
 }
 
 function signClass(n: number): string | null {
@@ -63,6 +101,7 @@ export class BotPanel {
   private readonly confirmBox: HTMLSpanElement;
   private readonly statsBody: HTMLTableSectionElement;
   private readonly historyBody: HTMLTableSectionElement;
+  private readonly chart = new NetChart();
   private session: Totals | null = null;
   private overall: Totals | null = null;
 
@@ -138,7 +177,11 @@ export class BotPanel {
                     null,
                     el("tr", null, [
                       el("th", null, ""),
-                      el("th", null, "Session"),
+                      el(
+                        "th",
+                        { title: "Rounds since this page opened" },
+                        "This visit"
+                      ),
                       el("th", null, "Overall"),
                     ])
                   ),
@@ -164,6 +207,9 @@ export class BotPanel {
                 ]),
               ]),
             ]),
+          ]),
+          el("tr", null, [
+            el("td", { class: "trow2", colspan: 2 }, this.chart.element),
           ]),
         ]),
       ]
@@ -235,6 +281,7 @@ export class BotPanel {
   }
 
   setHistory(entries: HistoryEntry[], limit = 25): void {
+    this.chart.setEntries(entries);
     if (!entries.length) {
       this.historyBody.replaceChildren(
         el(
@@ -277,18 +324,11 @@ export class BotPanel {
   private renderStats(): void {
     const cell = (totals: Totals | null, row: (typeof STAT_ROWS)[number]) => {
       if (!totals) return el("td", null, "–");
-      if (row.label.startsWith("Won")) {
-        return el(
-          "td",
-          null,
-          `${totals.wins} / ${totals.losses} / ${totals.pushes}`
-        );
-      }
-      const value = row.value(totals);
+      const { text, tone } = row.render(totals);
       return el(
         "td",
-        { class: row.signed ? signClass(value) : null },
-        formatAmount(value, row.signed)
+        { class: tone === undefined ? null : signClass(tone) },
+        text
       );
     };
     this.statsBody.replaceChildren(

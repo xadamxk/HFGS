@@ -1,6 +1,8 @@
 /**
- * Runs one game page: mounts the panel, keeps its totals and history current,
- * and starts/stops the game's bot with the current settings and limits.
+ * Runs one game page: mounts the panel, keeps its totals and history current
+ * (bot rounds and rounds played by hand alike), and starts/stops the game's bot
+ * with the current settings and limits. With Headless Mode off, the bot's
+ * results are drawn on HF's page with HF's own animations.
  */
 
 import { GameBot } from "../games/engine";
@@ -8,9 +10,25 @@ import { GameDefinition } from "../games/types";
 import { GlobalSettings, HfgsSettings, watchSettings } from "../settings";
 import { SettingValues } from "../settings/definitions";
 import { HfClient } from "./HfClient";
-import { GameHistory, loadHistory, recordRound } from "./history";
+import {
+  addToTotals,
+  emptyTotals,
+  GameHistory,
+  HistoryEntry,
+  loadHistory,
+  recordRound,
+  RoundResult,
+  toEntry,
+  Totals,
+} from "./history";
 import { Logger } from "./Logger";
-import { PageState } from "./pageBridge";
+import {
+  ManualRound,
+  onManualRound,
+  PageState,
+  showOnPage,
+  syncPage,
+} from "./pageBridge";
 import { describeStop, RunLimits, Runner } from "./Runner";
 import { STORAGE_KEYS } from "./storage";
 import { BotPanel } from "./ui/BotPanel";
@@ -22,6 +40,10 @@ export interface GameControllerOptions {
   page: PageState;
   /** Injectable for tests. */
   client?: HfClient;
+  /** Draws a bot response on HF's page; injectable for tests. */
+  showOnPage?: typeof showOnPage;
+  /** Updates HF's counters in Headless Mode; injectable for tests. */
+  syncPage?: typeof syncPage;
   openSettings?: () => void;
 }
 
@@ -44,7 +66,12 @@ export class GameController {
   private readonly client: HfClient;
   private runner: Runner | null = null;
   private history: GameHistory | null = null;
+  /** Every round since this page opened, by the bot or by hand. */
+  private visit: Totals = emptyTotals();
   private stopWatching: (() => void) | null = null;
+  private stopManual: (() => void) | null = null;
+  /** Rounds are written one at a time so totals never miss one. */
+  private recording: Promise<unknown> = Promise.resolve();
   private readonly onStorageChanged = (
     changes: Record<string, chrome.storage.StorageChange>,
     area: string
@@ -85,7 +112,9 @@ export class GameController {
 
   /** Load history into the panel and follow settings and history changes. */
   async init(): Promise<void> {
+    this.panel.setSession(this.visit);
     await this.refreshHistory();
+    this.stopManual = onManualRound((round) => this.onManualRound(round));
     this.stopWatching = watchSettings((settings) => {
       this.settings = settings;
       this.client.minIntervalMs = settings.global.actionDelayMs;
@@ -95,7 +124,36 @@ export class GameController {
 
   dispose(): void {
     this.stopWatching?.();
+    this.stopManual?.();
     chrome.storage.onChanged.removeListener(this.onStorageChanged);
+  }
+
+  /** A round the user played with HF's own buttons. */
+  private onManualRound(round: ManualRound): void {
+    const { bot, game } = this.options;
+    if (round.game !== game.id || this.runner || !bot?.fromPage) return;
+    let result: RoundResult | null = null;
+    try {
+      result = bot.fromPage(round.action, round.response, round.bet);
+    } catch (error) {
+      Logger.warn("Couldn't read a round played by hand", error);
+    }
+    if (result) this.record(toEntry(result)).catch(() => undefined);
+  }
+
+  /** Count a finished round in this visit's totals and the stored history. */
+  private record(entry: HistoryEntry): Promise<void> {
+    this.visit = addToTotals(this.visit, entry);
+    this.panel.setSession(this.visit);
+    const write = this.recording.then(async () => {
+      this.history = await recordRound(this.options.game.id, entry);
+      this.panel.setOverall(this.history.totals);
+      this.panel.setHistory(this.history.entries);
+    });
+    this.recording = write.catch((error) =>
+      Logger.warn("Couldn't save a result", error)
+    );
+    return write;
   }
 
   async refreshHistory(): Promise<void> {
@@ -126,19 +184,26 @@ export class GameController {
       gameSettings: () => this.gameSettings,
       globalSettings: () => this.settings.global,
       status: (message) => this.panel.setStatus(message),
+      display: () => {
+        if (this.settings.global.headless) return null;
+        const show = this.options.showOnPage ?? showOnPage;
+        return async (action, response, bet) => {
+          if (!(await show(action, response, bet)))
+            Logger.debug("HF's page didn't draw a bot action", action);
+        };
+      },
     });
+    const sync = this.options.syncPage ?? syncPage;
     const runner = new Runner(engine, {
-      onState: (state) => this.panel.setState(state),
-      onRound: async (entry, session) => {
-        this.panel.setSession(session);
-        try {
-          bot.afterRound?.(entry);
-        } catch (error) {
-          Logger.warn("Couldn't update HF's page after a round", error);
-        }
-        this.history = await recordRound(game.id, entry);
-        this.panel.setOverall(this.history.totals);
-        this.panel.setHistory(this.history.entries);
+      onState: (state) => {
+        this.panel.setState(state);
+        document.body.classList.toggle("hfgs-running", state !== "idle");
+      },
+      onRound: async (entry) => {
+        // Animated rounds already left HF's page up to date.
+        if (this.settings.global.headless && typeof entry.balance === "number")
+          sync(entry.balance, entry.details ?? {});
+        await this.record(entry);
       },
       onStop: (reason) => {
         this.panel.setStatus(describeStop(reason), reason.kind === "error");
@@ -147,7 +212,6 @@ export class GameController {
       },
     });
     this.runner = runner;
-    this.panel.setSession(runner.session);
     this.panel.setStatus("Running…");
     try {
       await runner.start(limitsFrom(this.settings.global, this.gameSettings));

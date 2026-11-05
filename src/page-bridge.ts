@@ -1,10 +1,28 @@
 /**
- * Runs in the page's own JavaScript world (manifest `"world": "MAIN"`) so it
- * can read HF's page variables, which the content script's isolated world
- * can't see. It only reads and reports them (see core/pageBridge.ts); it never
- * changes the page.
+ * Runs in the page's own JavaScript world (manifest `"world": "MAIN"`), where
+ * HF's page variables and game scripts live; the content script's isolated
+ * world can't reach them. Talks to the content script over window.postMessage
+ * (see core/pageBridge.ts):
+ *
+ * - reports HF's page state (post key, windowID, an unfinished hand);
+ * - draws the bot's results with HF's own animations (when Headless Mode is off)
+ *   or brings HF's counters up to date (when it's on);
+ * - reports the rounds the user plays by hand, so the panel counts them too.
  */
-import { BRIDGE_SOURCE, CONTENT_SOURCE, PageState } from "./core/pageBridge";
+import {
+  BRIDGE_SOURCE,
+  CONTENT_SOURCE,
+  gameIdForPath,
+  PageState,
+} from "./core/pageBridge";
+import { blackjackPage } from "./page/blackjack";
+import { slotsPage } from "./page/slots";
+import { PageGame } from "./page/types";
+
+const PAGE_GAMES: Record<string, PageGame> = {
+  blackjack: blackjackPage,
+  slots: slotsPage,
+};
 
 type HfWindow = Window & {
   my_post_key?: unknown;
@@ -33,22 +51,46 @@ function snapshot(): PageState {
   };
 }
 
-function send(): void {
-  window.postMessage(
-    { source: BRIDGE_SOURCE, type: "state", state: snapshot() },
-    location.origin
-  );
+function post(message: Record<string, unknown>): void {
+  window.postMessage({ source: BRIDGE_SOURCE, ...message }, location.origin);
 }
 
+const gameId = gameIdForPath(location.pathname);
+const game = gameId ? PAGE_GAMES[gameId] : undefined;
+
 window.addEventListener("message", (event) => {
-  if (
-    event.source === window &&
-    event.data?.source === CONTENT_SOURCE &&
-    event.data.type === "request-state"
-  ) {
-    send();
+  if (event.source !== window || event.data?.source !== CONTENT_SOURCE) return;
+  const message = event.data;
+  switch (message.type) {
+    case "request-state":
+      post({ type: "state", state: snapshot() });
+      break;
+    case "show": {
+      const done = (ok: boolean, error?: string) =>
+        post({ type: "shown", id: message.id, ok, error });
+      if (!game) {
+        done(false, "No page animations for this game");
+        break;
+      }
+      game
+        .show(String(message.action), message.response, message.bet ?? null)
+        .then(
+          () => done(true),
+          (error) => done(false, String(error?.message ?? error))
+        );
+      break;
+    }
+    case "sync":
+      try {
+        game?.sync(Number(message.balance), message.details ?? {});
+      } catch {
+        // HF's page changed; the panel still has the numbers
+      }
+      break;
   }
 });
 
+game?.watch((round) => post({ type: "round", game: gameId, ...round }));
+
 // Announce once on load too, in case the content script asked before this ran.
-send();
+post({ type: "state", state: snapshot() });

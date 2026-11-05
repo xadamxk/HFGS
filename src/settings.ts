@@ -15,6 +15,7 @@ import {
 
 export interface GlobalSettings {
   confirmStart: boolean;
+  headless: boolean;
   actionDelayMs: number;
   stopLoss: number;
   takeProfit: number;
@@ -26,6 +27,14 @@ export const GLOBAL_SETTINGS: SettingDefinition<GlobalSettings>[] = [
     id: "confirmStart",
     label: "Confirm before starting",
     description: "Ask before a bot starts placing bets.",
+    default: true,
+  },
+  {
+    type: "checkbox",
+    id: "headless",
+    label: "Headless Mode",
+    description:
+      "Play in the background without drawing each hand or spin on HF's page; only HF's balance is updated. Turn it off to watch the bot play with HF's own card and reel animations (slower: each round waits for its animation).",
     default: true,
   },
   {

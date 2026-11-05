@@ -72,6 +72,7 @@ export function createSlotsEngine(context: EngineContext): GameEngine {
       }
       const settings = context.gameSettings() as unknown as SlotsSettings;
       const bet = slotsBet(settings.bet, credits);
+      const show = context.display?.() ?? null;
       context.status?.(`Spinning at ${bet} βyte${bet === 1 ? "" : "s"}…`);
       const response = await context.client.post<SpinResponse>(SPIN_URL, {
         bet,
@@ -88,6 +89,7 @@ export function createSlotsEngine(context: EngineContext): GameEngine {
         );
       }
       credits = response.credits;
+      await show?.("spin", response, bet);
       return settleSpin(bet, response);
     },
   };
@@ -103,17 +105,15 @@ export const slotsBot: GameBot = {
     const bet = slotsBet(s.bet, null);
     return `Spin ${count} at ${bet} βyte${bet === 1 ? "" : "s"}?`;
   },
-  afterRound: (result) => {
-    // HF's page doesn't know about spins the bot made: show the new credits
-    // and light up the winning prize row, as HF's own client does.
-    const credits = document.getElementById("credits");
-    if (credits && typeof result.balance === "number")
-      credits.textContent = String(result.balance);
-    document
-      .querySelectorAll(".trPrize.won")
-      .forEach((row) => row.classList.remove("won"));
-    const prizeId = result.details?.prizeId;
-    if (prizeId)
-      document.getElementById(`trPrize_${prizeId}`)?.classList.add("won");
+  fromPage: (_action, response, bet) => {
+    const spin = response as SpinResponse | null;
+    if (
+      !spin?.success ||
+      !Array.isArray(spin.reels) ||
+      typeof spin.credits !== "number" ||
+      bet === null
+    )
+      return null;
+    return settleSpin(bet, spin);
   },
 };

@@ -119,6 +119,7 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
       let state: BjGameState;
       let balance: number | undefined;
       let dealt = false;
+      const show = context.display?.() ?? null;
 
       // An unfinished game from before the page loaded: finish it first.
       const open = context.page.openGameState as BjGameState | null;
@@ -132,6 +133,7 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
         state = response.data;
         balance = response.balance;
         dealt = true;
+        await show?.("deal", response, bet);
       }
 
       let actions = 0;
@@ -151,6 +153,7 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
         });
         state = response.data;
         balance = response.balance;
+        await show?.(action, response, null);
       }
 
       const result = settle(state, balance);
@@ -208,10 +211,9 @@ export const blackjackBot: GameBot = {
       : "";
     return `Play ${count} at ${s.baseBet} βytes${martingale}?`;
   },
-  afterRound: (result) => {
-    // HF's own counter doesn't know about requests the bot made.
-    const counter = document.getElementById("balanceCounterBalance");
-    if (counter && typeof result.balance === "number")
-      counter.textContent = String(result.balance);
+  fromPage: (_action, response) => {
+    const res = response as BjResponse | null;
+    if (!res?.success || !res.data?.hand1 || !isEnded(res.data)) return null;
+    return settle(res.data, Number(res.balance));
   },
 };

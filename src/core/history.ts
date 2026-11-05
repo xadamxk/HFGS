@@ -33,6 +33,12 @@ export interface Totals {
   returned: number;
   net: number;
   biggestWin: number;
+  /** The worst round, as a negative net (0 if no round lost). */
+  biggestLoss: number;
+  /** Current run: positive for wins in a row, negative for losses. Pushes don't break it. */
+  streak: number;
+  longestWinStreak: number;
+  longestLossStreak: number;
 }
 
 export interface GameHistory {
@@ -53,12 +59,28 @@ export function emptyTotals(): Totals {
     returned: 0,
     net: 0,
     biggestWin: 0,
+    biggestLoss: 0,
+    streak: 0,
+    longestWinStreak: 0,
+    longestLossStreak: 0,
   };
+}
+
+/** Share of decided rounds (pushes left out) that were won, 0 to 1; null before any. */
+export function winRate(totals: Totals): number | null {
+  const decided = totals.wins + totals.losses;
+  return decided ? totals.wins / decided : null;
 }
 
 /** Totals plus one round. Amounts are rounded to cents to avoid float drift. */
 export function addToTotals(totals: Totals, entry: HistoryEntry): Totals {
   const cents = (n: number) => Math.round(n * 100) / 100;
+  const streak =
+    entry.net > 0
+      ? Math.max(totals.streak, 0) + 1
+      : entry.net < 0
+        ? Math.min(totals.streak, 0) - 1
+        : totals.streak;
   return {
     rounds: totals.rounds + 1,
     wins: totals.wins + (entry.net > 0 ? 1 : 0),
@@ -68,6 +90,10 @@ export function addToTotals(totals: Totals, entry: HistoryEntry): Totals {
     returned: cents(totals.returned + entry.returned),
     net: cents(totals.net + entry.net),
     biggestWin: Math.max(totals.biggestWin, entry.net),
+    biggestLoss: Math.min(totals.biggestLoss, entry.net),
+    streak,
+    longestWinStreak: Math.max(totals.longestWinStreak, streak),
+    longestLossStreak: Math.max(totals.longestLossStreak, -streak),
   };
 }
 
@@ -83,8 +109,20 @@ function normalizeHistory(stored: unknown): GameHistory {
   const source = (
     stored && typeof stored === "object" ? stored : {}
   ) as Partial<GameHistory>;
-  const totals = { ...emptyTotals(), ...(source.totals ?? {}) };
   const entries = Array.isArray(source.entries) ? source.entries : [];
+  const savedTotals = (source.totals ?? {}) as Partial<Totals>;
+  const totals = { ...emptyTotals(), ...savedTotals };
+  // History saved before loss and streak stats existed: work them out from
+  // the results kept (the latest MAX_ENTRIES).
+  if (savedTotals.biggestLoss === undefined && entries.length) {
+    const derived = [...entries]
+      .reverse()
+      .reduce((sum, entry) => addToTotals(sum, entry), emptyTotals());
+    totals.biggestLoss = derived.biggestLoss;
+    totals.streak = derived.streak;
+    totals.longestWinStreak = derived.longestWinStreak;
+    totals.longestLossStreak = derived.longestLossStreak;
+  }
   return { totals, entries };
 }
 

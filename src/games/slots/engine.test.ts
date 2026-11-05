@@ -3,6 +3,7 @@ import path from "path";
 import { HfClient } from "../../core/HfClient";
 import { PageState } from "../../core/pageBridge";
 import { defaultSettings } from "../../settings";
+import { PageDisplay } from "../engine";
 import { SlotsSettings } from "./definition";
 import {
   createSlotsEngine,
@@ -25,7 +26,11 @@ const captured = (name: string) =>
 
 function engineWith(
   responses: SpinResponse[],
-  options: { settings?: Partial<SlotsSettings>; page?: Partial<PageState> } = {}
+  options: {
+    settings?: Partial<SlotsSettings>;
+    page?: Partial<PageState>;
+    display?: PageDisplay | null;
+  } = {}
 ) {
   const requests: { url: string; form: Record<string, string | number> }[] = [];
   const client = {
@@ -55,6 +60,7 @@ function engineWith(
     gameSettings: () => settings as unknown as Record<string, number | boolean>,
     globalSettings: () => defaultSettings().global,
     status,
+    display: () => options.display ?? null,
   });
   return { engine, requests, status };
 }
@@ -177,24 +183,32 @@ describe("slots bot", () => {
     );
   });
 
-  it("updates HF's credits and lights up the winning prize row", () => {
-    document.body.innerHTML = `<span id="credits">2871</span>
-      <div id="trPrize_3" class="trPrize won"></div><div id="trPrize_8" class="trPrize"></div>`;
-    slotsBot.afterRound!(
-      settleSpin(
-        1,
-        spin(2874, { id: "8", payoutCredits: 4, payoutWinnings: 4 })
-      )
-    );
-    expect(document.getElementById("credits")!.textContent).toBe("2874");
-    expect(
-      document.getElementById("trPrize_8")!.classList.contains("won")
-    ).toBe(true);
-    expect(
-      document.getElementById("trPrize_3")!.classList.contains("won")
-    ).toBe(false);
+  it("draws each spin on the page before returning it", async () => {
+    const response = spin(2874, {
+      id: "8",
+      payoutCredits: 4,
+      payoutWinnings: 4,
+    });
+    const display = jest.fn(async () => undefined);
+    const { engine } = engineWith([response], {
+      settings: { bet: 2 },
+      display,
+    });
+    await engine.playRound({ stopRequested: false });
+    expect(display).toHaveBeenCalledWith("spin", response, 2);
+  });
 
-    slotsBot.afterRound!(settleSpin(1, spin(2873)));
-    expect(document.querySelectorAll(".trPrize.won")).toHaveLength(0);
+  it("settles spins played by hand, and ignores anything else", () => {
+    const fromPage = slotsBot.fromPage!;
+    expect(
+      fromPage(
+        "spin",
+        spin(2874, { id: "8", payoutCredits: 4, payoutWinnings: 4 }),
+        1
+      )
+    ).toMatchObject({ outcome: "WIN", wagered: 1, returned: 4, balance: 2874 });
+    expect(fromPage("spin", spin(2873), null)).toBeNull();
+    expect(fromPage("spin", { success: false }, 1)).toBeNull();
+    expect(fromPage("spin", "<html>", 1)).toBeNull();
   });
 });

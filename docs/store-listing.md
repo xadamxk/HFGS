@@ -29,8 +29,12 @@ Every session
 • Stop-loss and take-profit
 • Asks before any bet is placed (can be turned off)
 • Gentle on Hack Forums: one request at a time, 2 seconds apart by default
+• Headless Mode plays in the background; turn it off to watch the bot play with HF's own card and reel animations
 
-History
+Stats and history
+• Live stats under each game: win rate, net, biggest win and loss, streaks
+• A chart of your βytes over your recent results
+• Hands and spins you play yourself are counted too
 • Totals and recent results per game on the settings page
 • Export to CSV or JSON
 

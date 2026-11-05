@@ -1,9 +1,12 @@
 import {
+  addToTotals,
   clearHistory,
+  emptyTotals,
   loadHistory,
   MAX_ENTRIES,
   recordRound,
   toEntry,
+  winRate,
 } from "./history";
 
 describe("history", () => {
@@ -40,7 +43,7 @@ describe("history", () => {
 
     const slots = await loadHistory("slots");
     expect(slots.entries.map((e) => e.at)).toEqual([2, 1]);
-    expect(slots.totals).toEqual({
+    expect(slots.totals).toMatchObject({
       rounds: 2,
       wins: 1,
       losses: 1,
@@ -97,5 +100,51 @@ describe("history", () => {
     await clearHistory("slots");
     expect((await loadHistory("slots")).totals.rounds).toBe(0);
     expect((await loadHistory("blackjack")).totals.rounds).toBe(1);
+  });
+});
+
+describe("addToTotals streaks and losses", () => {
+  const round = (net: number) =>
+    toEntry({ outcome: "X", wagered: 10, returned: 10 + net }, 0);
+
+  it("tracks the current streak, the longest runs and the biggest loss", () => {
+    let totals = emptyTotals();
+    for (const net of [5, 5, 0, 5, -10, -2, 0, -3, 4]) {
+      totals = addToTotals(totals, round(net));
+    }
+    expect(totals).toMatchObject({
+      streak: 1,
+      longestWinStreak: 3,
+      longestLossStreak: 3,
+      biggestLoss: -10,
+      biggestWin: 5,
+    });
+    expect(winRate(totals)).toBeCloseTo(4 / 7);
+  });
+
+  it("has no win rate before a decided round", () => {
+    expect(winRate(emptyTotals())).toBeNull();
+    expect(winRate(addToTotals(emptyTotals(), round(0)))).toBeNull();
+  });
+});
+
+describe("history saved before loss and streak stats", () => {
+  it("works them out from the stored results", async () => {
+    const round = (net: number, at: number) =>
+      toEntry({ outcome: "X", wagered: 2, returned: 2 + net }, at);
+    await chrome.storage.local.set({
+      "history:slots": {
+        // Newest first; no biggestLoss/streak fields
+        totals: { rounds: 4, wins: 1, losses: 3, net: -4, biggestWin: 2 },
+        entries: [round(-2, 4), round(-2, 3), round(2, 2), round(-2, 1)],
+      },
+    });
+    expect((await loadHistory("slots")).totals).toMatchObject({
+      rounds: 4,
+      biggestLoss: -2,
+      streak: -2,
+      longestWinStreak: 1,
+      longestLossStreak: 2,
+    });
   });
 });

@@ -13,7 +13,7 @@ import {
   Totals,
 } from "../core/history";
 import { STORAGE_KEYS } from "../core/storage";
-import { formatAmount } from "../core/ui/BotPanel";
+import { formatAmount, formatWinRate } from "../core/ui/format";
 import { GameDefinition } from "../games/types";
 
 /** How many results the table shows; exports include every stored result. */
@@ -83,6 +83,12 @@ function totalsLine(totals: Totals): HTMLElement {
       formatAmount(totals.biggestWin, true),
       signClass(totals.biggestWin)
     ),
+    item(
+      "Biggest loss",
+      formatAmount(totals.biggestLoss, true),
+      signClass(totals.biggestLoss)
+    ),
+    item("Win rate", formatWinRate(totals)),
   ]);
 }
 

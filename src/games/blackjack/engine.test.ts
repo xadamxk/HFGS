@@ -3,6 +3,7 @@ import path from "path";
 import { HfClient } from "../../core/HfClient";
 import { PageState } from "../../core/pageBridge";
 import { defaultSettings } from "../../settings";
+import { PageDisplay } from "../engine";
 import { BlackjackSettings } from "./definition";
 import {
   blackjackBot,
@@ -59,6 +60,7 @@ function engineWith(
   options: {
     settings?: Partial<BlackjackSettings>;
     page?: Partial<PageState>;
+    display?: PageDisplay | null;
   } = {}
 ) {
   const { client, requests, remaining } = scriptedClient(script);
@@ -78,6 +80,7 @@ function engineWith(
     gameSettings: () => current as unknown as Record<string, number | boolean>,
     globalSettings: () => defaultSettings().global,
     status,
+    display: () => options.display ?? null,
   });
   return {
     engine,
@@ -464,6 +467,62 @@ describe("martingale", () => {
     await engine.playRound({ stopRequested: false });
     await engine.playRound({ stopRequested: false });
     expect(requests.map((r) => r.form.bet)).toEqual([2, 4, 8]);
+  });
+});
+
+describe("blackjack on HF's page", () => {
+  it("draws each response on the page, with the bet on the deal, before the next action", async () => {
+    const deal = fixture("013-deal.json").response;
+    const split = fixture("014-split.json").response;
+    const hit = fixture("015-hit.json").response;
+    const stand = fixture("017-stand.json").response;
+    const order: string[] = [];
+    const display = jest.fn(async (action: string) => {
+      order.push(`show ${action}`);
+    });
+    const { engine, requests } = engineWith(
+      [
+        { action: "deal", response: deal },
+        { action: "split", response: split },
+        { action: "hit", response: hit },
+        { action: "stand", response: stand },
+      ],
+      { display }
+    );
+    const post = requests.push.bind(requests);
+    requests.push = (...items) => {
+      order.push(`post ${items[0].action}`);
+      return post(...items);
+    };
+    await engine.playRound({ stopRequested: false });
+    expect(display.mock.calls).toEqual([
+      ["deal", deal, 2],
+      ["split", split, null],
+      ["hit", hit, null],
+      ["stand", stand, null],
+    ]);
+    expect(order).toEqual([
+      "post deal",
+      "show deal",
+      "post split",
+      "show split",
+      "post hit",
+      "show hit",
+      "post stand",
+      "show stand",
+    ]);
+  });
+
+  it("settles hands played by hand once they end, and ignores unfinished ones", () => {
+    const fromPage = blackjackBot.fromPage!;
+    expect(
+      fromPage("ended", fixture("019-double.json").response, null)
+    ).toMatchObject({ outcome: "WIN (double)", wagered: 4, returned: 8 });
+    expect(
+      fromPage("ended", fixture("013-deal.json").response, null)
+    ).toBeNull();
+    expect(fromPage("ended", { success: false }, null)).toBeNull();
+    expect(fromPage("ended", null, null)).toBeNull();
   });
 });
 

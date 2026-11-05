@@ -11,7 +11,7 @@ HF Gaming Suite (HFGS) is a browser extension for Hack Forums' βytes games (bla
 To work, the extension reads and sends the same data as Hack Forums' own game pages (blackjack.php and slots.php):
 
 - **Your Hack Forums session.** It reads Hack Forums' post key and the game's page values (such as the slot machine's window ID and any unfinished blackjack hand) from the game page you have open, and uses your existing Hack Forums login to play. It never sees or stores your password.
-- **Your games.** When you start a bot, it sends the same game actions as Hack Forums' own buttons (deal, hit, stand, double, split, surrender, spin) and reads Hack Forums' answers: cards, reels, payouts and your βytes balance.
+- **Your games.** When you start a bot, it sends the same game actions as Hack Forums' own buttons (deal, hit, stand, double, split, surrender, spin) and reads Hack Forums' answers: cards, reels, payouts and your βytes balance. When you play with Hack Forums' own buttons, it reads Hack Forums' answers on the page the same way, to count those hands and spins in your stats.
 
 ## Where data goes
 

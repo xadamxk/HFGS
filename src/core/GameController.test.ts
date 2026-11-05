@@ -2,9 +2,14 @@ import { GameBot } from "../games/engine";
 import { slots } from "../games/slots/definition";
 import { GameDefinition } from "../games/types";
 import { defaultSettings, HfgsSettings, saveSettings } from "../settings";
-import { GameController, limitsFrom } from "./GameController";
+import {
+  GameController,
+  GameControllerOptions,
+  limitsFrom,
+} from "./GameController";
 import { HfClient } from "./HfClient";
 import { loadHistory, recordRound, toEntry } from "./history";
+import { BRIDGE_SOURCE } from "./pageBridge";
 
 const game = slots as unknown as GameDefinition;
 const page = {
@@ -43,7 +48,8 @@ function fakeBot(): GameBot & { rounds: number } {
 
 function setup(
   settings: HfgsSettings = defaultSettings(),
-  bot: GameBot | null = fakeBot()
+  bot: GameBot | null = fakeBot(),
+  extra: Partial<GameControllerOptions> = {}
 ) {
   const controller = new GameController({
     game,
@@ -56,6 +62,7 @@ function setup(
       fetch: jest.fn(),
     }),
     openSettings: jest.fn(),
+    ...extra,
   });
   document.body.replaceChildren(controller.panel.element);
   return controller;
@@ -190,4 +197,119 @@ describe("GameController", () => {
     expect(text(".hfgs-history tbody")).toContain("No results yet.");
     controller.dispose();
   });
+
+  it("counts rounds played by hand in this visit and the history, but not while the bot runs", async () => {
+    const bot = {
+      ...fakeBot(),
+      fromPage: jest.fn((_a: string, response: unknown) =>
+        (response as { win: boolean }).win
+          ? { outcome: "WIN", wagered: 1, returned: 4 }
+          : null
+      ),
+    };
+    const controller = setup(defaultSettings(), bot);
+    await controller.init();
+    const round = (response: unknown, game = "slots") =>
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          source: window,
+          data: {
+            source: BRIDGE_SOURCE,
+            type: "round",
+            game,
+            action: "spin",
+            response,
+            bet: 1,
+          },
+        })
+      );
+    round({ win: true });
+    round({ win: false });
+    round({ win: true }, "blackjack");
+    await flush();
+    expect((await loadHistory("slots")).totals.rounds).toBe(1);
+    expect(statRow("Rounds")).toEqual(["Rounds", "1", "1"]);
+    expect(statRow("Net")).toEqual(["Net", "+3", "+3"]);
+    expect(text(".hfgs-chart")).toContain("starts after 2 results");
+    round({ win: true });
+    await flush();
+    expect(text(".hfgs-chart")).toContain("last 2 results: +6");
+    controller.dispose();
+  });
+
+  it("in Headless Mode, syncs HF's counters after each bot round and draws nothing", async () => {
+    const settings = defaultSettings();
+    settings.global.confirmStart = false;
+    settings.games.slots.gamesPerSession = 2;
+    const show = jest.fn(async () => true);
+    const sync = jest.fn();
+    const bot = balanceBot();
+    const controller = setup(settings, bot, {
+      showOnPage: show,
+      syncPage: sync,
+    });
+    await controller.init();
+    await controller.start();
+    expect(bot.displays).toEqual([null, null]);
+    expect(show).not.toHaveBeenCalled();
+    expect(sync).toHaveBeenCalledTimes(2);
+    expect(sync).toHaveBeenLastCalledWith(1001, { reels: [] });
+    expect(statRow("Rounds")).toEqual(["Rounds", "2", "2"]);
+    controller.dispose();
+  });
+
+  it("with Headless Mode off, has HF's page draw each bot action and marks the page as busy", async () => {
+    const settings = defaultSettings();
+    settings.global.confirmStart = false;
+    settings.global.headless = false;
+    settings.games.slots.gamesPerSession = 1;
+    const busy: boolean[] = [];
+    const show = jest.fn(async () => {
+      busy.push(document.body.classList.contains("hfgs-running"));
+      return true;
+    });
+    const sync = jest.fn();
+    const bot = balanceBot();
+    const controller = setup(settings, bot, {
+      showOnPage: show,
+      syncPage: sync,
+    });
+    await controller.init();
+    await controller.start();
+    expect(show).toHaveBeenCalledWith("spin", { credits: 1001 }, 1);
+    expect(busy).toEqual([true]);
+    expect(document.body.classList.contains("hfgs-running")).toBe(false);
+    expect(sync).not.toHaveBeenCalled();
+    controller.dispose();
+  });
 });
+
+/** A bot whose engine draws each round through the page display, if any. */
+function balanceBot(): GameBot & { displays: unknown[] } {
+  const displays: unknown[] = [];
+  return {
+    displays,
+    summarize: () => "Go?",
+    createEngine: ({ display }) => ({
+      playRound: async () => {
+        const show = display?.() ?? null;
+        displays.push(show);
+        await show?.("spin", { credits: 1001 }, 1);
+        return {
+          outcome: "WIN",
+          wagered: 1,
+          returned: 2,
+          balance: 1001,
+          details: { reels: [] },
+        };
+      },
+    }),
+  };
+}
+
+function statRow(label: string): string[] {
+  const row = [...document.querySelectorAll(".hfgs-stats tbody tr")].find(
+    (tr) => tr.firstElementChild?.textContent === label
+  );
+  return row ? [...row.children].map((td) => td.textContent ?? "") : [];
+}
