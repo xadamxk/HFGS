@@ -4,6 +4,8 @@ import { GAMES } from "../games/registry";
 import { download, HistorySection, renderHistorySection } from "./history";
 import { SettingValues } from "../settings/definitions";
 import { settingsForm } from "../settings/form";
+import { HACKGAME_SETTINGS, HackGameSettings } from "../hackgame/settings";
+import { jobsView, JobsView } from "../hackgame/jobsView";
 import {
   GLOBAL_SETTINGS,
   GlobalSettings,
@@ -80,6 +82,42 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
     ])
   );
 
+  const hackgameForm = settingsForm(
+    "hackgame",
+    HACKGAME_SETTINGS,
+    settings.hackgame as unknown as SettingValues,
+    (change) =>
+      persist({
+        ...settings,
+        hackgame: { ...settings.hackgame, ...change } as HackGameSettings,
+      })
+  );
+  activeJobs?.dispose();
+  activeJobs = jobsView("hackgame");
+  hackgameForm
+    .group("Jobs")
+    ?.querySelector(".group-title")
+    ?.after(
+      el("div", { class: "row" }, [
+        el("strong", null, "Jobs to play"),
+        el(
+          "p",
+          { class: "description" },
+          "HF's current Small Hack Jobs with their success rates. Lower rates pay more."
+        ),
+        activeJobs.element,
+      ])
+    );
+  const hackgameSection = el("section", { "data-game": "hackgame" }, [
+    el("h2", null, "Hack Game"),
+    el(
+      "p",
+      { class: "description intro" },
+      "Plays Small Hack Jobs for you whenever the cooldown is over, pauses when power runs low and starts again once the battery has recharged. Start and stop it from the panel on any Hack Game page."
+    ),
+    hackgameForm.element,
+  ]);
+
   const reset = el("button", { type: "button", class: "secondary" }, [
     "Reset all settings to defaults",
   ]);
@@ -95,6 +133,7 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
     settings = next;
     globalSettingsForm.setValues(next.global as unknown as SettingValues);
     for (const [id, form] of gameForms) form.setValues(next.games[id]);
+    hackgameForm.setValues(next.hackgame as unknown as SettingValues);
   });
 
   // History sections listen for storage changes; drop the old ones on re-render.
@@ -131,6 +170,7 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
       globalForm,
     ]),
     ...gameSections,
+    hackgameSection,
     reset,
     el("h2", { class: "group" }, "History"),
     el(
@@ -145,6 +185,7 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
 }
 
 let activeHistory: HistorySection[] = [];
+let activeJobs: JobsView | null = null;
 let stopWatchingSettings: (() => void) | null = null;
 
 /** Settings plus every game's history, for a backup file. */

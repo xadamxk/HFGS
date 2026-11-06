@@ -23,7 +23,11 @@ describe("options page", () => {
     const sections = [...root.querySelectorAll("section[data-game]")].map(
       (section) => section.getAttribute("data-game")
     );
-    expect(sections).toEqual(["global", ...GAMES.map((game) => game.id)]);
+    expect(sections).toEqual([
+      "global",
+      ...GAMES.map((game) => game.id),
+      "hackgame",
+    ]);
   });
 
   it("saves a game setting as soon as it changes", async () => {

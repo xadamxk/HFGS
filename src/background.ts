@@ -1,5 +1,9 @@
 import { Logger } from "./core/Logger";
 import { migrateStorage } from "./core/storage";
+import { registerHackGame } from "./hackgame/background";
+
+// Hack Game auto-play while "Run in background" is on
+registerHackGame();
 
 // Upgrade stored data on install and on every extension update.
 chrome.runtime.onInstalled.addListener(() => {

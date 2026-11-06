@@ -1,0 +1,198 @@
+/**
+ * What the Hack Game bot keeps in chrome.storage.local: the job list it last
+ * read, the jobs you ticked, the run state and lifetime totals. Shared by the
+ * background script, the game pages and the settings page.
+ */
+import { recordRound, toEntry } from "../core/history";
+import { getItem, setItem, STORAGE_KEYS } from "../core/storage";
+import { HackJob, sameJobs } from "./parse";
+
+export const HACKGAME_ID = "hackgame";
+
+export interface JobCache {
+  jobs: HackJob[];
+  /** When HF's list last changed (not when it was last read). */
+  changedAt: number;
+  /** Ticked jobs the last change removed or renamed, for a notice. */
+  dropped: string[];
+}
+
+/** A ticked job: its id, and its name when ticked (HF can reuse ids). */
+export interface ChosenJob {
+  id: string;
+  name: string;
+}
+
+export type Phase =
+  "idle" | "playing" | "waiting" | "recharging" | "locked" | "stopped";
+
+export interface LastJob {
+  at: number;
+  job: string;
+  success: boolean;
+  rate: number;
+  money: number;
+  xp: number;
+}
+
+export interface HackState {
+  running: boolean;
+  startedAt: number | null;
+  jobsThisRun: number;
+  phase: Phase;
+  /** What it's doing or why it stopped, without times (the panel adds nextAt). */
+  message: string;
+  /** When the next check or job is due. */
+  nextAt: number | null;
+  /** Errors in a row; three stop the bot. */
+  errors: number;
+  last: LastJob | null;
+}
+
+export interface HackTotals {
+  jobs: number;
+  successes: number;
+  money: number;
+  xp: number;
+}
+
+export function idleState(): HackState {
+  return {
+    running: false,
+    startedAt: null,
+    jobsThisRun: 0,
+    phase: "idle",
+    message: "",
+    nextAt: null,
+    errors: 0,
+    last: null,
+  };
+}
+
+export function emptyTotals(): HackTotals {
+  return { jobs: 0, successes: 0, money: 0, xp: 0 };
+}
+
+const TOTALS_KEY = "hackgame:totals";
+export const HACKGAME_KEYS = [
+  STORAGE_KEYS.hackgameJobs,
+  STORAGE_KEYS.hackgameChoice,
+  STORAGE_KEYS.hackgameState,
+  TOTALS_KEY,
+  STORAGE_KEYS.history(HACKGAME_ID),
+];
+
+export async function loadJobCache(): Promise<JobCache | null> {
+  const cache = await getItem<JobCache>(STORAGE_KEYS.hackgameJobs);
+  return cache && Array.isArray(cache.jobs) ? cache : null;
+}
+
+export async function loadChoice(): Promise<ChosenJob[]> {
+  const choice = await getItem<ChosenJob[]>(STORAGE_KEYS.hackgameChoice);
+  return Array.isArray(choice) ? choice : [];
+}
+
+export async function saveChoice(choice: ChosenJob[]): Promise<void> {
+  await setItem(STORAGE_KEYS.hackgameChoice, choice);
+}
+
+/**
+ * Store HF's current job list, but only when it differs from the stored one.
+ * Ticked jobs that are gone, or whose id now has another name, are unticked.
+ * Returns true when the list changed.
+ */
+export async function updateJobs(
+  jobs: HackJob[],
+  now = Date.now()
+): Promise<boolean> {
+  if (!jobs.length) return false;
+  const cache = await loadJobCache();
+  if (cache && sameJobs(cache.jobs, jobs)) return false;
+  const choice = await loadChoice();
+  const kept = choice.filter((chosen) =>
+    jobs.some((job) => job.id === chosen.id && job.name === chosen.name)
+  );
+  const dropped = choice
+    .filter((chosen) => !kept.includes(chosen))
+    .map((c) => c.name);
+  await setItem(STORAGE_KEYS.hackgameJobs, {
+    jobs,
+    changedAt: now,
+    dropped,
+  } satisfies JobCache);
+  if (dropped.length) await saveChoice(kept);
+  return true;
+}
+
+export async function loadState(): Promise<HackState> {
+  return {
+    ...idleState(),
+    ...(await getItem<Partial<HackState>>(STORAGE_KEYS.hackgameState)),
+  };
+}
+
+export async function saveState(state: HackState): Promise<void> {
+  await setItem(STORAGE_KEYS.hackgameState, state);
+}
+
+export async function patchState(
+  patch: Partial<HackState>
+): Promise<HackState> {
+  const state = { ...(await loadState()), ...patch };
+  await saveState(state);
+  return state;
+}
+
+/** Start auto-play (from the panel). */
+export async function startRun(now = Date.now()): Promise<void> {
+  const state = await loadState();
+  await saveState({
+    ...state,
+    running: true,
+    startedAt: now,
+    jobsThisRun: 0,
+    phase: "waiting",
+    message: "Starting…",
+    nextAt: now,
+    errors: 0,
+  });
+}
+
+/** Stop auto-play, with the reason to show. */
+export async function stopRun(message = "Stopped."): Promise<void> {
+  await patchState({
+    running: false,
+    phase: "stopped",
+    message,
+    nextAt: null,
+  });
+}
+
+export async function loadTotals(): Promise<HackTotals> {
+  return { ...emptyTotals(), ...(await getItem<HackTotals>(TOTALS_KEY)) };
+}
+
+const round4 = (n: number) => Math.round(n * 10000) / 10000;
+
+/** Keep a played job in the history and the lifetime totals. */
+export async function recordJob(job: LastJob): Promise<void> {
+  const totals = await loadTotals();
+  await setItem(TOTALS_KEY, {
+    jobs: totals.jobs + 1,
+    successes: totals.successes + (job.success ? 1 : 0),
+    money: round4(totals.money + job.money),
+    xp: round4(totals.xp + job.xp),
+  } satisfies HackTotals);
+  await recordRound(
+    HACKGAME_ID,
+    toEntry(
+      {
+        outcome: job.success ? "SUCCESS" : "FAIL",
+        wagered: 0,
+        returned: job.money,
+        details: { job: job.job, rate: job.rate, xp: job.xp },
+      },
+      job.at
+    )
+  );
+}

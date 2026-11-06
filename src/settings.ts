@@ -5,6 +5,7 @@
 
 import { getItem, setItem, STORAGE_KEYS } from "./core/storage";
 import { GAMES } from "./games/registry";
+import { HACKGAME_SETTINGS, HackGameSettings } from "./hackgame/settings";
 import { GameDefinition } from "./games/types";
 import {
   defaultsOf,
@@ -100,6 +101,8 @@ export interface HfgsSettings {
   global: GlobalSettings;
   /** Keyed by game id; every registered game has an entry. */
   games: Record<string, SettingValues>;
+  /** The Hack Game's auto-play (not a βytes game, so not in GAMES). */
+  hackgame: HackGameSettings;
 }
 
 export function defaultSettings(): HfgsSettings {
@@ -108,6 +111,7 @@ export function defaultSettings(): HfgsSettings {
     games: Object.fromEntries(
       GAMES.map((game) => [game.id, defaultsOf(game.settings)])
     ),
+    hackgame: defaultsOf(HACKGAME_SETTINGS),
   };
 }
 
@@ -115,7 +119,7 @@ export function defaultSettings(): HfgsSettings {
 export function normalizeSettings(stored: unknown): HfgsSettings {
   const source = (
     stored && typeof stored === "object" ? stored : {}
-  ) as Partial<Record<"global" | "games", unknown>>;
+  ) as Partial<Record<"global" | "games" | "hackgame", unknown>>;
   const games = (
     source.games && typeof source.games === "object" ? source.games : {}
   ) as Record<string, unknown>;
@@ -127,6 +131,7 @@ export function normalizeSettings(stored: unknown): HfgsSettings {
         normalizeValues(game.settings, games[game.id]),
       ])
     ),
+    hackgame: normalizeValues(HACKGAME_SETTINGS, source.hackgame),
   };
 }
 

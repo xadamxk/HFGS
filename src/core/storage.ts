@@ -11,6 +11,12 @@ export const STORAGE_KEYS = {
   settings: "settings",
   /** Per-game history and totals: `history:<gameId>` (written from Phase 2). */
   history: (gameId: string) => `history:${gameId}`,
+  /** The Hack Game's last-read job list, only rewritten when HF changes it. */
+  hackgameJobs: "hackgame:jobs",
+  /** The jobs ticked to play: [{ id, name }]. */
+  hackgameChoice: "hackgame:choice",
+  /** Whether auto-play is running, and what it's doing now. */
+  hackgameState: "hackgame:state",
 } as const;
 
 export const STORAGE_SCHEMA_VERSION = 1;

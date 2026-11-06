@@ -11,11 +11,14 @@ describe("game registry", () => {
     const expected = GAMES.map(
       (game) => `https://hackforums.net${game.path}*`
     ).sort();
-    expect(manifest.content_scripts.map((s) => s.js[0]).sort()).toEqual([
+    const gameScripts = manifest.content_scripts.filter(
+      (s) => s.js[0] !== "hackgame.js"
+    );
+    expect(gameScripts.map((s) => s.js[0]).sort()).toEqual([
       "content.js",
       "page-bridge.js",
     ]);
-    for (const script of manifest.content_scripts) {
+    for (const script of gameScripts) {
       expect([...script.matches].sort()).toEqual(expected);
     }
   });

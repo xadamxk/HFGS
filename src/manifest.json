@@ -3,7 +3,7 @@
   "name": "HF Gaming Suite",
   "short_name": "HFGS",
   "version": "2.0.0",
-  "description": "Bots, stats and history for HF's βytes games: blackjack and slots.",
+  "description": "Bots, stats and history for HF's βytes games (blackjack and slots), plus Hack Game auto-play.",
   "homepage_url": "https://github.com/xadamxk/HFGS",
   "incognito": "spanning",
   "background": {
@@ -30,6 +30,15 @@
       "js": [
         "page-bridge.js"
       ]
+    },
+    {
+      "run_at": "document_idle",
+      "matches": [
+        "https://hackforums.net/gamecp.php*"
+      ],
+      "js": [
+        "hackgame.js"
+      ]
     }
   ],
   "action": {
@@ -50,6 +59,10 @@
     "open_in_tab": true
   },
   "permissions": [
-    "storage"
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://hackforums.net/*"
   ]
 }

@@ -24,6 +24,12 @@ Blackjack
 Slots
 • Spins at a fixed bet using HF's bet steps, and never bets more than your credits
 
+Hack Game
+• Auto-plays Small Hack Jobs whenever the cooldown is over, from the jobs you tick (or any job above a success rate)
+• A random extra wait after each cooldown, so it doesn't play like clockwork
+• Pauses when power runs low and starts again by itself once the battery has recharged
+• Runs in the background with no Hack Forums tab open, or only while a Hack Game page is open: your choice
+
 Strategy assistant (blackjack)
 • Beside the table: your cards, the dealer's upcard and what HF offers go in; the best play and each option's expected value come out
 • Bust odds, the dealer's final-total odds and the strategy chart row, highlighted
@@ -58,9 +64,11 @@ Chrome: Fun. AMO: Games & Entertainment.
 
 ## Chrome Web Store: privacy practices
 
-- **Single purpose:** Playing and tracking Hack Forums' βytes games (blackjack and slots) on Hack Forums' game pages.
+- **Single purpose:** Playing and tracking Hack Forums' games (βytes blackjack and slots, and the Hack Game's Small Hack Jobs) on Hack Forums.
 - **storage:** Saves the user's settings and their game history (totals and recent results) locally in the browser.
-- **Host access (content scripts on hackforums.net/blackjack.php and /slots.php):** Shows the extension's panel on Hack Forums' two game pages and sends the same game requests as the site's own buttons, using the user's existing Hack Forums session.
+- **alarms:** Wakes the extension when the Hack Game's cooldown or battery recharge is over, so auto-play can continue in the background.
+- **Host permission (hackforums.net):** Lets the background script load and submit Hack Forums' Hack Game pages (gamecp.php) with the user's session while "Run in background" is on.
+- **Host access (content scripts on hackforums.net/blackjack.php, /slots.php and /gamecp.php):** Shows the extension's panel on Hack Forums' game pages and sends the same game requests as the site's own buttons, using the user's existing Hack Forums session.
 - **Remote code:** No. All code is in the package.
 - **Data usage:** No user data is collected or transmitted to the developer or third parties. Certify all three disclosures (not sold, not used for unrelated purposes, not used for creditworthiness).
 
