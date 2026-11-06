@@ -201,7 +201,17 @@ export class GameController {
       { compact: true }
     );
     this.limitsNote = el("div", { class: "hfgs-limits", role: "status" });
-    this.globalForm.group(STOP_GROUP)?.append(this.limitsNote);
+    // The game's round settings and the global stop-loss and take-profit
+    // both decide when a run ends: show them as one group.
+    const gameStop = this.gameForm.group(STOP_GROUP);
+    const globalStop = this.globalForm.group(STOP_GROUP);
+    const grid = (box?: HTMLElement) =>
+      box?.querySelector(".hfgs-settings-grid") ?? null;
+    if (gameStop && globalStop) {
+      grid(gameStop)?.append(...Array.from(grid(globalStop)?.children ?? []));
+      globalStop.remove();
+    }
+    (gameStop ?? globalStop)?.append(this.limitsNote);
     this.updateLimitsNote();
     this.savedNote = el("span", { class: "hfgs-saved", role: "status" });
     this.panel.addSection(

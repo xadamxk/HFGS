@@ -44,6 +44,8 @@ const CSS = `
 .hfgs-panel .hfgs-field { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
 /* HF's .textbox sets its own width; keep number inputs compact */
 .hfgs-panel .hfgs-field input { width: 80px !important; min-width: 0; flex: none; box-sizing: border-box; }
+/* Every number input gets the same unit slot, so inputs line up in every group */
+.hfgs-panel .hfgs-field .unit { width: 36px; flex: none; }
 .hfgs-panel .hfgs-setting > label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hfgs-panel .hfgs-settings-note { font-size: 11px; opacity: 0.75; }
 .hfgs-panel .hfgs-settings-note .hfgs-saved { color: #00b500; margin-left: 6px; }

@@ -71,11 +71,16 @@ export function settingsForm<T>(
   );
   const groups = groupRows(form, rows, options);
 
-  // Settings that only apply while a checkbox is on are disabled while it's off.
+  // Settings that only apply while a checkbox is on are disabled while it's
+  // off, and those a checkbox overrides are disabled while it's on.
   const updateEnabled = () => {
     for (const row of rows) {
-      const { enabledBy } = row.definition;
-      if (enabledBy) row.setEnabled(current[enabledBy] === true);
+      const { enabledBy, disabledBy } = row.definition;
+      if (!enabledBy && !disabledBy) continue;
+      row.setEnabled(
+        (!enabledBy || current[enabledBy] === true) &&
+          (!disabledBy || current[disabledBy] !== true)
+      );
     }
   };
   updateEnabled();
@@ -252,7 +257,9 @@ function settingRow(
       });
       const field = el("div", { class: compact ? "hfgs-field" : "field" }, [
         input,
-        setting.unit && el("span", { class: "unit" }, setting.unit),
+        // Compact rows keep an empty unit slot so their inputs line up
+        (setting.unit || compact) &&
+          el("span", { class: "unit" }, setting.unit ?? ""),
       ]);
       const element = compact
         ? el("div", { class: "hfgs-setting hfgs-setting-number", title: tip }, [

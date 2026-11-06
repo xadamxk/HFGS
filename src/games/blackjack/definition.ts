@@ -1,4 +1,5 @@
 import { GameDefinition } from "../types";
+import { STOP_GROUP } from "../../settings/definitions";
 import { describeBlackjack } from "./cards";
 
 export interface BlackjackSettings {
@@ -43,38 +44,19 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       unit: "βytes",
     },
     {
-      type: "number",
-      id: "gamesPerSession",
-      label: "Rounds per session",
-      description:
-        "How many rounds to play each time you start the bot. A round is one hand, or with martingale betting on, one whole set: from your bet up to the win that ends it.",
-      default: 10,
-      min: 1,
-      max: 10000,
-      step: 1,
-    },
-    {
-      type: "checkbox",
-      id: "runUntilStopped",
-      label: "Run until stopped",
-      description:
-        "Ignore rounds per session and keep playing until you press Stop or the stop-loss or take-profit is hit. With both at 0, only Stop (or HF refusing a bet) ends the run.",
-      default: false,
-    },
-    {
       type: "checkbox",
       id: "martingale",
       group: "Martingale",
-      label: "Martingale betting",
+      label: "Use martingale",
       description:
-        "Multiply the bet after each loss and go back to your bet after a win. Each set (up to that win) counts as one round, so a losing streak can run past your rounds per session and grows the bet fast: use a stop-loss.",
+        "Multiply the bet after each loss and go back to your bet after a win. Each set (up to that win) counts as one round, so a losing streak can run past your Rounds and grows the bet fast: use a stop-loss.",
       default: false,
     },
     {
       type: "number",
       id: "martingaleMultiplier",
       group: "Martingale",
-      label: "Martingale multiplier",
+      label: "Multiplier",
       description: "How much the bet grows after each loss.",
       default: 2,
       min: 1.5,
@@ -86,7 +68,7 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       type: "number",
       id: "maxBet",
       group: "Martingale",
-      label: "Martingale bet cap",
+      label: "Bet cap",
       description: "The bet never grows past this.",
       default: 100,
       min: BLACKJACK_MIN_BET,
@@ -94,6 +76,28 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       step: 1,
       unit: "βytes",
       enabledBy: "martingale",
+    },
+    {
+      type: "number",
+      id: "gamesPerSession",
+      group: STOP_GROUP,
+      disabledBy: "runUntilStopped",
+      label: "Rounds",
+      description:
+        "How many rounds to play each time you start the bot. A round is one hand, or with martingale betting on, one whole set: from your bet up to the win that ends it.",
+      default: 10,
+      min: 1,
+      max: 10000,
+      step: 1,
+    },
+    {
+      type: "checkbox",
+      id: "runUntilStopped",
+      group: STOP_GROUP,
+      label: "Run until stopped",
+      description:
+        "Ignore Rounds and keep playing until you press Stop or the stop-loss or take-profit is hit. With both at 0, only Stop (or HF refusing a bet) ends the run.",
+      default: false,
     },
   ],
 };

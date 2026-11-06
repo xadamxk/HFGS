@@ -1,4 +1,5 @@
 import { GameDefinition } from "../types";
+import { STOP_GROUP } from "../../settings/definitions";
 
 export interface SlotsSettings {
   bet: number;
@@ -38,7 +39,9 @@ export const slots: GameDefinition<SlotsSettings> = {
     {
       type: "number",
       id: "gamesPerSession",
-      label: "Spins per session",
+      group: STOP_GROUP,
+      disabledBy: "runUntilStopped",
+      label: "Spins",
       description: "How many spins to play each time you start the bot.",
       default: 25,
       min: 1,
@@ -48,9 +51,10 @@ export const slots: GameDefinition<SlotsSettings> = {
     {
       type: "checkbox",
       id: "runUntilStopped",
+      group: STOP_GROUP,
       label: "Run until stopped",
       description:
-        "Ignore spins per session and keep spinning until you press Stop or the stop-loss or take-profit is hit. With both at 0, only Stop (or HF refusing a spin) ends the run.",
+        "Ignore Spins and keep spinning until you press Stop or the stop-loss or take-profit is hit. With both at 0, only Stop (or HF refusing a spin) ends the run.",
       default: false,
     },
   ],

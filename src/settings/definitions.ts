@@ -3,6 +3,12 @@
  * are checked against them. Used for the global settings and each game's.
  */
 
+/**
+ * The group for every setting that decides when a run ends: each game's round
+ * count and the global stop-loss and take-profit. The game page shows them as one.
+ */
+export const STOP_GROUP = "Stop the bot";
+
 export type SettingValue = boolean | number | string;
 export type SettingValues = Record<string, SettingValue>;
 
@@ -23,6 +29,8 @@ interface BaseDefinition<T, K extends keyof T & string> {
   group?: string;
   /** A checkbox setting that must be on for this one to apply (it's disabled otherwise). */
   enabledBy?: KeysOfType<T, boolean>;
+  /** A checkbox setting that makes this one not apply while it's on (disabled then). */
+  disabledBy?: KeysOfType<T, boolean>;
 }
 
 export interface CheckboxDefinition<T> extends BaseDefinition<

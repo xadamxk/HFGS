@@ -11,7 +11,10 @@ import {
   normalizeValues,
   SettingDefinition,
   SettingValues,
+  STOP_GROUP,
 } from "./settings/definitions";
+
+export { STOP_GROUP };
 
 export interface GlobalSettings {
   confirmStart: boolean;
@@ -22,9 +25,8 @@ export interface GlobalSettings {
   takeProfit: number;
 }
 
-/** The global settings' groups. Both apply to every game. */
-export const STOP_GROUP = "Stop the bot (all games)";
-export const DISPLAY_GROUP = "Display and pacing (all games)";
+/** The global settings' other group; they apply to every game. */
+export const DISPLAY_GROUP = "All games";
 
 export const GLOBAL_SETTINGS: SettingDefinition<GlobalSettings>[] = [
   {
@@ -33,7 +35,7 @@ export const GLOBAL_SETTINGS: SettingDefinition<GlobalSettings>[] = [
     group: STOP_GROUP,
     label: "Stop-loss",
     description:
-      "Stop any run once it is down this many βytes, even with Run until stopped on or partway through a martingale set. It's checked after each hand or spin, so the last bet can take the run past it. 0 turns it off.",
+      "Stop any run once it is down this many βytes, even with Run until stopped on or partway through a martingale set. It's checked after each hand or spin, so the last bet can take the run past it. Shared by all games; 0 turns it off.",
     default: 0,
     min: 0,
     max: 1000000,
@@ -46,7 +48,7 @@ export const GLOBAL_SETTINGS: SettingDefinition<GlobalSettings>[] = [
     group: STOP_GROUP,
     label: "Take-profit",
     description:
-      "Stop any run once it is up this many βytes, even with Run until stopped on or martingale betting on. 0 turns it off.",
+      "Stop any run once it is up this many βytes, even with Run until stopped on or martingale betting on. Shared by all games; 0 turns it off.",
     default: 0,
     min: 0,
     max: 1000000,
@@ -57,7 +59,7 @@ export const GLOBAL_SETTINGS: SettingDefinition<GlobalSettings>[] = [
     type: "checkbox",
     id: "confirmStart",
     group: DISPLAY_GROUP,
-    label: "Confirm before starting",
+    label: "Confirm start",
     description: "Ask before a bot starts placing bets.",
     default: true,
   },
@@ -74,7 +76,7 @@ export const GLOBAL_SETTINGS: SettingDefinition<GlobalSettings>[] = [
     type: "checkbox",
     id: "muteSounds",
     group: DISPLAY_GROUP,
-    label: "Mute game sounds",
+    label: "Mute sounds",
     description:
       "Keep HF's blackjack and slots sounds off. Clicking HF's own sound button on a game page changes this too, so your choice is remembered next time.",
     default: false,
@@ -83,7 +85,7 @@ export const GLOBAL_SETTINGS: SettingDefinition<GlobalSettings>[] = [
     type: "number",
     id: "actionDelayMs",
     group: DISPLAY_GROUP,
-    label: "Delay between actions",
+    label: "Action delay",
     description:
       "Wait this long between requests to HF (each hit, stand, deal or spin). HF rejects actions sent about a second apart as too quick, so keep this at 2 seconds or more.",
     default: 2000,

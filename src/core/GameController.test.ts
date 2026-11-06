@@ -325,15 +325,21 @@ describe("GameController settings on the game page", () => {
     const titles = [
       ...document.querySelectorAll(".hfgs-panel .hfgs-settings-title"),
     ].map((t) => t.textContent);
-    expect(titles).toEqual([
-      "Slots",
-      "Stop the bot (all games)",
-      "Display and pacing (all games)",
+    expect(titles).toEqual(["Slots", "Stop the bot", "All games"]);
+    const stopGroup = document.querySelector('[data-group="Stop the bot"]')!;
+    // The game's round settings and the global limits, in one group
+    expect(
+      [...stopGroup.querySelectorAll("input[id]")].map((i) => i.id)
+    ).toEqual([
+      "hfgs-slots-gamesPerSession",
+      "hfgs-slots-runUntilStopped",
+      "hfgs-global-stopLoss",
+      "hfgs-global-takeProfit",
     ]);
-    const stopGroup = document.querySelector(
-      '[data-group="Stop the bot (all games)"]'
-    )!;
-    expect(stopGroup.querySelector("#hfgs-global-takeProfit")).not.toBeNull();
+    expect(
+      document.querySelectorAll('[data-group="Stop the bot"]')
+    ).toHaveLength(1);
+    expect(input("hfgs-slots-gamesPerSession").disabled).toBe(false);
     const note = () => stopGroup.querySelector(".hfgs-limits")!;
     expect(note().textContent).toBe(
       "Each run stops after 25 rounds, or when you press Stop. There's no stop-loss, so nothing caps the losses."
@@ -344,6 +350,8 @@ describe("GameController settings on the game page", () => {
     input("hfgs-global-takeProfit").value = "50";
     input("hfgs-global-takeProfit").dispatchEvent(new Event("change"));
     await flush();
+    // Run until stopped overrides the round count
+    expect(input("hfgs-slots-gamesPerSession").disabled).toBe(true);
     expect(note().textContent).toBe(
       "Each run stops once it's up 50 βytes, or when you press Stop. There's no stop-loss, so nothing caps the losses."
     );
