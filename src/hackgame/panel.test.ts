@@ -23,6 +23,21 @@ describe("describeState", () => {
     expect(describeState(state, nextAt - 90_000)).toMatch(/\(01:30\)\.$/);
   });
 
+  it("says when a run is overdue", () => {
+    const state = {
+      ...idleState(),
+      running: true,
+      message: "Waiting for the cooldown.",
+      nextAt: 1000,
+    };
+    expect(describeState(state, 1000 + 100_000, false)).toBe(
+      "Overdue: no Hack Game tab is playing. Open or reload a Hack Game page to continue."
+    );
+    expect(describeState(state, 1000 + 100_000, true)).toBe(
+      "Overdue: waiting for the browser to wake the bot."
+    );
+  });
+
   it("leaves the time out once it's due, and when stopped", () => {
     const state = {
       ...idleState(),

@@ -9,6 +9,15 @@ import { STORAGE_KEYS } from "../core/storage";
 import { loadSettings } from "../settings";
 import { HackState, loadState } from "./store";
 
+/** False once the extension has been updated or reloaded under this page. */
+export function extensionAlive(): boolean {
+  try {
+    return Boolean(chrome.runtime?.id);
+  } catch {
+    return false;
+  }
+}
+
 const HF_COUNTDOWN = "game-countdown-smallhacks";
 const OURS = "hfgs-countdown-smallhacks";
 
@@ -90,7 +99,15 @@ export function startMenuCountdown(doc: Document = document): () => void {
       load().catch(() => undefined);
   };
   chrome.storage.onChanged.addListener(onChange);
-  const timer = setInterval(draw, 1000);
+  const timer = setInterval(() => {
+    // Extension updated or reloaded: put HF's own countdown back and stop
+    if (!extensionAlive()) {
+      clearInterval(timer);
+      renderCountdown(doc, null);
+      return;
+    }
+    draw();
+  }, 1000);
   return () => {
     clearInterval(timer);
     chrome.storage.onChanged.removeListener(onChange);

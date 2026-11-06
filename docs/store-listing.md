@@ -29,6 +29,7 @@ Hack Game
 • A random extra wait after each cooldown, so it doesn't play like clockwork
 • Pauses when power runs low and starts again by itself once the battery has recharged
 • Runs in the background with no Hack Forums tab open, or only while a Hack Game page is open: your choice
+• A status card on every Hack Forums page shows what it's doing and counts down to its next step (compact mode available)
 
 Strategy assistant (blackjack)
 • Beside the table: your cards, the dealer's upcard and what HF offers go in; the best play and each option's expected value come out
@@ -68,7 +69,7 @@ Chrome: Fun. AMO: Games & Entertainment.
 - **storage:** Saves the user's settings and their game history (totals and recent results) locally in the browser.
 - **alarms:** Wakes the extension when the Hack Game's cooldown or battery recharge is over, so auto-play can continue in the background.
 - **Host permission (hackforums.net):** Lets the background script load and submit Hack Forums' Hack Game pages (gamecp.php) with the user's session while "Run in background" is on.
-- **Host access (content scripts on hackforums.net/blackjack.php, /slots.php and /gamecp.php):** Shows the extension's panel on Hack Forums' game pages and sends the same game requests as the site's own buttons, using the user's existing Hack Forums session.
+- **Host access (content scripts on hackforums.net):** Shows the extension's panel on Hack Forums' game pages (blackjack.php, slots.php, gamecp.php) and, while Hack Game auto-play runs, a small status card on other Hack Forums pages and sends the same game requests as the site's own buttons, using the user's existing Hack Forums session.
 - **Remote code:** No. All code is in the package.
 - **Data usage:** No user data is collected or transmitted to the developer or third parties. Certify all three disclosures (not sold, not used for unrelated purposes, not used for creditworthiness).
 

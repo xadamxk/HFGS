@@ -47,6 +47,8 @@ export interface HackState {
   /** Errors in a row; three stop the bot. */
   errors: number;
   last: LastJob | null;
+  /** Power (%) when last read, for the status card's battery bar. */
+  power: number | null;
 }
 
 export interface HackTotals {
@@ -66,7 +68,27 @@ export function idleState(): HackState {
     nextAt: null,
     errors: 0,
     last: null,
+    power: null,
   };
+}
+
+/** A step this long overdue means nothing is playing the run. */
+export const STALLED_AFTER_MS = 90_000;
+
+/**
+ * Why a running run is past its step, or null when it isn't stalled: no tab
+ * is playing it (tab mode), or the background script hasn't woken yet.
+ */
+export function stalledReason(
+  state: HackState,
+  runInBackground: boolean,
+  now = Date.now()
+): string | null {
+  if (!state.running || !state.nextAt || state.phase === "playing") return null;
+  if (now - state.nextAt < STALLED_AFTER_MS) return null;
+  return runInBackground
+    ? "Overdue: waiting for the browser to wake the bot."
+    : "Overdue: no Hack Game tab is playing. Open or reload a Hack Game page to continue.";
 }
 
 export function emptyTotals(): HackTotals {
@@ -74,11 +96,33 @@ export function emptyTotals(): HackTotals {
 }
 
 const TOTALS_KEY = "hackgame:totals";
+const CARD_KEY = "hackgame:card";
+
+/** The status card's own state, shared by every HF tab. */
+export interface CardPrefs {
+  /** Shrunk to a pill (the default, until you expand it). */
+  collapsed: boolean;
+  /** The run (its startedAt) whose stopped card was dismissed. */
+  dismissedRun: number | null;
+}
+
+export async function loadCardPrefs(): Promise<CardPrefs> {
+  return {
+    collapsed: true,
+    dismissedRun: null,
+    ...(await getItem<Partial<CardPrefs>>(CARD_KEY)),
+  };
+}
+
+export async function saveCardPrefs(patch: Partial<CardPrefs>): Promise<void> {
+  await setItem(CARD_KEY, { ...(await loadCardPrefs()), ...patch });
+}
 export const HACKGAME_KEYS = [
   STORAGE_KEYS.hackgameJobs,
   STORAGE_KEYS.hackgameChoice,
   STORAGE_KEYS.hackgameState,
   TOTALS_KEY,
+  CARD_KEY,
   STORAGE_KEYS.history(HACKGAME_ID),
 ];
 

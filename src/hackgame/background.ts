@@ -44,6 +44,23 @@ export async function tick(): Promise<void> {
   }
 }
 
+/**
+ * Keep the wake-up on the stored next step, whoever changed it, so the alarm
+ * can never be left on an older time. Skipped while a step runs (it books its
+ * own alarm when done) and outside background mode.
+ */
+function followNextStep(nextAt: number): void {
+  if (busy) return;
+  inBackgroundMode()
+    .then((background) => {
+      if (background && !busy)
+        chrome.alarms.create(HACKGAME_ALARM, {
+          when: Math.max(nextAt, Date.now() + 1000),
+        });
+    })
+    .catch(() => undefined);
+}
+
 /** The toolbar button's tooltip says what auto-play is doing. */
 function showStatus(state: HackState): void {
   const title = state.running
@@ -54,6 +71,27 @@ function showStatus(state: HackState): void {
       }`
     : DEFAULT_TITLE;
   chrome.action?.setTitle?.({ title })?.catch?.(() => undefined);
+}
+
+/**
+ * In tab mode, the game tabs' scripts stop working when the extension is
+ * updated or reloaded, so a run would stall until a tab is reloaded. Reload
+ * the open Hack Game tabs so one of them carries on.
+ */
+export async function resumeTabMode(): Promise<number> {
+  const [state, settings] = await Promise.all([loadState(), loadSettings()]);
+  if (!state.running || settings.hackgame.runInBackground) return 0;
+  const tabs = await chrome.tabs.query({
+    url: "https://hackforums.net/gamecp.php*",
+  });
+  await Promise.all(
+    tabs.map((tab) =>
+      tab.id === undefined
+        ? undefined
+        : chrome.tabs.reload(tab.id).catch(() => undefined)
+    )
+  );
+  return tabs.length;
 }
 
 export function registerHackGame(): void {
@@ -70,19 +108,24 @@ export function registerHackGame(): void {
       const now = stateChange.newValue as HackState | undefined;
       if (now) showStatus(now);
       if (now?.running && !was?.running) tick();
+      else if (now?.running && now.nextAt && now.nextAt !== was?.nextAt)
+        followNextStep(now.nextAt);
       if (!now?.running) chrome.alarms.clear(HACKGAME_ALARM);
     }
     const settingsChange = changes[STORAGE_KEYS.settings];
     if (settingsChange) {
-      const before = settingsChange.oldValue?.hackgame?.runInBackground;
-      const after = settingsChange.newValue?.hackgame?.runInBackground;
+      // Missing means the default (on)
+      const before = settingsChange.oldValue?.hackgame?.runInBackground ?? true;
+      const after = settingsChange.newValue?.hackgame?.runInBackground ?? true;
       if (before !== after) tick();
     }
   });
 
-  // An extension update or reload drops pending alarms: pick the run back up.
+  // An extension update or reload drops pending alarms and cuts off the
+  // scripts in open tabs: pick the run back up either way.
   chrome.runtime.onInstalled.addListener(() => {
     tick();
+    resumeTabMode().catch(() => undefined);
   });
 
   // After a browser restart, wait for Start rather than carrying on.

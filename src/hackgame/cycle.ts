@@ -98,12 +98,14 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
   if (!state.running) return { nextInMs: null };
   const settings = (await loadSettings()).hackgame;
 
+  let power: number | null | undefined;
   const save = async (
     patch: Partial<HackState>,
     nextInMs: number | null
   ): Promise<CycleOutcome> => {
     state = {
       ...(await loadState()),
+      ...(power === undefined ? {} : { power }),
       ...patch,
       nextAt: nextInMs === null ? null : io.now() + nextInMs,
     };
@@ -155,7 +157,7 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
     await updateJobs(jobs, io.now());
 
     // Power: pause below the threshold, and once paused, wait for resumeAt
-    const power = powerPercent(page);
+    power = powerPercent(page);
     const recharging = state.phase === "recharging";
     if (
       power !== null &&

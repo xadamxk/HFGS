@@ -12,7 +12,7 @@ describe("game registry", () => {
       (game) => `https://hackforums.net${game.path}*`
     ).sort();
     const gameScripts = manifest.content_scripts.filter(
-      (s) => s.js[0] !== "hackgame.js"
+      (s) => !["hackgame.js", "statuscard.js"].includes(s.js[0])
     );
     expect(gameScripts.map((s) => s.js[0]).sort()).toEqual([
       "content.js",

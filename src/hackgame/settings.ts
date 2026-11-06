@@ -7,6 +7,8 @@ import { SettingDefinition, STOP_GROUP } from "../settings/definitions";
 
 export interface HackGameSettings {
   runInBackground: boolean;
+  statusCard: boolean;
+  compactCard: boolean;
   minRate: number;
   waitMin: number;
   waitMax: number;
@@ -24,6 +26,25 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     description:
       "Keep playing with no HF tab open, as long as the browser is running and you're signed in to HF. Turn it off to play only while a Hack Game page is open in a tab.",
     default: true,
+  },
+  {
+    type: "checkbox",
+    id: "statusCard",
+    group: "Status card",
+    label: "Status card on HF pages",
+    description:
+      "While auto-play runs, show a small card in the corner of every other Hack Forums page with what it's doing and the time to its next step.",
+    default: true,
+  },
+  {
+    type: "checkbox",
+    id: "compactCard",
+    group: "Status card",
+    label: "Compact card",
+    description:
+      "A narrower status card with tighter spacing and a smaller countdown.",
+    default: false,
+    enabledBy: "statusCard",
   },
   {
     type: "number",

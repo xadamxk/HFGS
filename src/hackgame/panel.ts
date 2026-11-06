@@ -23,6 +23,7 @@ import {
   HackTotals,
   loadState,
   loadTotals,
+  stalledReason,
   startRun,
   stopRun,
 } from "./store";
@@ -44,9 +45,15 @@ const pct = (part: number, whole: number) =>
   whole ? `${Math.round((part / whole) * 100)}%` : "–";
 
 /** The status line for a state. */
-export function describeState(state: HackState, now = Date.now()): string {
+export function describeState(
+  state: HackState,
+  now = Date.now(),
+  runInBackground = true
+): string {
   if (!state.running)
     return state.message || "Not running. Tick some jobs and press Start.";
+  const stalled = stalledReason(state, runInBackground, now);
+  if (stalled) return stalled;
   const next =
     state.nextAt && state.nextAt > now + 1000
       ? ` Next step at ${time(state.nextAt)} (${formatCountdown((state.nextAt - now) / 1000)}).`
@@ -318,7 +325,11 @@ export class HackGamePanel {
     const state = this.state;
     if (!state) return;
     this.button.textContent = state.running ? "Stop" : "Start";
-    this.status.textContent = describeState(state);
+    this.status.textContent = describeState(
+      state,
+      Date.now(),
+      this.settings?.hackgame.runInBackground ?? true
+    );
     this.status.classList.toggle(
       "hfgs-error",
       !state.running &&

@@ -7,6 +7,7 @@ const baseConfig: Configuration = {
     background: "./src/background.ts",
     content: "./src/content.ts",
     hackgame: "./src/hackgame/content.ts",
+    statuscard: "./src/statuscard.ts",
     "page-bridge": "./src/page-bridge.ts",
     options: "./src/options/index.ts",
   },

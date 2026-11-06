@@ -39,6 +39,18 @@
       "js": [
         "hackgame.js"
       ]
+    },
+    {
+      "run_at": "document_idle",
+      "matches": [
+        "https://hackforums.net/*"
+      ],
+      "exclude_matches": [
+        "https://hackforums.net/gamecp.php*"
+      ],
+      "js": [
+        "statuscard.js"
+      ]
     }
   ],
   "action": {

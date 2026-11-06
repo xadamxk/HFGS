@@ -35,8 +35,8 @@ function waitOrWake(ms: number): Promise<void> {
       if (
         (state && state.newValue?.running !== state.oldValue?.running) ||
         (settings &&
-          settings.newValue?.hackgame?.runInBackground !==
-            settings.oldValue?.hackgame?.runInBackground)
+          (settings.newValue?.hackgame?.runInBackground ?? true) !==
+            (settings.oldValue?.hackgame?.runInBackground ?? true))
       )
         done();
     };

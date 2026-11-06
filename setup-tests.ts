@@ -68,6 +68,7 @@ const local = {
     },
   },
   runtime: {
+    id: "test-id",
     getURL: jest.fn((path: string) => `chrome-extension://test-id/${path}`),
   },
 };
