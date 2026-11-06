@@ -1,6 +1,7 @@
 /**
- * The blackjack panel's Martingale section: the set in progress and how past
- * sets ended. Shown only while martingale betting is on.
+ * The blackjack panel's Martingale section: the set in progress and how the
+ * sets of the latest bot run ended. It starts over with each run. Shown only
+ * while martingale betting is on.
  */
 
 import { el } from "../../core/Dom";
@@ -11,13 +12,23 @@ import { HistoryView, HistoryViewContext } from "../engine";
 import { BLACKJACK_MAX_BET, BlackjackSettings } from "./definition";
 import { nextBet } from "./engine";
 import {
-  martingaleSets,
+  latestRun,
+  MartingaleRun,
   MartingaleSet,
   RESULT_LABELS,
   summarizeSets,
 } from "./martingale";
 
-const SHOWN = 10;
+const SHOWN = 20;
+
+const time = (at: number) =>
+  new Date(at).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+const plural = (n: number, word: string, many = word + "s") =>
+  `${n} ${n === 1 ? word : many}`;
 
 export const MARTINGALE_CSS = `
 .hfgs-mg { display: flex; flex-direction: column; gap: 6px; }
@@ -56,16 +67,19 @@ export class MartingaleView implements HistoryView {
 
   render(entries: HistoryEntry[], context: HistoryViewContext): void {
     const settings = context.gameSettings as unknown as BlackjackSettings;
-    const sets = martingaleSets(entries, context.sessionStartedAt);
+    const running = context.sessionStartedAt !== null;
+    const run = latestRun(entries, context.sessionStartedAt);
+    const sets = run?.sets ?? [];
     const open = sets.find((s) => s.result === "open") ?? null;
     this.element.replaceChildren(
-      this.current(open, settings, context.sessionStartedAt !== null),
-      this.summary(sets),
+      this.current(open, settings, running),
+      this.summary(run, running),
       sets.length ? this.table(sets.slice(0, SHOWN)) : "",
+      this.whyAbandoned(sets[0]),
       el(
         "div",
         { class: "hfgs-mg-note" },
-        "A set runs from your base bet to the win that ends the progression (pushes keep it going), across the latest 500 results. When the bot stops before that win, the set is abandoned: the next start begins a new set at your base bet. Hands you play yourself aren't part of a set."
+        "Results start over each time you start the bot. A set runs from your base bet to the win that ends the progression (pushes keep it going). Hands you play yourself aren't part of a set."
       )
     );
   }
@@ -102,11 +116,32 @@ export class MartingaleView implements HistoryView {
     ]);
   }
 
-  private summary(sets: MartingaleSet[]): HTMLElement {
-    if (!sets.length)
-      return el("div", { class: "hfgs-mg-note" }, "No martingale sets yet.");
-    const s = summarizeSets(sets);
+  /** The run ended on a set that hadn't won yet: say why it's abandoned. */
+  private whyAbandoned(last: MartingaleSet | undefined): HTMLElement | string {
+    if (last?.result !== "abandoned") return "";
+    return el(
+      "div",
+      { class: "hfgs-mg-note" },
+      `The last set is abandoned because the run stopped (you pressed Stop, a stop-loss or take-profit was hit, or an error) after ${plural(last.hands, "hand")} of it, before the win that ends a set. It finished ${formatAmount(last.net, true)} βytes. The next run starts a new set at your base bet.`
+    );
+  }
+
+  private summary(run: MartingaleRun | null, running: boolean): HTMLElement {
+    if (!run)
+      return el(
+        "div",
+        { class: "hfgs-mg-note" },
+        running
+          ? "No martingale sets in this run yet."
+          : "No martingale runs yet."
+      );
+    const s = summarizeSets(run.sets);
     return el("div", null, [
+      el(
+        "strong",
+        null,
+        `${running ? "This run" : "Last run"} (started ${time(run.startedAt)}, ${plural(run.hands, "hand")}): `
+      ),
       `${s.sets} set${s.sets === 1 ? "" : "s"}: `,
       el("strong", null, `${s.recovered} recovered`),
       ` (${pct(s.recovered, s.finished)} of finished)`,
@@ -136,15 +171,7 @@ export class MartingaleView implements HistoryView {
         null,
         sets.map((set) =>
           el("tr", null, [
-            el(
-              "td",
-              null,
-              new Date(set.startedAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              })
-            ),
+            el("td", null, time(set.startedAt)),
             el("td", null, String(set.hands)),
             el("td", null, [
               formatAmount(set.peakBet),

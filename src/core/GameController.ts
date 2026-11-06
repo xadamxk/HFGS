@@ -393,7 +393,15 @@ export class GameController {
         await this.record(entry);
       },
       onStop: (reason) => {
-        this.panel.setStatus(describeStop(reason), reason.kind === "error");
+        const text =
+          reason.kind === "rounds" && bot.describeRounds
+            ? bot.describeRounds(
+                reason.rounds,
+                reason.played,
+                this.gameSettings
+              )
+            : describeStop(reason);
+        this.panel.setStatus(text, reason.kind === "error");
         if (reason.kind === "error")
           Logger.warn(`${game.name} bot ${describeStop(reason)}`);
       },

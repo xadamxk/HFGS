@@ -1,12 +1,12 @@
 import { HfError } from "./HfClient";
 import { RoundResult } from "./history";
-import { GameEngine, Runner, RunLimits } from "./Runner";
+import { GameEngine, PlayedRound, Runner, RunLimits } from "./Runner";
 
 const NO_LIMITS: RunLimits = { maxRounds: null, stopLoss: 0, takeProfit: 0 };
 
 /** An engine that plays the given results in order, then repeats the last. */
 function engine(
-  results: (RoundResult | Error)[]
+  results: (PlayedRound | Error)[]
 ): GameEngine & { played: number } {
   const fake = {
     played: 0,
@@ -43,7 +43,7 @@ describe("Runner", () => {
       onRound,
     });
     const reason = await runner.start({ ...NO_LIMITS, maxRounds: 4 });
-    expect(reason).toEqual({ kind: "rounds", rounds: 4 });
+    expect(reason).toEqual({ kind: "rounds", rounds: 4, played: 4 });
     expect(onRound).toHaveBeenCalledTimes(4);
     expect(runner.session).toMatchObject({
       rounds: 4,
@@ -55,6 +55,19 @@ describe("Runner", () => {
       net: 4,
       biggestWin: 4,
     });
+  });
+
+  it("counts only finished rounds toward the limit, and keeps the flag out of the history", async () => {
+    const onRound = jest.fn();
+    const goesOn = (r: RoundResult): PlayedRound => ({ ...r, continues: true });
+    const runner = new Runner(
+      engine([goesOn(loss()), goesOn(push(4)), win(4), win(), goesOn(loss())]),
+      { onRound }
+    );
+    const reason = await runner.start({ ...NO_LIMITS, maxRounds: 2 });
+    expect(reason).toEqual({ kind: "rounds", rounds: 2, played: 4 });
+    expect(runner.session.rounds).toBe(4);
+    expect(onRound.mock.calls[0][0]).not.toHaveProperty("continues");
   });
 
   it("stops at the stop-loss", async () => {

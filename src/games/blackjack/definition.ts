@@ -45,8 +45,9 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
     {
       type: "number",
       id: "gamesPerSession",
-      label: "Hands per session",
-      description: "How many hands to play each time you start the bot.",
+      label: "Rounds per session",
+      description:
+        "How many rounds to play each time you start the bot. A round is one hand, or with martingale betting on, one whole set: from your bet up to the win that ends it.",
       default: 10,
       min: 1,
       max: 10000,
@@ -57,7 +58,7 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       id: "runUntilStopped",
       label: "Run until stopped",
       description:
-        "Ignore hands per session and keep playing until you stop the bot or a stop-loss or take-profit limit is hit.",
+        "Ignore rounds per session and keep playing until you stop the bot or a stop-loss or take-profit limit is hit.",
       default: false,
     },
     {
@@ -65,7 +66,7 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       id: "martingale",
       label: "Martingale betting",
       description:
-        "Multiply the bet after each loss and go back to your bet after a win. A losing streak grows the bet fast: use a stop-loss.",
+        "Multiply the bet after each loss and go back to your bet after a win. Each set (up to that win) counts as one round, so a losing streak can run past your rounds per session and grows the bet fast: use a stop-loss.",
       default: false,
     },
     {

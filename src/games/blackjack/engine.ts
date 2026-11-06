@@ -120,6 +120,8 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
   // first hand and after each win (see martingale.ts).
   let setId: string | null = null;
   let step = 0;
+  // One engine per bot run, so this marks which run each set belongs to.
+  let runId: string | null = null;
 
   const post = (action: string, form: Record<string, string | number>) =>
     context.client.post<BjResponse>(ACTION_URL + action, form);
@@ -178,7 +180,9 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
         } else {
           step++;
         }
+        runId ??= `${Date.now()}-${++setCounter}`;
         const tag: MartingaleTag = {
+          run: runId,
           set: setId,
           step,
           bet: parseFloat(state.bet) || 0,
@@ -190,7 +194,12 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
       }
       previousBet = parseFloat(state.bet) || null;
       previousNet = result.returned - result.wagered;
-      return result;
+      // With martingale a round is a whole set: a loss or push keeps it going,
+      // so it doesn't count toward the session's rounds.
+      const continues = Boolean(
+        settings.martingale && dealt && previousNet <= 0
+      );
+      return { ...result, continues };
     },
   };
 }
@@ -232,13 +241,20 @@ export const blackjackBot: GameBot = {
   createEngine: createBlackjackEngine,
   summarize: (values) => {
     const s = values as unknown as BlackjackSettings;
+    const unit = s.martingale ? "set" : "hand";
     const count = s.runUntilStopped
       ? "until stopped"
-      : `${s.gamesPerSession} hand${s.gamesPerSession === 1 ? "" : "s"}`;
+      : `${s.gamesPerSession} ${unit}${s.gamesPerSession === 1 ? "" : "s"}`;
     const martingale = s.martingale
-      ? `, martingale ×${s.martingaleMultiplier} up to ${s.maxBet}`
+      ? `, martingale ×${s.martingaleMultiplier} up to ${s.maxBet}. Each set keeps going until a win`
       : "";
     return `Play ${count} at ${s.baseBet} βytes${martingale}?`;
+  },
+  describeRounds: (rounds, played, values) => {
+    const hands = `${played} hand${played === 1 ? "" : "s"}`;
+    if (values.martingale !== true && rounds === played)
+      return `Finished ${hands}.`;
+    return `Finished ${rounds} set${rounds === 1 ? "" : "s"} (${hands}).`;
   },
   createHistoryView: () => new MartingaleView(),
   createAssistant: (page) =>

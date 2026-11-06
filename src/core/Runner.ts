@@ -17,13 +17,26 @@ import {
   Totals,
 } from "./history";
 
+/** What playRound reports: the result to record, and whether the round goes on. */
+export interface PlayedRound extends RoundResult {
+  /**
+   * This play is part of a longer round that isn't over yet (a martingale set
+   * still waiting for its win), so it doesn't count toward the round limit.
+   * Not stored in the history.
+   */
+  continues?: boolean;
+}
+
 export interface GameEngine {
   /** Play one full round (a hand, a spin) and report what happened. */
-  playRound(signal: { stopRequested: boolean }): Promise<RoundResult>;
+  playRound(signal: { stopRequested: boolean }): Promise<PlayedRound>;
 }
 
 export interface RunLimits {
-  /** Stop after this many rounds; null means no round limit. */
+  /**
+   * Stop after this many finished rounds; null means no round limit. Plays
+   * that continue a round (`PlayedRound.continues`) don't count.
+   */
   maxRounds: number | null;
   /** Stop once the session has lost at least this much; 0 turns it off. */
   stopLoss: number;
@@ -34,7 +47,8 @@ export interface RunLimits {
 export type RunnerState = "idle" | "running" | "stopping";
 
 export type StopReason =
-  | { kind: "rounds"; rounds: number }
+  /** `played`: every play, including those that continued a round. */
+  | { kind: "rounds"; rounds: number; played: number }
   | { kind: "stopLoss"; net: number }
   | { kind: "takeProfit"; net: number }
   | { kind: "user" }
@@ -65,6 +79,8 @@ export class Runner {
   private state: RunnerState = "idle";
   private signal = { stopRequested: false };
   session: Totals = emptyTotals();
+  /** Rounds finished this session (`session.rounds` counts every play). */
+  private completed = 0;
 
   constructor(
     private readonly engine: GameEngine,
@@ -79,6 +95,7 @@ export class Runner {
   async start(limits: RunLimits): Promise<StopReason> {
     if (this.state !== "idle") throw new Error("The bot is already running");
     this.session = emptyTotals();
+    this.completed = 0;
     this.signal = { stopRequested: false };
     this.setState("running");
 
@@ -109,21 +126,27 @@ export class Runner {
       const early = this.checkLimits(limits);
       if (early) return early;
 
-      const entry = toEntry(await this.engine.playRound(this.signal));
+      const { continues, ...result } = await this.engine.playRound(this.signal);
+      if (!continues) this.completed++;
+      const entry = toEntry(result);
       this.session = addToTotals(this.session, entry);
       await this.events.onRound?.(entry, this.session);
     }
   }
 
   private checkLimits(limits: RunLimits): StopReason | null {
-    const { net, rounds } = this.session;
+    const { net } = this.session;
     if (this.signal.stopRequested) return { kind: "user" };
     if (limits.stopLoss > 0 && net <= -limits.stopLoss)
       return { kind: "stopLoss", net };
     if (limits.takeProfit > 0 && net >= limits.takeProfit)
       return { kind: "takeProfit", net };
-    if (limits.maxRounds !== null && rounds >= limits.maxRounds)
-      return { kind: "rounds", rounds };
+    if (limits.maxRounds !== null && this.completed >= limits.maxRounds)
+      return {
+        kind: "rounds",
+        rounds: this.completed,
+        played: this.session.rounds,
+      };
     return null;
   }
 

@@ -9,6 +9,11 @@ import { HistoryEntry } from "../../core/history";
 
 /** Stored on each martingale hand's details. */
 export interface MartingaleTag {
+  /**
+   * Run id: one per press of Start bot. Hands tagged before runs were
+   * recorded don't have one.
+   */
+  run?: string;
   /** Set id: when the set's first hand was played. */
   set: string;
   /** 1 for the set's first hand, then 2, 3… */
@@ -111,6 +116,38 @@ export function martingaleSets(
           : "abandoned";
   }
   return sets.sort((a, b) => b.startedAt - a.startedAt);
+}
+
+export interface MartingaleRun {
+  id: string;
+  startedAt: number;
+  endedAt: number;
+  hands: number;
+  /** Newest first. */
+  sets: MartingaleSet[];
+}
+
+/**
+ * The latest bot run's sets, so the results start over with each run. While
+ * a run has started (`sessionStartedAt`) but not played a martingale hand
+ * yet, there's no run to show.
+ */
+export function latestRun(
+  entries: HistoryEntry[],
+  sessionStartedAt: number | null = null
+): MartingaleRun | null {
+  const newest = entries.find((entry) => tagOf(entry)?.run);
+  if (!newest) return null;
+  if (sessionStartedAt !== null && newest.at < sessionStartedAt) return null;
+  const id = tagOf(newest)!.run!;
+  const hands = entries.filter((entry) => tagOf(entry)?.run === id);
+  return {
+    id,
+    startedAt: hands[hands.length - 1].at,
+    endedAt: newest.at,
+    hands: hands.length,
+    sets: martingaleSets(hands, sessionStartedAt),
+  };
 }
 
 export interface SetSummary {

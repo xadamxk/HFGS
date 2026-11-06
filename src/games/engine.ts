@@ -75,6 +75,15 @@ export interface GameBot {
   createEngine: EngineFactory;
   summarize: RunSummary;
   /**
+   * The status line when the round limit ends a session, e.g. "Finished 10
+   * sets (23 hands)." Defaults to "Finished 10 rounds."
+   */
+  describeRounds?: (
+    rounds: number,
+    played: number,
+    gameSettings: SettingValues
+  ) => string;
+  /**
    * A finished round from a request HF's own page sent (the user playing by
    * hand), or null if that request didn't finish a round.
    */

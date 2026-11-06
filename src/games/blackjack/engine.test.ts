@@ -494,17 +494,24 @@ describe("martingale set tags", () => {
       { settings: { martingale: true, baseBet: 2, maxBet: 100 } }
     );
     const tags = [];
+    const continues = [];
     for (let i = 0; i < 4; i++) {
-      tags.push(
-        (await engine.playRound({ stopRequested: false })).details!.martingale
-      );
+      const played = await engine.playRound({ stopRequested: false });
+      tags.push(played.details!.martingale);
+      continues.push(played.continues);
     }
+    // The loss and the push keep the set going; the win ends it
+    expect(continues).toEqual([true, true, false, true]);
     expect(tags.map((t) => (t as { step: number }).step)).toEqual([1, 2, 3, 1]);
     expect(tags.map((t) => (t as { bet: number }).bet)).toEqual([2, 4, 4, 2]);
     const sets = tags.map((t) => (t as { set: string }).set);
     expect(sets[0]).toBe(sets[2]);
     expect(sets[3]).not.toBe(sets[0]);
     expect(tags[0]).toMatchObject({ cap: 100 });
+    // One run for the whole session
+    const runs = new Set(tags.map((t) => (t as { run: string }).run));
+    expect(runs.size).toBe(1);
+    expect([...runs][0]).toEqual(expect.any(String));
   });
 
   it("doesn't tag hands when martingale is off", async () => {
@@ -513,6 +520,7 @@ describe("martingale set tags", () => {
     ]);
     const result = await engine.playRound({ stopRequested: false });
     expect(result.details!.martingale).toBeUndefined();
+    expect(result.continues).toBe(false);
   });
 });
 
@@ -588,7 +596,28 @@ describe("blackjack bot", () => {
           maxBet: 50,
         })
       )
-    ).toBe("Play until stopped at 2 βytes, martingale ×2.5 up to 50?");
+    ).toBe(
+      "Play until stopped at 2 βytes, martingale ×2.5 up to 50. Each set keeps going until a win?"
+    );
+    expect(
+      blackjackBot.summarize(values({ gamesPerSession: 1, martingale: true }))
+    ).toBe(
+      "Play 1 set at 2 βytes, martingale ×2 up to 100. Each set keeps going until a win?"
+    );
+  });
+
+  it("says how many sets and hands a martingale session played", () => {
+    const values = (s: Partial<BlackjackSettings>) =>
+      settings(s) as unknown as Record<string, number | boolean>;
+    expect(blackjackBot.describeRounds!(10, 10, values({}))).toBe(
+      "Finished 10 hands."
+    );
+    expect(
+      blackjackBot.describeRounds!(10, 23, values({ martingale: true }))
+    ).toBe("Finished 10 sets (23 hands).");
+    expect(
+      blackjackBot.describeRounds!(1, 1, values({ martingale: true }))
+    ).toBe("Finished 1 set (1 hand).");
   });
 
   it("formats HF cards", () => {

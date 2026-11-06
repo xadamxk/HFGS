@@ -1,18 +1,24 @@
 import { HistoryEntry, toEntry } from "../../core/history";
 import { defaultSettings } from "../../settings";
-import { martingaleSets, summarizeSets } from "./martingale";
+import { latestRun, martingaleSets, summarizeSets } from "./martingale";
 import { MartingaleView } from "./martingaleView";
 
 let clock = 1000;
 /** A bot hand in set `set` at `step` (bet doubling from 2), newest-first lists built below. */
-function hand(set: string, step: number, net: number, cap = 100): HistoryEntry {
+function hand(
+  set: string,
+  step: number,
+  net: number,
+  cap = 100,
+  run = "run1"
+): HistoryEntry {
   const bet = Math.min(2 * 2 ** (step - 1), cap);
   return toEntry(
     {
       outcome: net > 0 ? "WIN" : net < 0 ? "LOSE" : "TIE",
       wagered: bet,
       returned: bet + net,
-      details: { martingale: { set, step, bet, cap } },
+      details: { martingale: { run, set, step, bet, cap } },
     },
     clock++
   );
@@ -70,6 +76,41 @@ describe("martingaleSets", () => {
   });
 });
 
+describe("latestRun", () => {
+  it("keeps only the newest run's sets", () => {
+    const entries = newestFirst(
+      hand("old", 1, -2, 100, "r1"),
+      hand("old", 2, 4, 100, "r1"),
+      hand("x", 1, 2, 100, "r2"),
+      manual(),
+      hand("y", 1, -2, 100, "r2")
+    );
+    const run = latestRun(entries)!;
+    expect(run.id).toBe("r2");
+    expect(run.hands).toBe(2);
+    expect(run.sets.map((s) => [s.id, s.result])).toEqual([
+      ["y", "abandoned"],
+      ["x", "recovered"],
+    ]);
+    expect(run.startedAt).toBe(entries[2].at);
+  });
+
+  it("has nothing to show before a run's first hand, or for untagged runs", () => {
+    const entries = newestFirst(hand("a", 1, 2, 100, "r1"));
+    expect(latestRun(entries, clock + 10)).toBeNull();
+    const legacy = toEntry(
+      {
+        outcome: "WIN",
+        wagered: 2,
+        returned: 4,
+        details: { martingale: { set: "l", step: 1, bet: 2, cap: 100 } },
+      },
+      clock++
+    );
+    expect(latestRun([legacy])).toBeNull();
+  });
+});
+
 describe("MartingaleView", () => {
   const settings = () => ({
     ...defaultSettings().games.blackjack,
@@ -94,10 +135,15 @@ describe("MartingaleView", () => {
     expect(text).toContain("In progress");
   });
 
-  it("summarizes past sets and says how the next set starts", () => {
+  it("summarizes the last run, explains an abandoned set, and leaves older runs out", () => {
     const view = new MartingaleView();
     view.render(
-      newestFirst(hand("f", 1, -2), hand("f", 2, 4), hand("g", 1, -2)),
+      newestFirst(
+        hand("old", 1, 2, 100, "r0"),
+        hand("f", 1, -2),
+        hand("f", 2, 4),
+        hand("g", 1, -2)
+      ),
       {
         sessionStartedAt: null,
         gameSettings: settings(),
@@ -105,8 +151,12 @@ describe("MartingaleView", () => {
     );
     const text = view.element.textContent!;
     expect(text).toContain("Start the bot to begin a set at 2 βytes.");
+    expect(text).toContain("Last run (started");
     expect(text).toContain(
-      "2 sets: 1 recovered (50% of finished), 1 abandoned"
+      "3 hands): 2 sets: 1 recovered (50% of finished), 1 abandoned"
+    );
+    expect(text).toContain(
+      "The last set is abandoned because the run stopped (you pressed Stop, a stop-loss or take-profit was hit, or an error) after 1 hand of it, before the win that ends a set. It finished -2 βytes."
     );
     expect(view.element.querySelectorAll("tbody tr")).toHaveLength(2);
     expect(text).toContain("Abandoned");
