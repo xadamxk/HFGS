@@ -19,7 +19,7 @@ export const STORAGE_KEYS = {
   hackgameState: "hackgame:state",
 } as const;
 
-export const STORAGE_SCHEMA_VERSION = 1;
+export const STORAGE_SCHEMA_VERSION = 2;
 
 type Migration = () => Promise<void>;
 
@@ -31,6 +31,25 @@ type Migration = () => Promise<void>;
 const MIGRATIONS: Record<number, Migration> = {
   0: async () => {
     // Nothing to convert: v1 is the first chrome.storage layout.
+  },
+  // v2: the bot settings shared by all games ("global") became each game's own.
+  1: async () => {
+    const settings = await getItem<Record<string, unknown>>(
+      STORAGE_KEYS.settings
+    );
+    if (!settings || typeof settings.global !== "object" || !settings.global)
+      return;
+    const global = settings.global as Record<string, unknown>;
+    const games = {
+      blackjack: {},
+      slots: {},
+      ...((settings.games as Record<string, Record<string, unknown>>) ?? {}),
+    } as Record<string, Record<string, unknown>>;
+    for (const id of Object.keys(games))
+      games[id] = { ...global, ...games[id] };
+    const rest = { ...settings };
+    delete rest.global;
+    await setItem(STORAGE_KEYS.settings, { ...rest, games });
   },
 };
 

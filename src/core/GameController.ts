@@ -6,11 +6,10 @@
  */
 
 import { GameAssistant, GameBot, HistoryView, PlayedBy } from "../games/engine";
+import { BotSettings, DISPLAY_GROUP } from "../games/botSettings";
 import { GameDefinition } from "../games/types";
 import {
-  GLOBAL_SETTINGS,
   STOP_GROUP,
-  GlobalSettings,
   HfgsSettings,
   saveSettings,
   watchSettings,
@@ -61,17 +60,19 @@ export interface GameControllerOptions {
   openSettings?: () => void;
 }
 
-/** The limits for a session from the current settings. */
-export function limitsFrom(
-  global: GlobalSettings,
-  game: SettingValues
-): RunLimits {
+/** The limits for a session from the game's settings. */
+export function limitsFrom(game: SettingValues): RunLimits {
   return {
     maxRounds:
       game.runUntilStopped === true ? null : Number(game.gamesPerSession) || 1,
-    stopLoss: global.stopLoss,
-    takeProfit: global.takeProfit,
+    stopLoss: Number(game.stopLoss) || 0,
+    takeProfit: Number(game.takeProfit) || 0,
   };
+}
+
+/** The game's bot settings, typed (each game has its own; see games/botSettings.ts). */
+function botOf(game: SettingValues): BotSettings {
+  return game as unknown as BotSettings;
 }
 
 function injectCss(id: string, css: string): void {
@@ -99,7 +100,6 @@ export class GameController {
   private setHistoryViewVisible: ((visible: boolean) => void) | null = null;
   private sessionStartedAt: number | null = null;
   private gameForm: SettingsForm | null = null;
-  private globalForm: SettingsForm | null = null;
   /** In the Stop the bot group: when a run with the current settings stops. */
   private limitsNote: HTMLElement | null = null;
   private savedNote: HTMLElement | null = null;
@@ -125,7 +125,7 @@ export class GameController {
       options.client ??
       new HfClient({
         postKey: options.page.postKey,
-        minIntervalMs: this.settings.global.actionDelayMs,
+        minIntervalMs: botOf(this.gameSettings).actionDelayMs,
       });
     this.panel = new BotPanel({
       gameName: options.game.name,
@@ -169,7 +169,7 @@ export class GameController {
   }
 
   /**
-   * The game's settings and the global ones, editable on the game page. They
+   * The game's settings, editable on the game page. They
    * save right away, like the settings page, and the bot reads them every
    * round, so changes apply from the next hand or spin.
    */
@@ -189,33 +189,11 @@ export class GameController {
         }),
       { compact: true, title: game.name }
     );
-    this.globalForm = settingsForm(
-      "hfgs-global",
-      GLOBAL_SETTINGS,
-      this.settings.global as unknown as SettingValues,
-      (change) =>
-        this.persist({
-          ...this.settings,
-          global: { ...this.settings.global, ...change } as GlobalSettings,
-        }),
-      { compact: true }
-    );
     this.limitsNote = el("div", { class: "hfgs-limits", role: "status" });
-    // The game's round settings and the global stop-loss and take-profit
-    // both decide when a run ends: show them as one group.
-    const gameStop = this.gameForm.group(STOP_GROUP);
-    const globalStop = this.globalForm.group(STOP_GROUP);
-    const grid = (box?: HTMLElement) =>
-      box?.querySelector(".hfgs-settings-grid") ?? null;
-    if (gameStop && globalStop) {
-      grid(gameStop)?.append(...Array.from(grid(globalStop)?.children ?? []));
-      globalStop.remove();
-    }
-    (gameStop ?? globalStop)?.append(this.limitsNote);
-    // What's left of the global settings (confirm, Headless Mode, sound,
-    // delay) goes beside the Start button.
-    this.globalForm.element.title = "These apply to every game.";
-    this.panel.addToControls(this.globalForm.element);
+    this.gameForm.group(STOP_GROUP)?.append(this.limitsNote);
+    // Confirm start, Headless Mode, sound and delay go beside the Start button
+    const display = this.gameForm.group(DISPLAY_GROUP);
+    if (display) this.panel.addToControls(display);
     this.updateLimitsNote();
     this.savedNote = el("span", { class: "hfgs-saved", role: "status" });
     this.panel.addSection(
@@ -233,7 +211,7 @@ export class GameController {
   private updateLimitsNote(): void {
     if (!this.limitsNote) return;
     const { text, warn } = describeLimits(
-      limitsFrom(this.settings.global, this.gameSettings),
+      limitsFrom(this.gameSettings),
       this.options.bot?.roundUnit?.(this.gameSettings)
     );
     this.limitsNote.textContent = text;
@@ -244,7 +222,7 @@ export class GameController {
   private mutedSent: boolean | null = null;
 
   private applyMuted(): void {
-    this.mutedSent = this.settings.global.muteSounds;
+    this.mutedSent = botOf(this.gameSettings).muteSounds;
     (this.options.setPageMuted ?? setPageMuted)(this.mutedSent);
   }
 
@@ -267,8 +245,9 @@ export class GameController {
   private async persist(next: HfgsSettings): Promise<void> {
     this.settings = next;
     this.renderHistoryView();
-    if (next.global.muteSounds !== this.mutedSent) this.applyMuted();
-    this.client.minIntervalMs = next.global.actionDelayMs;
+    if (botOf(this.gameSettings).muteSounds !== this.mutedSent)
+      this.applyMuted();
+    this.client.minIntervalMs = botOf(this.gameSettings).actionDelayMs;
     this.setAssistantVisible?.(this.gameSettings.showAssistant !== false);
     this.updateLimitsNote();
     try {
@@ -296,20 +275,23 @@ export class GameController {
     this.applyMuted();
     // HF's own sound button: remember the choice
     this.stopMuteButton = onMuteButton((muted) => {
-      if (muted === this.settings.global.muteSounds) return;
+      if (muted === botOf(this.gameSettings).muteSounds) return;
       this.persist({
         ...this.settings,
-        global: { ...this.settings.global, muteSounds: muted },
+        games: {
+          ...this.settings.games,
+          [this.options.game.id]: { ...this.gameSettings, muteSounds: muted },
+        },
       }).catch(() => undefined);
     });
     this.stopWatching = watchSettings((settings) => {
       this.settings = settings;
-      this.client.minIntervalMs = settings.global.actionDelayMs;
+      this.client.minIntervalMs = botOf(this.gameSettings).actionDelayMs;
       this.setAssistantVisible?.(this.gameSettings.showAssistant !== false);
       this.renderHistoryView();
-      if (settings.global.muteSounds !== this.mutedSent) this.applyMuted();
+      if (botOf(this.gameSettings).muteSounds !== this.mutedSent)
+        this.applyMuted();
       this.gameForm?.setValues(this.gameSettings);
-      this.globalForm?.setValues(settings.global as unknown as SettingValues);
       this.updateLimitsNote();
     });
     chrome.storage.onChanged.addListener(this.onStorageChanged);
@@ -379,7 +361,7 @@ export class GameController {
       );
       return;
     }
-    if (this.settings.global.confirmStart) {
+    if (botOf(this.gameSettings).confirmStart) {
       const ok = await this.panel.confirm(bot.summarize(this.gameSettings));
       if (!ok) return;
     }
@@ -388,11 +370,10 @@ export class GameController {
       client: this.client,
       page: this.options.page,
       gameSettings: () => this.gameSettings,
-      globalSettings: () => this.settings.global,
       status: (message) => this.panel.setStatus(message),
       observe: (action, response) => this.observe(action, response, "bot"),
       display: () => {
-        if (this.settings.global.headless) return null;
+        if (botOf(this.gameSettings).headless) return null;
         const show = this.options.showOnPage ?? showOnPage;
         return async (action, response, bet) => {
           if (!(await show(action, response, bet)))
@@ -413,7 +394,10 @@ export class GameController {
       },
       onRound: async (entry) => {
         // Animated rounds already left HF's page up to date.
-        if (this.settings.global.headless && typeof entry.balance === "number")
+        if (
+          botOf(this.gameSettings).headless &&
+          typeof entry.balance === "number"
+        )
           sync(entry.balance, entry.details ?? {});
         await this.record(entry);
       },
@@ -434,7 +418,7 @@ export class GameController {
     this.runner = runner;
     this.panel.setStatus("Running…");
     try {
-      await runner.start(limitsFrom(this.settings.global, this.gameSettings));
+      await runner.start(limitsFrom(this.gameSettings));
     } finally {
       this.runner = null;
     }

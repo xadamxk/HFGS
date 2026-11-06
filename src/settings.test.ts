@@ -33,10 +33,12 @@ describe("normalizeNumber", () => {
 });
 
 describe("normalizeSettings", () => {
-  it("fills every global and game setting with defaults", () => {
+  it("fills every game setting with defaults", () => {
     const settings = normalizeSettings(undefined);
     expect(settings).toEqual(defaultSettings());
-    expect(settings.global.actionDelayMs).toBe(2000);
+    expect(settings).not.toHaveProperty("global");
+    expect(settings.games.blackjack.actionDelayMs).toBe(2000);
+    expect(settings.games.slots.actionDelayMs).toBe(2000);
     expect(gameSettings<BlackjackSettings>(settings, "blackjack").baseBet).toBe(
       2
     );
@@ -55,9 +57,12 @@ describe("normalizeSettings", () => {
         retired: { anything: 1 },
       },
     });
-    expect(settings.global.confirmStart).toBe(false);
-    expect(settings.global.actionDelayMs).toBe(2000);
-    expect(settings.global.stopLoss).toBe(250);
+    // Saved before each game had its own: the old shared values carry over
+    for (const id of ["blackjack", "slots"]) {
+      expect(settings.games[id].confirmStart).toBe(false);
+      expect(settings.games[id].actionDelayMs).toBe(2000);
+      expect(settings.games[id].stopLoss).toBe(250);
+    }
     expect(settings.games.blackjack.baseBet).toBe(1000);
     expect(settings.games.blackjack.martingale).toBe(false);
     expect(settings.games.blackjack.martingaleMultiplier).toBe(2.5);
@@ -77,11 +82,13 @@ describe("storage", () => {
     const listener = jest.fn();
     const stop = watchSettings(listener);
     const settings = defaultSettings();
-    settings.global.takeProfit = 100;
+    settings.games.slots.takeProfit = 100;
     await saveSettings(settings);
     expect(listener).toHaveBeenCalledWith(
       expect.objectContaining({
-        global: expect.objectContaining({ takeProfit: 100 }),
+        games: expect.objectContaining({
+          slots: expect.objectContaining({ takeProfit: 100 }),
+        }),
       })
     );
 

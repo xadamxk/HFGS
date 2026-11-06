@@ -78,19 +78,21 @@ const button = (label: string) =>
 
 describe("limitsFrom", () => {
   it("uses the round count unless running until stopped", () => {
-    const { global } = defaultSettings();
+    const { slots } = defaultSettings().games;
     expect(
-      limitsFrom(
-        { ...global, stopLoss: 50 },
-        { gamesPerSession: 7, runUntilStopped: false }
-      )
+      limitsFrom({
+        ...slots,
+        stopLoss: 50,
+        gamesPerSession: 7,
+        runUntilStopped: false,
+      })
     ).toEqual({
       maxRounds: 7,
       stopLoss: 50,
       takeProfit: 0,
     });
     expect(
-      limitsFrom(global, { gamesPerSession: 7, runUntilStopped: true })
+      limitsFrom({ ...slots, gamesPerSession: 7, runUntilStopped: true })
         .maxRounds
     ).toBeNull();
   });
@@ -143,13 +145,13 @@ describe("GameController", () => {
 
   it("skips the question when confirmation is off, and applies settings changed mid-session", async () => {
     const settings = defaultSettings();
-    settings.global.confirmStart = false;
+    settings.games.slots.confirmStart = false;
     settings.games.slots.gamesPerSession = 2;
     const controller = setup(settings);
     await controller.init();
 
     const changed = defaultSettings();
-    changed.global.confirmStart = false;
+    changed.games.slots.confirmStart = false;
     changed.games.slots.bet = 10;
     changed.games.slots.gamesPerSession = 2;
     await saveSettings(changed);
@@ -162,7 +164,7 @@ describe("GameController", () => {
 
   it("refuses to start without a post key", async () => {
     const settings = defaultSettings();
-    settings.global.confirmStart = false;
+    settings.games.slots.confirmStart = false;
     const bot = fakeBot();
     const controller = new GameController({
       game,
@@ -240,7 +242,7 @@ describe("GameController", () => {
 
   it("in Headless Mode, syncs HF's counters after each bot round and draws nothing", async () => {
     const settings = defaultSettings();
-    settings.global.confirmStart = false;
+    settings.games.slots.confirmStart = false;
     settings.games.slots.gamesPerSession = 2;
     const show = jest.fn(async () => true);
     const sync = jest.fn();
@@ -261,8 +263,8 @@ describe("GameController", () => {
 
   it("with Headless Mode off, has HF's page draw each bot action and marks the page as busy", async () => {
     const settings = defaultSettings();
-    settings.global.confirmStart = false;
-    settings.global.headless = false;
+    settings.games.slots.confirmStart = false;
+    settings.games.slots.headless = false;
     settings.games.slots.gamesPerSession = 1;
     const busy: boolean[] = [];
     const show = jest.fn(async () => {
@@ -288,20 +290,20 @@ describe("GameController", () => {
 describe("GameController settings on the game page", () => {
   const input = (id: string) => document.getElementById(id) as HTMLInputElement;
 
-  it("saves the game's and the global settings as soon as they change", async () => {
+  it("saves the game's settings as soon as they change", async () => {
     const controller = setup();
     await controller.init();
     const bet = input("hfgs-slots-bet");
     bet.value = "7"; // not one of HF's bet steps: snaps to 5
     bet.dispatchEvent(new Event("change"));
-    const headless = input("hfgs-global-headless");
+    const headless = input("hfgs-slots-headless");
     headless.checked = false;
     headless.dispatchEvent(new Event("change"));
     await flush();
     expect(bet.value).toBe("5");
     const saved = (await chrome.storage.local.get("settings")).settings;
     expect(saved.games.slots.bet).toBe(5);
-    expect(saved.global.headless).toBe(false);
+    expect(saved.games.slots.headless).toBe(false);
     expect(text(".hfgs-saved")).toBe("Saved");
     controller.dispose();
   });
@@ -311,11 +313,11 @@ describe("GameController settings on the game page", () => {
     await controller.init();
     const changed = defaultSettings();
     changed.games.slots.runUntilStopped = true;
-    changed.global.stopLoss = 50;
+    changed.games.slots.stopLoss = 50;
     await saveSettings(changed);
     await flush();
     expect(input("hfgs-slots-runUntilStopped").checked).toBe(true);
-    expect(input("hfgs-global-stopLoss").value).toBe("50");
+    expect(input("hfgs-slots-stopLoss").value).toBe("50");
     controller.dispose();
   });
 
@@ -325,23 +327,23 @@ describe("GameController settings on the game page", () => {
     const titles = [
       ...document.querySelectorAll(".hfgs-panel .hfgs-settings-title"),
     ].map((t) => t.textContent);
-    expect(titles).toEqual(["All games", "Slots", "Stop the bot"]);
+    expect(titles).toEqual(["Display and pacing", "Slots", "Stop the bot"]);
     // The settings for every game sit beside the Start button
     expect(
-      document.querySelector('.hfgs-controls [data-group="All games"]')
+      document.querySelector('.hfgs-controls [data-group="Display and pacing"]')
     ).not.toBeNull();
     expect(
-      document.querySelector(".hfgs-controls #hfgs-global-headless")
+      document.querySelector(".hfgs-controls #hfgs-slots-headless")
     ).not.toBeNull();
     const stopGroup = document.querySelector('[data-group="Stop the bot"]')!;
-    // The game's round settings and the global limits, in one group
+    // The game's round count and its limits, in one group
     expect(
       [...stopGroup.querySelectorAll("input[id]")].map((i) => i.id)
     ).toEqual([
       "hfgs-slots-gamesPerSession",
       "hfgs-slots-runUntilStopped",
-      "hfgs-global-stopLoss",
-      "hfgs-global-takeProfit",
+      "hfgs-slots-stopLoss",
+      "hfgs-slots-takeProfit",
     ]);
     expect(
       document.querySelectorAll('[data-group="Stop the bot"]')
@@ -354,8 +356,8 @@ describe("GameController settings on the game page", () => {
 
     input("hfgs-slots-runUntilStopped").checked = true;
     input("hfgs-slots-runUntilStopped").dispatchEvent(new Event("change"));
-    input("hfgs-global-takeProfit").value = "50";
-    input("hfgs-global-takeProfit").dispatchEvent(new Event("change"));
+    input("hfgs-slots-takeProfit").value = "50";
+    input("hfgs-slots-takeProfit").dispatchEvent(new Event("change"));
     await flush();
     // Run until stopped overrides the round count
     expect(input("hfgs-slots-gamesPerSession").disabled).toBe(true);
@@ -364,8 +366,8 @@ describe("GameController settings on the game page", () => {
     );
     expect(note().classList.contains("hfgs-warn")).toBe(true);
 
-    input("hfgs-global-stopLoss").value = "200";
-    input("hfgs-global-stopLoss").dispatchEvent(new Event("change"));
+    input("hfgs-slots-stopLoss").value = "200";
+    input("hfgs-slots-stopLoss").dispatchEvent(new Event("change"));
     await flush();
     expect(note().textContent).toBe(
       "Each run stops once it's up 50 βytes or once it's down 200 βytes, whichever comes first, or when you press Stop."
@@ -376,7 +378,7 @@ describe("GameController settings on the game page", () => {
 
   it("uses a setting changed on the page for the next round of a running bot", async () => {
     const settings = defaultSettings();
-    settings.global.confirmStart = false;
+    settings.games.slots.confirmStart = false;
     settings.games.slots.gamesPerSession = 3;
     const bot = fakeBot();
     const controller = setup(settings, bot);
@@ -409,7 +411,7 @@ describe("GameController martingale section", () => {
     };
     document.body.replaceChildren();
     const settings = defaultSettings();
-    settings.global.confirmStart = false;
+    settings.games.blackjack.confirmStart = false;
     settings.games.blackjack.gamesPerSession = 1;
     const controller = new GameController({
       game: blackjack as unknown as GameDefinition,
@@ -430,7 +432,7 @@ describe("GameController martingale section", () => {
     expect(renders).toEqual([]);
 
     const changed = defaultSettings();
-    changed.global.confirmStart = false;
+    changed.games.blackjack.confirmStart = false;
     changed.games.blackjack.martingale = true;
     changed.games.blackjack.gamesPerSession = 1;
     await saveSettings(changed);
@@ -448,7 +450,7 @@ describe("GameController martingale section", () => {
 describe("GameController sounds", () => {
   it("applies the saved mute setting, follows changes, and remembers HF's sound button", async () => {
     const settings = defaultSettings();
-    settings.global.muteSounds = true;
+    settings.games.slots.muteSounds = true;
     const setPageMuted = jest.fn();
     const controller = setup(settings, fakeBot(), { setPageMuted });
     await controller.init();
@@ -463,18 +465,18 @@ describe("GameController sounds", () => {
     );
     await flush();
     expect(
-      (await chrome.storage.local.get("settings")).settings.global.muteSounds
+      (await chrome.storage.local.get("settings")).settings.games.slots.muteSounds
     ).toBe(false);
     expect(setPageMuted).toHaveBeenLastCalledWith(false);
 
     // Changed on the settings page
     const changed = defaultSettings();
-    changed.global.muteSounds = true;
+    changed.games.slots.muteSounds = true;
     await saveSettings(changed);
     await flush();
     expect(setPageMuted).toHaveBeenLastCalledWith(true);
     expect(
-      (document.getElementById("hfgs-global-muteSounds") as HTMLInputElement)
+      (document.getElementById("hfgs-slots-muteSounds") as HTMLInputElement)
         .checked
     ).toBe(true);
     controller.dispose();
@@ -506,7 +508,7 @@ describe("GameController assistant", () => {
 
   it("shows the assistant under the controls and gives it the bot's and your answers", async () => {
     const settings = defaultSettings();
-    settings.global.confirmStart = false;
+    settings.games.slots.confirmStart = false;
     settings.games.slots.gamesPerSession = 1;
     const { bot, updates } = assistantBot();
     const controller = setup(settings, bot);

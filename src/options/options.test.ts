@@ -18,13 +18,12 @@ function input(root: HTMLElement, id: string): HTMLInputElement {
 }
 
 describe("options page", () => {
-  it("has a section for the global settings and each game", async () => {
+  it("has a section for each game and the Hack Game, with no shared section", async () => {
     const root = await render();
     const sections = [...root.querySelectorAll("section[data-game]")].map(
       (section) => section.getAttribute("data-game")
     );
     expect(sections).toEqual([
-      "global",
       ...GAMES.map((game) => game.id),
       "hackgame",
     ]);
@@ -43,11 +42,11 @@ describe("options page", () => {
     const root = await render();
     const fromGamePage = await loadSettings();
     fromGamePage.games.blackjack.baseBet = 40;
-    fromGamePage.global.headless = false;
+    fromGamePage.games.blackjack.headless = false;
     await saveSettings(fromGamePage);
     await flush();
     expect(input(root, "blackjack-baseBet").value).toBe("40");
-    expect(input(root, "global-headless").checked).toBe(false);
+    expect(input(root, "blackjack-headless").checked).toBe(false);
 
     const games = input(root, "blackjack-gamesPerSession");
     games.value = "3";
@@ -58,7 +57,7 @@ describe("options page", () => {
       baseBet: 40,
       gamesPerSession: 3,
     });
-    expect(saved.global.headless).toBe(false);
+    expect(saved.games.blackjack.headless).toBe(false);
   });
 
   it("clamps and rounds number input to the setting's limits", async () => {

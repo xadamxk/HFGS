@@ -1,11 +1,11 @@
 /**
  * Settings described as data: the options page renders them, and stored values
- * are checked against them. Used for the global settings and each game's.
+ * are checked against them. Used for each game's settings and the Hack Game's.
  */
 
 /**
  * The group for every setting that decides when a run ends: each game's round
- * count and the global stop-loss and take-profit. The game page shows them as one.
+ * count, stop-loss and take-profit (the Hack Game's job limit too).
  */
 export const STOP_GROUP = "Stop the bot";
 

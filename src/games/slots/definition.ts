@@ -1,7 +1,8 @@
 import { GameDefinition } from "../types";
 import { STOP_GROUP } from "../../settings/definitions";
+import { botSettings, BotSettings } from "../botSettings";
 
-export interface SlotsSettings {
+export interface SlotsSettings extends BotSettings {
   bet: number;
   gamesPerSession: number;
   runUntilStopped: boolean;
@@ -57,5 +58,7 @@ export const slots: GameDefinition<SlotsSettings> = {
         "Ignore Spins and keep spinning until you press Stop or the stop-loss or take-profit is hit. With both at 0, only Stop (or HF refusing a spin) ends the run.",
       default: false,
     },
+    ...botSettings<SlotsSettings>().stop,
+    ...botSettings<SlotsSettings>().display,
   ],
 };

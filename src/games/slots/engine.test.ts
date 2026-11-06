@@ -58,7 +58,6 @@ function engineWith(
     client,
     page,
     gameSettings: () => settings as unknown as Record<string, number | boolean>,
-    globalSettings: () => defaultSettings().global,
     status,
     display: () => options.display ?? null,
   });

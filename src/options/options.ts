@@ -7,8 +7,6 @@ import { settingsForm } from "../settings/form";
 import { HACKGAME_SETTINGS, HackGameSettings } from "../hackgame/settings";
 import { jobsView, JobsView } from "../hackgame/jobsView";
 import {
-  GLOBAL_SETTINGS,
-  GlobalSettings,
   HfgsSettings,
   defaultSettings,
   loadSettings,
@@ -17,7 +15,8 @@ import {
 } from "../settings";
 
 /**
- * The settings page: a section for the global settings and one per game, all
+ * The settings page: a section per game (each with its own bot settings) and
+ * one for the Hack Game, all
  * generated from their definitions and saved as soon as anything changes. Open
  * game pages pick changes up right away (see watchSettings).
  */
@@ -45,17 +44,6 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
     }
   };
 
-  const globalSettingsForm = settingsForm(
-    "global",
-    GLOBAL_SETTINGS,
-    settings.global as unknown as SettingValues,
-    (change) =>
-      persist({
-        ...settings,
-        global: { ...settings.global, ...change } as GlobalSettings,
-      })
-  );
-  const globalForm = globalSettingsForm.element;
   const gameForms = new Map<string, ReturnType<typeof settingsForm>>();
   const gameForm = (game: (typeof GAMES)[number]) => {
     const form = settingsForm(
@@ -118,7 +106,6 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
   stopWatchingSettings?.();
   stopWatchingSettings = watchSettings((next) => {
     settings = next;
-    globalSettingsForm.setValues(next.global as unknown as SettingValues);
     for (const [id, form] of gameForms) form.setValues(next.games[id]);
     hackgameForm.setValues(next.hackgame as unknown as SettingValues);
   });
@@ -152,10 +139,6 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
       el("h1", null, "HF Gaming Suite"),
     ]),
     el("h2", { class: "group" }, "Settings"),
-    el("section", { "data-game": "global" }, [
-      el("h2", null, "All games"),
-      globalForm,
-    ]),
     ...gameSections,
     hackgameSection,
     reset,

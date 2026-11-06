@@ -3,7 +3,6 @@ import { HistoryEntry, RoundResult } from "../core/history";
 import { PageState } from "../core/pageBridge";
 import { GameEngine } from "../core/Runner";
 import { SettingValues } from "../settings/definitions";
-import { GlobalSettings } from "../settings";
 
 /**
  * Draws a response the bot received on HF's page with HF's own animations,
@@ -54,7 +53,6 @@ export interface EngineContext {
   page: PageState;
   /** Current settings; read them each round so changes apply mid-session. */
   gameSettings: () => SettingValues;
-  globalSettings: () => GlobalSettings;
   /** Show a short progress line in the panel (e.g. the hand being played). */
   status?: (message: string) => void;
   /**

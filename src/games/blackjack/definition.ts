@@ -1,8 +1,9 @@
 import { GameDefinition } from "../types";
+import { botSettings, BotSettings } from "../botSettings";
 import { STOP_GROUP } from "../../settings/definitions";
 import { describeBlackjack } from "./cards";
 
-export interface BlackjackSettings {
+export interface BlackjackSettings extends BotSettings {
   baseBet: number;
   gamesPerSession: number;
   runUntilStopped: boolean;
@@ -99,5 +100,7 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
         "Ignore Rounds and keep playing until you press Stop or the stop-loss or take-profit is hit. With both at 0, only Stop (or HF refusing a bet) ends the run.",
       default: false,
     },
+    ...botSettings<BlackjackSettings>().stop,
+    ...botSettings<BlackjackSettings>().display,
   ],
 };
