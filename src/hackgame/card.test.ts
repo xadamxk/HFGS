@@ -172,21 +172,12 @@ describe("status card", () => {
 
   it('says a run is overdue instead of counting "Any moment…" forever', () => {
     const late = { nextAt: NOW - 120_000 };
-    const tab = { ...defaultSettings().hackgame, runInBackground: false };
-    const card = renderCard(
-      data({ settings: tab }, { ...late, mode: "tab" }),
-      actions(),
-      NOW
-    )!;
+    const card = renderCard(data({}, late), actions(), NOW)!;
     expect(card.dataset.stalled).toBe("1");
     expect(card.querySelector(".chip")?.textContent).toBe("Overdue");
     expect(card.querySelector(".big")).toBeNull();
     expect(card.querySelector(".actions")).toBeNull();
     expect(text(card.querySelector(".reason"))).toBe(
-      "No Hack Game tab is playing. Open or reload a Hack Game page to continue."
-    );
-    const bg = renderCard(data({}, late), actions(), NOW)!;
-    expect(text(bg.querySelector(".reason"))).toBe(
       "Waiting for the browser to wake the bot."
     );
     // Only after a grace period
@@ -343,11 +334,26 @@ describe("manual status card (Run in background off)", () => {
     expect(blocked.querySelector(".label")?.textContent).toBe(
       "Not enough power (4%)."
     );
-    const busy = renderCard(manual({ busy: true }), actions(), NOW)!;
+    const busy = renderCard(
+      manual({ busy: true, busyAt: NOW - 1000 }),
+      actions(),
+      NOW
+    )!;
     expect(busy.querySelector(".chip")?.textContent).toBe("Playing");
     expect(
       (busy.querySelector("button.play") as HTMLButtonElement).disabled
     ).toBe(true);
+
+    // A press cut off by a reload or a closed tab doesn't lock the button
+    const stale = renderCard(
+      manual({ busy: true, busyAt: NOW - 120_000 }),
+      actions(),
+      NOW
+    )!;
+    expect(stale.querySelector(".chip")?.textContent).toBe("Ready");
+    expect(
+      (stale.querySelector("button.play") as HTMLButtonElement).disabled
+    ).toBe(false);
   });
 
   it("keeps a ▶ button on the collapsed pill", () => {
@@ -380,7 +386,7 @@ describe("manual status card (Run in background off)", () => {
     expect(leftover.querySelector("button.play")).not.toBeNull();
   });
 
-  it("is the status card while a run goes, even with Run in background off", () => {
+  it("offers the Hack button even if a run is marked going, since runs need Run in background", () => {
     const running = renderCard(
       manual({
         running: true,
@@ -392,7 +398,7 @@ describe("manual status card (Run in background off)", () => {
       actions(),
       NOW
     )!;
-    expect(running.dataset.manual).toBeUndefined();
-    expect(running.querySelector(".chip")?.textContent).toBe("Waiting");
+    expect(running.dataset.manual).toBe("1");
+    expect(running.querySelector("button.play")).not.toBeNull();
   });
 });

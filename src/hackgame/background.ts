@@ -73,27 +73,6 @@ function showStatus(state: HackState): void {
   chrome.action?.setTitle?.({ title })?.catch?.(() => undefined);
 }
 
-/**
- * In tab mode, the game tabs' scripts stop working when the extension is
- * updated or reloaded, so a run would stall until a tab is reloaded. Reload
- * the open Hack Game tabs so one of them carries on.
- */
-export async function resumeTabMode(): Promise<number> {
-  const [state, settings] = await Promise.all([loadState(), loadSettings()]);
-  if (!state.running || settings.hackgame.runInBackground) return 0;
-  const tabs = await chrome.tabs.query({
-    url: "https://hackforums.net/gamecp.php*",
-  });
-  await Promise.all(
-    tabs.map((tab) =>
-      tab.id === undefined
-        ? undefined
-        : chrome.tabs.reload(tab.id).catch(() => undefined)
-    )
-  );
-  return tabs.length;
-}
-
 export function registerHackGame(): void {
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === HACKGAME_ALARM) tick();
@@ -122,11 +101,9 @@ export function registerHackGame(): void {
     }
   });
 
-  // An extension update or reload drops pending alarms and cuts off the
-  // scripts in open tabs: pick the run back up either way.
+  // An extension update or reload drops pending alarms: pick the run back up.
   chrome.runtime.onInstalled.addListener(() => {
     tick();
-    resumeTabMode().catch(() => undefined);
   });
 
   // After a browser restart, wait for Start rather than carrying on.

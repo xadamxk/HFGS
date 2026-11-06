@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { loadHistory } from "../core/history";
+import { defaultSettings, saveSettings } from "../settings";
 import { HackIO } from "./cycle";
 import { rememberPickedJob } from "./jobsView";
 import { playOnce } from "./manual";
@@ -130,7 +131,10 @@ describe("playing a job by hand", () => {
 
   it("leaves a running auto-play alone", async () => {
     await pick();
-    await saveState({ ...idleState(), running: true, mode: "tab" });
+    const background = defaultSettings();
+    background.hackgame.runInBackground = true;
+    await saveSettings(background);
+    await saveState({ ...idleState(), running: true, mode: "background" });
     const hf = fakeHF({ [SMALL]: smallhacks });
     await playOnce(hf.io);
     expect(hf.posts).toEqual([]);

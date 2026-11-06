@@ -168,7 +168,9 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
   // "Run in background" changed since this run started: it doesn't carry on
   if (!runActive(state, settings.runInBackground)) {
     return stop(
-      `Stopped because Run in background was turned ${settings.runInBackground ? "on" : "off"}. Press Start to run again.`
+      settings.runInBackground
+        ? "Stopped: runs from an open tab are gone. Press Start to run in the background."
+        : "Stopped because Run in background was turned off. Use the Hack button, or turn it back on and press Start."
     );
   }
   const failed = (message: string) => {

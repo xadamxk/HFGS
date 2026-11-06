@@ -56,6 +56,8 @@ export interface HackState {
   readyAt: number | null;
   /** A job is being played by hand from a status card. */
   busy: boolean;
+  /** When that play started: a play cut off (a reload, a closed tab) expires. */
+  busyAt?: number | null;
   /** Why the last job played by hand didn't happen, or null. */
   note: string | null;
   /**
@@ -71,10 +73,15 @@ export type RunMode = "background" | "tab";
 export const modeOf = (runInBackground: boolean): RunMode =>
   runInBackground ? "background" : "tab";
 
-/** Whether a run is going in the current mode ("Run in background" on or off). */
+/**
+ * Whether a run is going. Runs only happen with "Run in background" on; a run
+ * from the old tab mode, or one left over after turning it off, doesn't count.
+ */
 export function runActive(state: HackState, runInBackground: boolean): boolean {
   return (
-    state.running && (state.mode ?? "background") === modeOf(runInBackground)
+    state.running &&
+    runInBackground &&
+    (state.mode ?? "background") === "background"
   );
 }
 
@@ -102,23 +109,30 @@ export function idleState(): HackState {
   };
 }
 
+/** A Hack press still "playing" after this long was cut off. */
+export const BUSY_EXPIRES_MS = 90_000;
+
+/** Whether a Hack press is playing a job right now. */
+export function isBusy(state: HackState, now = Date.now()): boolean {
+  return (
+    state.busy && state.busyAt != null && now - state.busyAt < BUSY_EXPIRES_MS
+  );
+}
+
 /** A step this long overdue means nothing is playing the run. */
 export const STALLED_AFTER_MS = 90_000;
 
 /**
- * Why a running run is past its step, or null when it isn't stalled: no tab
- * is playing it (tab mode), or the background script hasn't woken yet.
+ * Why a running run is past its step, or null when it isn't: the background
+ * script hasn't woken yet (the computer slept, or the browser is busy).
  */
 export function stalledReason(
   state: HackState,
-  runInBackground: boolean,
   now = Date.now()
 ): string | null {
   if (!state.running || !state.nextAt || state.phase === "playing") return null;
   if (now - state.nextAt < STALLED_AFTER_MS) return null;
-  return runInBackground
-    ? "Overdue: waiting for the browser to wake the bot."
-    : "Overdue: no Hack Game tab is playing. Open or reload a Hack Game page to continue.";
+  return "Overdue: waiting for the browser to wake the bot.";
 }
 
 export function emptyTotals(): HackTotals {

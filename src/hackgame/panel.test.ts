@@ -30,10 +30,7 @@ describe("describeState", () => {
       message: "Waiting for the cooldown.",
       nextAt: 1000,
     };
-    expect(describeState(state, 1000 + 100_000, false)).toBe(
-      "Overdue: no Hack Game tab is playing. Open or reload a Hack Game page to continue."
-    );
-    expect(describeState(state, 1000 + 100_000, true)).toBe(
+    expect(describeState(state, 1000 + 100_000)).toBe(
       "Overdue: waiting for the browser to wake the bot."
     );
   });

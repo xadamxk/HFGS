@@ -46,13 +46,14 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     group: BACKGROUND_GROUP,
     label: "Run in background",
     description:
-      "Press Start on a Hack Game page and keep playing with no HF tab open, as long as the browser is running and you're signed in to HF. The settings below set how a run plays. Off (the default): Start only plays while a Hack Game page is open, and the status card's Hack button plays one job at a time.",
+      "Play automatically: press Start on a Hack Game page and it keeps playing with no HF tab open, as long as the browser is running and you're signed in to HF. The settings below set how a run plays. Off (the default): the Hack button (on the status card or the Hack Game panel) plays your job once.",
     default: false,
   },
   {
     type: "number",
     id: "waitMin",
     group: BACKGROUND_GROUP,
+    enabledBy: "runInBackground",
     label: "Extra wait, shortest (s)",
     description:
       "After each cooldown ends, a run waits a random extra time between the shortest and longest before the next job, so it doesn't play like clockwork. The Hack button doesn't wait.",
@@ -65,6 +66,7 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     type: "number",
     id: "waitMax",
     group: BACKGROUND_GROUP,
+    enabledBy: "runInBackground",
     label: "Extra wait, longest (s)",
     description:
       "The longest random extra wait after a cooldown. If it's below the shortest, the two are swapped.",
@@ -77,6 +79,7 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     type: "number",
     id: "pauseBelow",
     group: BACKGROUND_GROUP,
+    enabledBy: "runInBackground",
     label: "Pause below power (%)",
     description:
       "When power drops below this, a run stops playing until the battery has recharged.",
@@ -89,6 +92,7 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     type: "number",
     id: "resumeAt",
     group: BACKGROUND_GROUP,
+    enabledBy: "runInBackground",
     label: "Resume at power (%)",
     description:
       "After a pause for power, a run starts playing again by itself once power is back to this. 100 waits for a full charge.",
@@ -101,6 +105,7 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     type: "number",
     id: "lockedWaitMin",
     group: BACKGROUND_GROUP,
+    enabledBy: "runInBackground",
     label: "Locked out, check again after (min)",
     description:
       "If the FBI locks you out of the game, a run waits this long before checking again.",
@@ -113,6 +118,7 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     type: "number",
     id: "stopAfterJobs",
     group: BACKGROUND_GROUP,
+    enabledBy: "runInBackground",
     label: "Stop after (jobs)",
     description:
       "Stop a run once it has played this many jobs. 0 keeps going until you press Stop.",

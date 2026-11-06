@@ -1,18 +1,15 @@
 /**
  * Content script for HF's Hack Game pages (gamecp.php). Adds the Hack Game
  * panel under the game, keeps the stored job list current from the Small Hack
- * Jobs page, and plays from this tab when "Run in background" is off (with
- * HF's menu countdown showing when the bot plays next).
+ * Jobs page, and gives the status card HF's cooldown and power.
  */
 import { Logger } from "../core/Logger";
 import { migrateStorage } from "../core/storage";
 import { BotPanel } from "../core/ui/BotPanel";
-import { startMenuCountdown } from "./countdown";
 import { HackGamePanel, HACKGAME_CSS } from "./panel";
 import { rememberPickedJob } from "./jobsView";
 import { cooldownSeconds, parseJobs, powerPercent } from "./parse";
 import { patchState, updateJobs } from "./store";
-import { startTabPlayer } from "./tab";
 
 async function main(): Promise<void> {
   const current = document.getElementById("game_content_currentpage");
@@ -44,10 +41,6 @@ async function main(): Promise<void> {
   const panel = new HackGamePanel();
   (anchor ?? current).after(panel.element);
   await panel.init();
-
-  startTabPlayer();
-  // While playing from a tab, HF's menu countdown shows the bot's next step
-  startMenuCountdown();
 }
 
 main().catch((error) =>

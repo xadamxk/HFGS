@@ -13,7 +13,10 @@ import {
 } from "../settings";
 import { SettingValues } from "../settings/definitions";
 import { settingsForm } from "../settings/form";
+import { manualStatus } from "./card";
 import { formatCountdown } from "./countdown";
+import { tabIO } from "./io";
+import { playOnceLocked } from "./manual";
 import { jobsView } from "./jobsView";
 import { HACKGAME_SETTINGS, HackGameSettings } from "./settings";
 import {
@@ -45,14 +48,10 @@ const pct = (part: number, whole: number) =>
   whole ? `${Math.round((part / whole) * 100)}%` : "–";
 
 /** The status line for a state. */
-export function describeState(
-  state: HackState,
-  now = Date.now(),
-  runInBackground = true
-): string {
+export function describeState(state: HackState, now = Date.now()): string {
   if (!state.running)
-    return state.message || "Not running. Tick some jobs and press Start.";
-  const stalled = stalledReason(state, runInBackground, now);
+    return state.message || "Not running. Press Start to play automatically.";
+  const stalled = stalledReason(state, now);
   if (stalled) return stalled;
   const next =
     state.nextAt && state.nextAt > now + 1000
@@ -252,9 +251,12 @@ export class HackGamePanel {
     this.renderStatus();
   }
 
+  /** Start or Stop a run (Run in background on), or play one job (off). */
   private async toggle(): Promise<void> {
-    if (this.state?.running) await stopRun("Stopped.");
-    else await startRun((await loadSettings()).hackgame.runInBackground);
+    const background = (await loadSettings()).hackgame.runInBackground;
+    if (!background) await playOnceLocked(tabIO());
+    else if (this.state?.running) await stopRun("Stopped.");
+    else await startRun(true);
   }
 
   private async refresh(): Promise<void> {
@@ -320,22 +322,41 @@ export class HackGamePanel {
   private renderStatus(): void {
     const state = this.state;
     if (!state) return;
-    this.button.textContent = state.running ? "Stop" : "Start";
-    this.status.textContent = describeState(
-      state,
-      Date.now(),
-      this.settings?.hackgame.runInBackground ?? false
-    );
-    this.status.classList.toggle(
-      "hfgs-error",
-      !state.running &&
-        state.phase === "stopped" &&
-        /error|signed out|Cloudflare|post key/i.test(state.message)
-    );
     const background = this.settings?.hackgame.runInBackground ?? false;
-    this.mode.textContent = background
-      ? "Runs in the background: no HF tab needs to stay open while the browser runs."
-      : "Start runs from an open tab: keep an HF game page open while it plays. Or play one job at a time with the status card's Hack button.";
+    if (background) {
+      this.button.textContent = state.running ? "Stop" : "Start";
+      this.button.disabled = false;
+      this.button.title = state.running
+        ? "Stop the run"
+        : "Play automatically in the background";
+      this.status.textContent = describeState(state);
+      this.status.classList.toggle(
+        "hfgs-error",
+        !state.running &&
+          state.phase === "stopped" &&
+          /error|signed out|Cloudflare|post key/i.test(state.message)
+      );
+      this.mode.textContent =
+        "Runs in the background: no HF tab needs to stay open while the browser runs.";
+    } else {
+      // One job at a time, like the status card's Hack button
+      const now = Date.now();
+      const status = manualStatus(state, now);
+      this.button.textContent = "Hack";
+      this.button.disabled = !status.canPlay;
+      this.button.title = "Play your job once";
+      const parts =
+        status.label === status.chip
+          ? status.label
+          : `${status.chip} · ${status.label}`;
+      this.status.textContent =
+        status.cooling && state.readyAt
+          ? `${parts} ${formatCountdown((state.readyAt - now) / 1000)}`
+          : parts;
+      this.status.classList.toggle("hfgs-error", status.tone === "s-error");
+      this.mode.textContent =
+        "Run in background is off: Hack plays your job once, here or on the status card. Turn it on in the settings below to play automatically.";
+    }
     this.last.textContent = state.last
       ? `Last job ${time(state.last.at)}: ${state.last.job}: ${state.last.success ? "Success" : "Fail"} (${state.last.rate}%)${
           state.last.success

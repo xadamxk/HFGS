@@ -1,6 +1,6 @@
 # Hack Game status card: spec
 
-Status: built (2026-11-06). Decisions: the card shows whenever a run is going, in background or tab mode (Q1); it's on by default (Q2); it has Stop and Open game (Q3). The corner setting was replaced by a **Compact card** setting (smaller, without the last job and totals); the card sits bottom right. The mock is in
+Status: built (2026-11-06). Decisions: the card shows whenever a run is going (runs only happen in background mode since tab-mode runs were removed); it's on by default (Q2); it has Stop and Open game (Q3). The corner setting was replaced by a **Compact card** setting (smaller, without the last job and totals); the card sits bottom right. The mock is in
 [mocks/hack-game-status-card.html](mocks/hack-game-status-card.html).
 
 ## Goal
@@ -36,7 +36,7 @@ page stays cheap.
 | Stopped with a reason (finished, error, Cloudflare, signed out) | Shown once with the reason, until you dismiss it or press Start again |
 | On Hack Game pages (`gamecp.php`) | Hidden: the full panel is already there |
 | In frames | Never (top page only) |
-| Running in tab mode (Run in background off) | See Q1 |
+| Run in background off | The manual card with the Hack button (see Manual mode) |
 
 ## What it shows
 

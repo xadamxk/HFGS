@@ -88,7 +88,12 @@ async function setup(
   tick = ["32"]
 ): Promise<void> {
   const settings = defaultSettings();
-  settings.hackgame = { ...settings.hackgame, ...hackgame };
+  // Runs only happen in background mode
+  settings.hackgame = {
+    ...settings.hackgame,
+    runInBackground: true,
+    ...hackgame,
+  };
   await saveSettings(settings);
   await saveChoice(
     parseJobs(smallhacks)
@@ -264,18 +269,16 @@ describe("runCycle", () => {
     });
   });
 
-  it("stops a run once Run in background no longer matches the mode it started in", async () => {
+  it("stops a run once Run in background is turned off", async () => {
     await setup();
-    const settings = defaultSettings();
-    settings.hackgame.runInBackground = true;
-    await saveSettings(settings);
+    await saveSettings(defaultSettings()); // Run in background: off
     const hf = fakeHF({ [SMALL]: smallhacks });
     expect((await runCycle(hf.io)).nextInMs).toBeNull();
     expect(hf.gets).toEqual([]);
     expect(await loadState()).toMatchObject({
       running: false,
       message:
-        "Stopped because Run in background was turned on. Press Start to run again.",
+        "Stopped because Run in background was turned off. Use the Hack button, or turn it back on and press Start.",
     });
   });
 

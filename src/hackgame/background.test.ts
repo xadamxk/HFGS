@@ -1,44 +1,5 @@
 import { defaultSettings, saveSettings } from "../settings";
-import { resumeTabMode } from "./background";
-import { idleState, saveState } from "./store";
-
-describe("resumeTabMode", () => {
-  const tabs = {
-    query: jest.fn(async () => [{ id: 7 }, { id: 9 }]),
-    reload: jest.fn(async () => undefined),
-  };
-
-  beforeEach(async () => {
-    await chrome.storage.local.clear();
-    (globalThis.chrome as unknown as { tabs: typeof tabs }).tabs = tabs;
-    tabs.query.mockClear();
-    tabs.reload.mockClear();
-  });
-
-  async function setMode(runInBackground: boolean, running: boolean) {
-    const settings = defaultSettings();
-    settings.hackgame.runInBackground = runInBackground;
-    await saveSettings(settings);
-    await saveState({ ...idleState(), running });
-  }
-
-  it("reloads the open Hack Game tabs after an update, so a tab-mode run carries on", async () => {
-    await setMode(false, true);
-    expect(await resumeTabMode()).toBe(2);
-    expect(tabs.query).toHaveBeenCalledWith({
-      url: "https://hackforums.net/gamecp.php*",
-    });
-    expect(tabs.reload.mock.calls).toEqual([[7], [9]]);
-  });
-
-  it("leaves tabs alone in background mode or when nothing is running", async () => {
-    await setMode(true, true);
-    expect(await resumeTabMode()).toBe(0);
-    await setMode(false, false);
-    expect(await resumeTabMode()).toBe(0);
-    expect(tabs.reload).not.toHaveBeenCalled();
-  });
-});
+import { idleState } from "./store";
 
 describe("background wake-up", () => {
   it("follows the stored next step when it changes, in background mode", async () => {

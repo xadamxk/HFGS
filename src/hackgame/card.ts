@@ -26,6 +26,7 @@ import {
   saveCardPrefs,
   startRun,
   runActive,
+  isBusy,
   stalledReason,
   STALLED_AFTER_MS,
   stopRun,
@@ -121,7 +122,7 @@ export function manualStatus(state: HackState, now: number): ManualStatus {
           : ""
       }`
     : "";
-  if (state.busy)
+  if (isBusy(state, now))
     return {
       chip: "Playing",
       tone: "s-playing",
@@ -209,7 +210,7 @@ export function renderCard(
       ? null
       : PHASES[state.phase];
   const tone = stopped ? (error ? "s-error" : "s-stopped") : `s-${state.phase}`;
-  const stalled = stalledReason(state, settings.runInBackground, now);
+  const stalled = stalledReason(state, now);
   const chipText = stalled ? "Overdue" : (phase?.chip ?? "Stopped");
 
   const button = (text: string, onClick: () => void, cls = "btn") => {
@@ -367,7 +368,9 @@ function renderManual(
     expand.append(
       el("span", { class: "dot" }),
       el("b", null, "HG"),
-      status.cooling && !state.busy ? time() : el("span", null, status.chip)
+      status.cooling && !isBusy(state, now)
+        ? time()
+        : el("span", null, status.chip)
     );
     return el(
       "div",
@@ -521,7 +524,9 @@ export function mountStatusCard(doc: Document = document): () => void {
       !runActive(data.state, data.settings.runInBackground)
     ) {
       await stopRun(
-        `Stopped because Run in background was turned ${data.settings.runInBackground ? "on" : "off"}. Press Start to run again.`
+        data.settings.runInBackground
+          ? "Stopped: runs from an open tab are gone. Press Start to run in the background."
+          : "Stopped because Run in background was turned off. Use the Hack button, or turn it back on and press Start."
       );
       return; // the stored change draws the card again
     }

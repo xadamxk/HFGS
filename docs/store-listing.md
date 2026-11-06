@@ -28,7 +28,7 @@ Hack Game
 • Plays the Small Hack Job you pick in HF's list (remembered and kept selected) whenever the cooldown is over
 • A random extra wait after each cooldown, so it doesn't play like clockwork
 • Pauses when power runs low and starts again by itself once the battery has recharged
-• Runs in the background with no Hack Forums tab open, or from an open Hack Game page: your choice
+• Plays automatically in the background with no Hack Forums tab open, or one job at a time with a Hack button: your choice
 • A status card on every Hack Forums page shows what it's doing and counts down to its next step, or gives you a Hack button to play one job at a time
 
 Strategy assistant (blackjack)

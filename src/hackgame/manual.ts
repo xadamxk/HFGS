@@ -17,6 +17,7 @@ import { loadSettings } from "../settings";
 import {
   chosenJob,
   runActive,
+  isBusy,
   HackState,
   loadChoice,
   loadState,
@@ -29,10 +30,14 @@ const LOCK = "hfgs-hackgame-play";
 /** Play the picked job once. Does nothing while auto-play runs or a play is going. */
 export async function playOnce(io: HackIO): Promise<void> {
   const [state, settings] = await Promise.all([loadState(), loadSettings()]);
-  if (runActive(state, settings.hackgame.runInBackground) || state.busy) return;
-  await patchState({ busy: true, note: null });
+  if (
+    runActive(state, settings.hackgame.runInBackground) ||
+    isBusy(state, io.now())
+  )
+    return;
+  await patchState({ busy: true, busyAt: io.now(), note: null });
 
-  const result: Partial<HackState> = { busy: false };
+  const result: Partial<HackState> = { busy: false, busyAt: null };
   try {
     const page = await io.get(SMALLHACKS);
     switch (pageKind(page)) {

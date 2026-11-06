@@ -1,6 +1,6 @@
 # Hack Game auto-play: spec
 
-Status: built (2026-11-06) with the recommended answers to the open questions, plus a "Run in background" setting. The live result parser still needs one real job to confirm (see Unknowns).
+Status: built (2026-11-06) with the recommended answers to the open questions, plus a "Run in background" setting. The live result parser still needs one real job to confirm (see Unknowns). Later changes: the job is the one picked in HF's own list; "Run in background" is off by default, and with it off there are no runs, only the status card's and panel's Hack button (playing from an open tab was removed).
 
 ## Goal
 
