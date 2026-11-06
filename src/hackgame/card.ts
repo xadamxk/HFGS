@@ -13,7 +13,7 @@ import { STORAGE_KEYS } from "../core/storage";
 import { loadSettings } from "../settings";
 import { extensionAlive, formatCountdown } from "./countdown";
 import { tabIO } from "./io";
-import { playOnceLocked } from "./manual";
+import { pagePostKey, playOnceLocked } from "./manual";
 import { HackGameSettings } from "./settings";
 import {
   CardPrefs,
@@ -120,7 +120,7 @@ export function manualStatus(state: HackState, now: number): ManualStatus {
         last.success
           ? `, $${last.money.toFixed(2)}, ${last.xp.toFixed(2)} xp`
           : ""
-      }`
+      }${last.reason ? `\n${last.reason}` : ""}`
     : "";
   if (isBusy(state, now))
     return {
@@ -500,7 +500,8 @@ export function mountStatusCard(doc: Document = document): () => void {
   const stopFollowing = followConvoDock(host, doc);
 
   const actions: CardActions = {
-    play: () => playOnceLocked(tabIO()).catch(() => undefined),
+    play: () =>
+      playOnceLocked(tabIO(), pagePostKey(doc)).catch(() => undefined),
     stop: () => stopRun("Stopped.").catch(() => undefined),
     start: () =>
       loadSettings()

@@ -16,7 +16,7 @@ import { settingsForm } from "../settings/form";
 import { manualStatus } from "./card";
 import { formatCountdown } from "./countdown";
 import { tabIO } from "./io";
-import { playOnceLocked } from "./manual";
+import { pagePostKey, playOnceLocked } from "./manual";
 import { jobsView } from "./jobsView";
 import { STORAGE_KEYS } from "../core/storage";
 import { collapseToggle } from "../core/ui/collapse";
@@ -277,7 +277,7 @@ export class HackGamePanel {
   /** Start or Stop a run (Run in background on), or play one job (off). */
   private async toggle(): Promise<void> {
     const background = (await loadSettings()).hackgame.runInBackground;
-    if (!background) await playOnceLocked(tabIO());
+    if (!background) await playOnceLocked(tabIO(), pagePostKey());
     else if (this.state?.running) await stopRun("Stopped.");
     else await startRun(true);
   }

@@ -175,3 +175,42 @@ export function sameJobs(a: HackJob[], b: HackJob[]): boolean {
     )
   );
 }
+
+export interface ReplyResult {
+  success: boolean;
+  /** HF's own words, e.g. "The owner had multi-signature security…". */
+  message: string;
+  /** Cash and xp, when HF's message states them (0 when it doesn't). */
+  money: number;
+  xp: number;
+}
+
+/**
+ * The job's result from the page HF shows after Attempt Hack (it redirects to
+ * Small Hack Jobs with a success or failure box above the job list). Seen
+ * live on 2026-11-06 for a fail:
+ * `<div class="failure"><p><em>Failed</em></p><ul><li>The owner had…</li></ul></div>`.
+ * Null when the page has neither box (HF didn't play the job).
+ */
+export function replyResult(html: string): ReplyResult | null {
+  const box = html.match(/<div class="(success|failure)">([\s\S]*?)<\/div>/i);
+  if (!box) return null;
+  const items = [...box[2].matchAll(/<li>([\s\S]*?)<\/li>/gi)].map((m) =>
+    textOf(m[1])
+  );
+  const message = items.join(" ") || textOf(box[2]);
+  const all = textOf(box[2]);
+  const number = (s?: string) => (s ? Number(s.replace(/,/g, "")) : 0);
+  return {
+    success: box[1].toLowerCase() === "success",
+    message,
+    money: number(all.match(/\$\s*([\d.,]+)/)?.[1]),
+    xp: number(all.match(/([\d.,]+)\s*xp\b/i)?.[1]),
+  };
+}
+
+/** HF's error box on a page (e.g. a job it refused), as text, or null. */
+export function errorMessage(html: string): string | null {
+  const box = html.match(/<div class="error">([\s\S]*?)<\/div>/i);
+  return box ? textOf(box[1]) || null : null;
+}

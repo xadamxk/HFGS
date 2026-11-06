@@ -3,6 +3,7 @@ import path from "path";
 import {
   cooldownSeconds,
   decodeEntities,
+  errorMessage,
   fullChargeAt,
   isLocked,
   latestJobResult,
@@ -10,6 +11,7 @@ import {
   parseJobs,
   postKey,
   powerPercent,
+  replyResult,
   sameJobs,
 } from "./parse";
 
@@ -108,6 +110,24 @@ describe("Hack Game page readers", () => {
       at: null,
     });
     expect(latestJobResult(smallhacks)).toBeNull();
+  });
+
+  it("reads the result HF shows after Attempt Hack", () => {
+    const reply = fixture("do_smallhacks");
+    expect(replyResult(reply)).toEqual({
+      success: false,
+      message:
+        "The owner had multi-signature security. Your attempt was useless.",
+      money: 0,
+      xp: 0,
+    });
+    // The same page also carries the next cooldown and power
+    expect(cooldownSeconds(reply)).toBe(296);
+    expect(powerPercent(reply)).toBe(95);
+    expect(replyResult(smallhacks)).toBeNull();
+    expect(errorMessage('<div class="error">Not enough power.</div>')).toBe(
+      "Not enough power."
+    );
   });
 
   it("decodes HTML entities and compares job lists", () => {

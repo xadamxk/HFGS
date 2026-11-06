@@ -1,17 +1,22 @@
 /**
- * Playing the picked Small Hack Job once, by hand, from the status card's
- * Hack button (with "Run in background" off). It reads the job list, cooldown
- * and power first, then plays the job and stores the result and when HF lets
- * the next job be played, so every open card shows it.
+ * Playing the picked Small Hack Job once, by hand, with the Hack button (on
+ * the status card or the Hack Game panel, with "Run in background" off).
+ *
+ * One request: the post key comes from the HF page the button is on, the job
+ * from storage, and HF's reply (the Small Hack Jobs page it redirects to)
+ * carries everything else: the result box, the next cooldown, power and the
+ * job list. The result, and when HF allows the next job, are stored so every
+ * open card shows them.
  */
-import { attemptJob, HackIO, JOB_POWER, SMALLHACKS } from "./cycle";
+import { REQUEST_GAP_MS, HackIO } from "./cycle";
 import {
   cooldownSeconds,
+  errorMessage,
   isLocked,
   pageKind,
   parseJobs,
-  postKey,
   powerPercent,
+  replyResult,
 } from "./parse";
 import { loadSettings } from "../settings";
 import {
@@ -19,28 +24,67 @@ import {
   runActive,
   isBusy,
   HackState,
+  LastJob,
   loadChoice,
+  loadJobCache,
   loadState,
   patchState,
+  recordJob,
   updateJobs,
 } from "./store";
 
 const LOCK = "hfgs-hackgame-play";
+/** Two presses closer than this would trip HF's "too quickly" check. */
+const MIN_GAP_MS = REQUEST_GAP_MS;
+let lastPostAt = -Infinity;
 
-/** Play the picked job once. Does nothing while auto-play runs or a play is going. */
-export async function playOnce(io: HackIO): Promise<void> {
+/**
+ * Play the picked job once. `key` is the post key from the HF page the button
+ * is on. Does nothing while auto-play runs or another press is playing.
+ */
+export async function playOnce(io: HackIO, key: string | null): Promise<void> {
   const [state, settings] = await Promise.all([loadState(), loadSettings()]);
   if (
     runActive(state, settings.hackgame.runInBackground) ||
     isBusy(state, io.now())
   )
     return;
-  await patchState({ busy: true, busyAt: io.now(), note: null });
 
   const result: Partial<HackState> = { busy: false, busyAt: null };
+  const done = () => patchState(result);
+
+  if (state.readyAt !== null && state.readyAt > io.now()) {
+    result.note = "Cooling down...";
+    await done();
+    return;
+  }
+  const [cache, choice] = await Promise.all([loadJobCache(), loadChoice()]);
+  const job = cache ? chosenJob(cache.jobs, choice) : null;
+  if (!job) {
+    result.note = "Pick a job in HF's Small Hack Jobs list first.";
+    await done();
+    return;
+  }
+  if (!key) {
+    result.note = "No post key on this page. Are you signed in to HF?";
+    await done();
+    return;
+  }
+
+  await patchState({ busy: true, busyAt: io.now(), note: null });
   try {
-    const page = await io.get(SMALLHACKS);
-    switch (pageKind(page)) {
+    const wait = lastPostAt + MIN_GAP_MS - io.now();
+    if (wait > 0) await io.sleep(wait);
+    lastPostAt = io.now();
+    const playedAt = io.now();
+    const reply = await io.post("gamecp.php", {
+      job_id: job.id,
+      my_post_key: key,
+      action: "do_smallhacks",
+      submit: "",
+    });
+
+    switch (pageKind(reply)) {
       case "challenge":
         result.note = "HF showed a Cloudflare check: open HF in a tab first.";
         return;
@@ -50,59 +94,62 @@ export async function playOnce(io: HackIO): Promise<void> {
       case "flood":
         result.note = "HF asked to slow down. Try again in a moment.";
         return;
-      case "unknown":
-        result.note = "HF sent a page HFGS doesn't recognize.";
-        return;
     }
-    if (isLocked(page)) {
+    if (isLocked(reply)) {
       result.note = "Locked out by the FBI.";
       return;
     }
 
-    const jobs = parseJobs(page);
-    await updateJobs(jobs, io.now());
-    const cooldown = cooldownSeconds(page);
-    result.readyAt = io.now() + cooldown * 1000;
-    const power = powerPercent(page);
-    result.power = power;
-    if (cooldown > 0) {
-      result.note = "Cooling down...";
-      return;
-    }
-    if (power !== null && power < JOB_POWER) {
-      result.note = `Not enough power (${power}%).`;
-      return;
-    }
-    const job = chosenJob(jobs, await loadChoice());
-    if (!job) {
-      result.note = "Pick a job in HF's Small Hack Jobs list first.";
-      return;
-    }
-    const key = postKey(page);
-    if (!key) {
-      result.note = "No post key on HF's page. Are you signed in?";
-      return;
-    }
+    // The reply is the Small Hack Jobs page: keep what it shows
+    await updateJobs(parseJobs(reply), io.now());
+    result.readyAt = io.now() + cooldownSeconds(reply) * 1000;
+    const power = powerPercent(reply);
+    if (power !== null) result.power = power;
 
-    const attempt = await attemptJob(io, job, key);
-    if (attempt.flood) {
-      result.note = "HF asked to slow down. Try again in a moment.";
+    const outcome = replyResult(reply);
+    if (!outcome) {
+      result.note = errorMessage(reply) ?? "HF didn't play the job.";
       return;
     }
-    result.readyAt = io.now() + attempt.cooldown * 1000;
-    if (power !== null) result.power = Math.max(0, power - JOB_POWER);
-    if (attempt.last) result.last = attempt.last;
-    else result.note = "Played, but couldn't read the result from HF's logs.";
+    const last: LastJob = {
+      at: playedAt,
+      job: job.name,
+      success: outcome.success,
+      rate: job.rate,
+      money: outcome.money,
+      xp: outcome.xp,
+      reason: outcome.message,
+    };
+    await recordJob(last);
+    result.last = last;
   } catch (error) {
     result.note = `Couldn't reach HF (${(error as Error)?.message || String(error)}).`;
   } finally {
-    await patchState(result);
+    await done();
   }
 }
 
-/** playOnce, one tab at a time (a Web Lock), for the status card's button. */
-export async function playOnceLocked(io: HackIO): Promise<void> {
+/** playOnce, one tab at a time (a Web Lock), for the Hack buttons. */
+export async function playOnceLocked(
+  io: HackIO,
+  key: string | null
+): Promise<void> {
   const locks = (navigator as Navigator & { locks?: LockManager }).locks;
-  if (locks) await locks.request(LOCK, () => playOnce(io));
-  else await playOnce(io);
+  if (locks) await locks.request(LOCK, () => playOnce(io, key));
+  else await playOnce(io, key);
+}
+
+/** The post key on the HF page this script runs on. */
+export function pagePostKey(doc: Document = document): string | null {
+  const input = doc.querySelector<HTMLInputElement>(
+    'input[name="my_post_key"]'
+  );
+  if (input?.value) return input.value;
+  for (const script of doc.scripts) {
+    const match = script.textContent?.match(
+      /my_post_key\s*=\s*["']([^"']+)["']/
+    );
+    if (match) return match[1];
+  }
+  return null;
 }

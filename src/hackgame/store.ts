@@ -36,6 +36,8 @@ export interface LastJob {
   rate: number;
   money: number;
   xp: number;
+  /** HF's own words about the result, when played with the Hack button. */
+  reason?: string;
 }
 
 export interface HackState {
@@ -90,6 +92,8 @@ export interface HackTotals {
   successes: number;
   money: number;
   xp: number;
+  /** HF's own words about the result, when played with the Hack button. */
+  reason?: string;
 }
 
 export function idleState(): HackState {

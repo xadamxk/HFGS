@@ -166,6 +166,19 @@ The 99% job was run once from the background script, with the user's OK:
 4. Not seen yet: the page during an FBI lock-out. The bot looks for the old
    `fbi-interrogating` image and otherwise treats an unknown page as an error.
 
+## The Hack button: one request (2026-11-06)
+
+One real Attempt Hack showed what HF sends back: a redirect to
+`gamecp.php?action=smallhacks&id=…`, a full Small Hack Jobs page with a result box above the
+job list (`<div class="failure"><p><em>Failed</em></p><ul><li>The owner had multi-signature
+security. Your attempt was useless.</li></ul></div>`), the next cooldown (`countdownTimer(…, 296)`
+after that fail) and power (95%). It's saved as `fixtures/hackgame/do_smallhacks.html`.
+
+So the Hack button makes a single request: it posts the job with the post key from the HF page
+it's on, then reads the result, cooldown, power and job list from the reply. The format of a
+success box hasn't been seen yet; its cash and xp are read from "$…" and "… xp" in its text,
+and are 0 if absent. Background runs still read results from the logs.
+
 ## Open questions
 
 1. **Background, or only while a tab is open?** I recommend background.

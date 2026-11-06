@@ -4,7 +4,7 @@ import { loadHistory } from "../core/history";
 import { defaultSettings, saveSettings } from "../settings";
 import { HackIO } from "./cycle";
 import { rememberPickedJob } from "./jobsView";
-import { playOnce } from "./manual";
+import { pagePostKey, playOnce } from "./manual";
 import { parseJobs } from "./parse";
 import {
   HACKGAME_ID,
@@ -13,6 +13,7 @@ import {
   loadState,
   saveChoice,
   saveState,
+  updateJobs,
 } from "./store";
 
 const fixture = (name: string) =>
@@ -21,46 +22,40 @@ const fixture = (name: string) =>
     "utf8"
   );
 const smallhacks = fixture("smallhacks");
-const logs = fixture("logs");
-const LOGGED_AT = 1793934411 * 1000;
-const STAT =
-  '<span class="game-leaderboard-stat game-leaderboard-stat-selected">';
-const successLogs = logs
-  .replace(`${STAT}Fail</span>`, `${STAT}Success</span>`)
-  .replace(
-    `${STAT}50%</span>`,
-    `${STAT}50%</span> ${STAT}<span>$</span>3.5</span> ${STAT}1.25 xp</span>`
-  );
-const withCooldown = (html: string, seconds: number) =>
-  html.replace(
-    "</body>",
-    `<script>countdownTimer('game-countdown-smallhacks', ${seconds});</script></body>`
-  );
-const withPower = (html: string, percent: number) =>
-  html.replace(
-    /(href="gamecp\.php\?action=battery"[^>]*title=")\d+%/,
-    `$1${percent}%`
-  );
+/** HF's real reply to Attempt Hack (a failed 10% job), keys removed. */
+const failedReply = fixture("do_smallhacks");
+const NOW = 1793934411 * 1000;
+/** The same page with a success box instead (format not seen live yet). */
+const successReply = failedReply.replace(
+  /<div class="failure">[\s\S]*?<\/div>/,
+  '<div class="success"><p><em>Success</em></p><ul><li>You got away with $3.50 and 1.25 xp.</li></ul></div>'
+);
 
-function fakeHF(pages: Record<string, string>) {
+function fakeHF(reply?: string) {
   const posts: Record<string, string>[] = [];
+  const gets: string[] = [];
   const io: HackIO = {
-    get: async (p) => pages[p],
+    get: async (p) => {
+      gets.push(p);
+      return "";
+    },
     post: async (_p, form) => {
       posts.push(form);
-      return pages.post;
+      if (reply === undefined) throw new Error("offline");
+      return reply;
     },
-    now: () => LOGGED_AT,
+    now: () => NOW,
     random: () => 0,
     sleep: async () => undefined,
   };
-  return { io, posts };
+  return { io, posts, gets };
 }
 
-const SMALL = "gamecp.php?action=smallhacks";
-const LOGS = "gamecp.php?action=logs";
-const pick = async (id = "32") => {
-  const job = parseJobs(smallhacks).find((j) => j.id === id)!;
+/** Pick a job, with HF's job list stored (as a game page visit leaves it). */
+const pick = async (id = "40") => {
+  const jobs = parseJobs(smallhacks);
+  await updateJobs(jobs, NOW);
+  const job = jobs.find((j) => j.id === id)!;
   await saveChoice([{ id: job.id, name: job.name }]);
 };
 
@@ -69,63 +64,87 @@ beforeEach(async () => {
 });
 
 describe("playing a job by hand", () => {
-  it("plays the picked job once and stores the result and the next cooldown", async () => {
+  it("makes one request and reads the result, cooldown and power from HF's reply", async () => {
     await pick();
-    const hf = fakeHF({
-      [SMALL]: smallhacks,
-      post: smallhacks,
-      [LOGS]: withCooldown(successLogs, 175),
-    });
-    await playOnce(hf.io);
+    const hf = fakeHF(failedReply);
+    await playOnce(hf.io, "KEY");
     expect(hf.posts).toEqual([
-      {
-        job_id: "32",
-        my_post_key: "REDACTED_POST_KEY",
-        action: "do_smallhacks",
-        submit: "",
-      },
+      { job_id: "40", my_post_key: "KEY", action: "do_smallhacks", submit: "" },
     ]);
-    const state = await loadState();
-    expect(state).toMatchObject({
+    expect(hf.gets).toEqual([]); // no other requests
+    expect(await loadState()).toMatchObject({
       busy: false,
       note: null,
-      readyAt: LOGGED_AT + 175_000,
-      power: 90,
-      running: false,
-      last: { job: "Hijacking a Rideshare Driver's Account", success: true },
+      readyAt: NOW + 296_000,
+      power: 95,
+      last: {
+        job: "Compromising a Crypto Wallet Seed Phrase",
+        success: false,
+        rate: 10,
+        money: 0,
+        xp: 0,
+        reason:
+          "The owner had multi-signature security. Your attempt was useless.",
+      },
     });
-    expect((await loadHistory(HACKGAME_ID)).entries).toHaveLength(1);
+    expect((await loadHistory(HACKGAME_ID)).entries[0]).toMatchObject({
+      outcome: "FAIL",
+    });
   });
 
-  it("doesn't play during a cooldown, without power, or with no job picked", async () => {
+  it("records a success with the amounts HF states", async () => {
     await pick();
-    await playOnce(fakeHF({ [SMALL]: withCooldown(smallhacks, 60) }).io);
-    expect(await loadState()).toMatchObject({
-      note: "Cooling down...",
-      readyAt: LOGGED_AT + 60_000,
+    await playOnce(fakeHF(successReply).io, "KEY");
+    expect((await loadState()).last).toMatchObject({
+      success: true,
+      money: 3.5,
+      xp: 1.25,
     });
+  });
 
-    const low = fakeHF({ [SMALL]: withPower(smallhacks, 4) });
-    await playOnce(low.io);
-    expect(low.posts).toEqual([]);
-    expect((await loadState()).note).toBe("Not enough power (4%).");
+  it("doesn't post during a cooldown, with no job picked, or without a post key", async () => {
+    await pick();
+    await saveState({ ...idleState(), readyAt: NOW + 60_000 });
+    const cooling = fakeHF(failedReply);
+    await playOnce(cooling.io, "KEY");
+    expect(cooling.posts).toEqual([]);
+    expect((await loadState()).note).toBe("Cooling down...");
 
+    await saveState(idleState());
     await saveChoice([]);
-    await playOnce(fakeHF({ [SMALL]: smallhacks }).io);
+    const none = fakeHF(failedReply);
+    await playOnce(none.io, "KEY");
+    expect(none.posts).toEqual([]);
     expect((await loadState()).note).toBe(
       "Pick a job in HF's Small Hack Jobs list first."
     );
+
+    await pick();
+    const noKey = fakeHF(failedReply);
+    await playOnce(noKey.io, null);
+    expect(noKey.posts).toEqual([]);
+    expect((await loadState()).note).toMatch(/No post key/);
   });
 
-  it("plays even with a run left over from background mode (no Hack Game tab needed)", async () => {
+  it("says why when HF didn't play the job, or can't be reached", async () => {
+    await pick();
+    const refused = failedReply.replace(
+      /<div class="failure">[\s\S]*?<\/div>/,
+      '<div class="error">You don\'t have enough power.</div>'
+    );
+    await playOnce(fakeHF(refused).io, "KEY");
+    expect((await loadState()).note).toBe("You don't have enough power.");
+
+    await saveState(idleState());
+    await playOnce(fakeHF(undefined).io, "KEY");
+    expect((await loadState()).note).toBe("Couldn't reach HF (offline).");
+  });
+
+  it("plays even with a run left over from background mode", async () => {
     await pick();
     await saveState({ ...idleState(), running: true, mode: "background" });
-    const hf = fakeHF({
-      [SMALL]: smallhacks,
-      post: smallhacks,
-      [LOGS]: successLogs,
-    });
-    await playOnce(hf.io);
+    const hf = fakeHF(failedReply);
+    await playOnce(hf.io, "KEY");
     expect(hf.posts).toHaveLength(1);
   });
 
@@ -135,9 +154,21 @@ describe("playing a job by hand", () => {
     background.hackgame.runInBackground = true;
     await saveSettings(background);
     await saveState({ ...idleState(), running: true, mode: "background" });
-    const hf = fakeHF({ [SMALL]: smallhacks });
-    await playOnce(hf.io);
+    const hf = fakeHF(failedReply);
+    await playOnce(hf.io, "KEY");
     expect(hf.posts).toEqual([]);
+  });
+});
+
+describe("pagePostKey", () => {
+  it("reads the post key from the page's form or script", () => {
+    document.body.innerHTML =
+      '<input type="hidden" name="my_post_key" value="abc">';
+    expect(pagePostKey(document)).toBe("abc");
+    document.body.innerHTML = '<script>var my_post_key = "def";</script>';
+    expect(pagePostKey(document)).toBe("def");
+    document.body.innerHTML = "<p>signed out</p>";
+    expect(pagePostKey(document)).toBeNull();
   });
 });
 
