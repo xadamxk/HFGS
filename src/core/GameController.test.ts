@@ -325,7 +325,14 @@ describe("GameController settings on the game page", () => {
     const titles = [
       ...document.querySelectorAll(".hfgs-panel .hfgs-settings-title"),
     ].map((t) => t.textContent);
-    expect(titles).toEqual(["Slots", "Stop the bot", "All games"]);
+    expect(titles).toEqual(["All games", "Slots", "Stop the bot"]);
+    // The settings for every game sit beside the Start button
+    expect(
+      document.querySelector('.hfgs-controls [data-group="All games"]')
+    ).not.toBeNull();
+    expect(
+      document.querySelector(".hfgs-controls #hfgs-global-headless")
+    ).not.toBeNull();
     const stopGroup = document.querySelector('[data-group="Stop the bot"]')!;
     // The game's round settings and the global limits, in one group
     expect(

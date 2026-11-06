@@ -60,7 +60,7 @@ export interface NumberDefinition<T> extends BaseDefinition<
   max: number;
   /** Values are rounded to a multiple of this from `min` (e.g. 1, 100 or 0.05). */
   step: number;
-  /** Shown after the input, e.g. "βytes" or "ms". */
+  /** Shown in brackets after the label, e.g. "βytes" or "ms". */
   unit?: string;
   /** Only these values are valid (e.g. a game's bet steps); input snaps to the nearest. */
   allowed?: number[];

@@ -255,19 +255,22 @@ function settingRow(
         input.value = String(value);
         save({ [setting.id]: value });
       });
-      const field = el("div", { class: compact ? "hfgs-field" : "field" }, [
-        input,
-        // Compact rows keep an empty unit slot so their inputs line up
-        (setting.unit || compact) &&
-          el("span", { class: "unit" }, setting.unit ?? ""),
-      ]);
+      // The unit goes in the label, e.g. "Bet (βytes)", so inputs line up
+      const label = setting.unit
+        ? `${setting.label} (${setting.unit})`
+        : setting.label;
+      const field = el(
+        "div",
+        { class: compact ? "hfgs-field" : "field" },
+        input
+      );
       const element = compact
         ? el("div", { class: "hfgs-setting hfgs-setting-number", title: tip }, [
-            el("label", { for: inputId }, setting.label),
+            el("label", { for: inputId }, label),
             field,
           ])
         : el("div", { class: "row number" }, [
-            el("label", { for: inputId }, setting.label),
+            el("label", { for: inputId }, label),
             description,
             field,
           ]);

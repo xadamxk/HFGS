@@ -205,13 +205,8 @@ button:hover {
   margin-top: 0;
 }
 
-.unit {
-  color: var(--muted);
-}
-
 .row.disabled label,
-.row.disabled .description,
-.row.disabled .unit {
+.row.disabled .description {
   opacity: 0.5;
 }
 

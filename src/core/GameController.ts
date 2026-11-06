@@ -212,13 +212,16 @@ export class GameController {
       globalStop.remove();
     }
     (gameStop ?? globalStop)?.append(this.limitsNote);
+    // What's left of the global settings (confirm, Headless Mode, sound,
+    // delay) goes beside the Start button.
+    this.globalForm.element.title = "These apply to every game.";
+    this.panel.addToControls(this.globalForm.element);
     this.updateLimitsNote();
     this.savedNote = el("span", { class: "hfgs-saved", role: "status" });
     this.panel.addSection(
       "Settings",
       el("div", { class: "hfgs-settings-groups" }, [
         this.gameForm.element,
-        this.globalForm.element,
         el("div", { class: "hfgs-settings-note" }, [
           "Changes save right away and apply from the next round, even while the bot runs. Hover a setting for details.",
           this.savedNote,

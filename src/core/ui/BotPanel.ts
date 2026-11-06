@@ -17,6 +17,11 @@ const CSS = `
 .hfgs-panel .hfgs-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .hfgs-panel .hfgs-status { margin-left: 4px; }
 .hfgs-panel .hfgs-status.hfgs-error { color: #ff2121; }
+.hfgs-panel .hfgs-controls-extra { margin-left: auto; }
+/* Settings beside the Start button sit in one line instead of a grid */
+.hfgs-panel .hfgs-controls-extra .hfgs-settings-title { display: none; }
+.hfgs-panel .hfgs-controls-extra .hfgs-settings-grid { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; }
+.hfgs-panel .hfgs-controls-extra .hfgs-setting-number { justify-content: flex-start; }
 .hfgs-panel .hfgs-stats { width: 100%; border-collapse: collapse; }
 .hfgs-panel .hfgs-stats td, .hfgs-panel .hfgs-stats th { padding: 3px 8px; text-align: right; }
 .hfgs-panel .hfgs-stats th:first-child, .hfgs-panel .hfgs-stats td:first-child { text-align: left; }
@@ -44,8 +49,6 @@ const CSS = `
 .hfgs-panel .hfgs-field { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
 /* HF's .textbox sets its own width; keep number inputs compact */
 .hfgs-panel .hfgs-field input { width: 80px !important; min-width: 0; flex: none; box-sizing: border-box; }
-/* Every number input gets the same unit slot, so inputs line up in every group */
-.hfgs-panel .hfgs-field .unit { width: 36px; flex: none; }
 .hfgs-panel .hfgs-setting > label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hfgs-panel .hfgs-settings-note { font-size: 11px; opacity: 0.75; }
 .hfgs-panel .hfgs-settings-note .hfgs-saved { color: #00b500; margin-left: 6px; }
@@ -122,6 +125,7 @@ export class BotPanel {
   private readonly chart = new NetChart();
   /** The controls row; game sections go right after it. */
   private readonly controlsRow: HTMLTableRowElement;
+  private readonly controls: HTMLDivElement;
   private session: Totals | null = null;
   private overall: Totals | null = null;
 
@@ -174,12 +178,12 @@ export class BotPanel {
           ]),
           (this.controlsRow = el("tr", null, [
             el("td", { class: "trow1", colspan: 2 }, [
-              el("div", { class: "hfgs-controls" }, [
+              (this.controls = el("div", { class: "hfgs-controls" }, [
                 this.startButton,
                 this.stopButton,
                 this.confirmBox,
                 this.status,
-              ]),
+              ])),
             ]),
           ])),
           el("tr", null, [
@@ -258,6 +262,11 @@ export class BotPanel {
       head.hidden = !visible;
       body.hidden = !visible;
     };
+  }
+
+  /** Put something on the right of the Start button's row (e.g. settings). */
+  addToControls(content: HTMLElement): void {
+    this.controls.append(el("div", { class: "hfgs-controls-extra" }, content));
   }
 
   static injectStyles(doc: Document = document): void {
