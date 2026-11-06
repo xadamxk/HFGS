@@ -43,6 +43,7 @@ import { describeLimits, describeStop, RunLimits, Runner } from "./Runner";
 import { STORAGE_KEYS } from "./storage";
 import { BESIDE_CSS, mountBeside } from "./ui/beside";
 import { BotPanel } from "./ui/BotPanel";
+import { collapseToggle } from "./ui/collapse";
 
 export interface GameControllerOptions {
   game: GameDefinition;
@@ -129,6 +130,7 @@ export class GameController {
       });
     this.panel = new BotPanel({
       gameName: options.game.name,
+      gameId: options.game.id,
       botAvailable: Boolean(options.bot),
       describeResult: options.game.describeResult,
       onStart: () =>
@@ -144,7 +146,8 @@ export class GameController {
         injectCss("hfgs-history-view-styles", this.historyView.css);
       this.setHistoryViewVisible = this.panel.addSection(
         this.historyView.title,
-        this.historyView.element
+        this.historyView.element,
+        this.historyView.title.toLowerCase()
       );
       this.renderHistoryView();
     }
@@ -204,7 +207,7 @@ export class GameController {
       ]),
     ]);
     if (!(game.settingsInGameTable && this.mountInGameTable(content)))
-      this.panel.addSection("Settings", content);
+      this.panel.addSection("Settings", content, "settings");
   }
 
   /**
@@ -220,34 +223,18 @@ export class GameController {
     if (!header) return false;
     // The panel's styles are scoped to .hfgs-panel: carry the class along
     const box = el("div", { class: "hfgs-panel hfgs-in-game" }, content);
-    const toggle = el("button", {
-      type: "button",
-      class: "hfgs-collapse",
-      "aria-controls": "hfgs-in-game-row",
-    });
     const row = el(
       "tr",
       { class: "hfgs-in-game-row", id: "hfgs-in-game-row" },
       el("td", { class: "trow1", colspan: 2 }, box)
     );
-    const setCollapsed = (collapsed: boolean) => {
-      row.hidden = collapsed;
-      toggle.textContent = collapsed ? "▼ Show" : "▲ Hide";
-      toggle.title = collapsed ? "Show the settings" : "Hide the settings";
-      toggle.setAttribute("aria-expanded", String(!collapsed));
-    };
     // Remembered per game, on every page and tab
-    const key = STORAGE_KEYS.settingsCollapsed(this.options.game.id);
-    setCollapsed(false);
-    chrome.storage.local
-      .get(key)
-      .then((stored) => setCollapsed(stored?.[key] === true))
-      .catch(() => undefined);
-    toggle.addEventListener("click", () => {
-      const collapsed = !row.hidden;
-      setCollapsed(collapsed);
-      chrome.storage.local.set({ [key]: collapsed }).catch(() => undefined);
-    });
+    const toggle = collapseToggle(
+      STORAGE_KEYS.collapsed(this.options.game.id, "settings"),
+      (collapsed) => (row.hidden = collapsed),
+      "the settings"
+    );
+    toggle.setAttribute("aria-controls", "hfgs-in-game-row");
     header.after(
       el(
         "tr",

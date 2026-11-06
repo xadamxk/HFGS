@@ -18,6 +18,8 @@ import { formatCountdown } from "./countdown";
 import { tabIO } from "./io";
 import { playOnceLocked } from "./manual";
 import { jobsView } from "./jobsView";
+import { STORAGE_KEYS } from "../core/storage";
+import { collapseToggle } from "../core/ui/collapse";
 import { HACKGAME_SETTINGS, HackGameSettings } from "./settings";
 import {
   HACKGAME_ID,
@@ -103,6 +105,8 @@ export class HackGamePanel {
       event.preventDefault();
       chrome.runtime.sendMessage({ type: "hfgs:open-options" });
     });
+    const settingsRow = el("tr", null, this.settingsCell);
+    const totalsRow = this.totalsRow();
     this.element = el(
       "table",
       {
@@ -127,63 +131,82 @@ export class HackGamePanel {
           ]),
         ]),
         el("tr", null, [
-          el(
-            "td",
-            { class: "tcat", colspan: 2 },
-            el("strong", null, "Settings")
-          ),
-        ]),
-        el("tr", null, this.settingsCell),
-        el("tr", null, [
-          el("td", { class: "tcat" }, el("strong", null, "Totals")),
-          el("td", { class: "tcat" }, el("strong", null, "Recent jobs")),
-        ]),
-        el("tr", null, [
-          el(
-            "td",
-            { class: "trow1", style: "vertical-align: top; width: 40%" },
-            el("table", { class: "hfgs-stats" }, [
-              el(
-                "thead",
-                null,
-                el("tr", null, [
-                  el("th", null, ""),
-                  el(
-                    "th",
-                    { title: "Since you last pressed Start" },
-                    "This run"
-                  ),
-                  el("th", null, "Overall"),
-                ])
-              ),
-              this.statsBody,
-            ])
-          ),
-          el(
-            "td",
-            { class: "trow1", style: "vertical-align: top" },
+          el("td", { class: "tcat", colspan: 2 }, [
+            el("strong", null, "Settings"),
             el(
               "div",
-              { class: "hfgs-history" },
-              el("table", { class: "hfgs-stats" }, [
-                el(
-                  "thead",
-                  null,
-                  el(
-                    "tr",
-                    null,
-                    ["Time", "Job", "Result", "Cash", "XP"].map((h) =>
-                      el("th", null, h)
-                    )
-                  )
-                ),
-                this.recentBody,
-              ])
-            )
-          ),
+              { class: "float_right" },
+              collapseToggle(
+                STORAGE_KEYS.collapsed(HACKGAME_ID, "settings"),
+                (collapsed) => (settingsRow.hidden = collapsed),
+                "the settings"
+              )
+            ),
+          ]),
         ]),
+        settingsRow,
+        el("tr", null, [
+          el("td", { class: "tcat" }, el("strong", null, "Totals")),
+          el("td", { class: "tcat" }, [
+            el("strong", null, "Recent jobs"),
+            el(
+              "div",
+              { class: "float_right" },
+              collapseToggle(
+                STORAGE_KEYS.collapsed(HACKGAME_ID, "totals"),
+                (collapsed) => (totalsRow.hidden = collapsed),
+                "totals and recent jobs"
+              )
+            ),
+          ]),
+        ]),
+        totalsRow,
       ])
     );
+  }
+
+  /** The totals and recent jobs row (built before the table, for its toggle). */
+  private totalsRow(): HTMLTableRowElement {
+    return el("tr", null, [
+      el(
+        "td",
+        { class: "trow1", style: "vertical-align: top; width: 40%" },
+        el("table", { class: "hfgs-stats" }, [
+          el(
+            "thead",
+            null,
+            el("tr", null, [
+              el("th", null, ""),
+              el("th", { title: "Since you last pressed Start" }, "This run"),
+              el("th", null, "Overall"),
+            ])
+          ),
+          this.statsBody,
+        ])
+      ),
+      el(
+        "td",
+        { class: "trow1", style: "vertical-align: top" },
+        el(
+          "div",
+          { class: "hfgs-history" },
+          el("table", { class: "hfgs-stats" }, [
+            el(
+              "thead",
+              null,
+              el(
+                "tr",
+                null,
+                ["Time", "Job", "Result", "Cash", "XP"].map((h) =>
+                  el("th", null, h)
+                )
+              )
+            ),
+            this.recentBody,
+          ])
+        )
+      ),
+    ]);
   }
 
   async init(): Promise<void> {

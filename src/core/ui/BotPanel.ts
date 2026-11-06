@@ -9,14 +9,15 @@ import { HistoryEntry, Totals } from "../history";
 import { RunnerState } from "../Runner";
 import { formatAmount, formatStreak, formatWinRate } from "./format";
 import { NetChart } from "./NetChart";
+import { COLLAPSE_CSS, collapseToggle } from "./collapse";
+import { STORAGE_KEYS } from "../storage";
 
 export { formatAmount };
 
 const CSS = `
 .hfgs-panel { margin-top: 10px; width: 100%; }
 .hfgs-panel.hfgs-in-game { margin-top: 0; }
-.hfgs-in-game-head .hfgs-collapse { background: none; border: 0; padding: 0 2px; color: inherit; font: inherit; font-size: 11px; opacity: 0.8; cursor: pointer; }
-.hfgs-in-game-head .hfgs-collapse:hover { opacity: 1; text-decoration: underline; }
+${COLLAPSE_CSS}
 .hfgs-panel .hfgs-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .hfgs-panel .hfgs-status { margin-left: 4px; }
 .hfgs-panel .hfgs-status.hfgs-error { color: #ff2121; }
@@ -104,6 +105,8 @@ const STAT_ROWS: {
 
 export interface BotPanelOptions {
   gameName: string;
+  /** For remembering which sections are collapsed; defaults to the name. */
+  gameId?: string;
   /** False when the game has no bot yet: the panel shows history only. */
   botAvailable: boolean;
   onStart: () => void;
@@ -129,8 +132,14 @@ export class BotPanel {
   /** The controls row; game sections go right after it. */
   private readonly controlsRow: HTMLTableRowElement;
   private readonly controls: HTMLDivElement;
+  private statsRow: HTMLTableRowElement | null = null;
+  private chartRow: HTMLTableRowElement | null = null;
   private session: Totals | null = null;
   private overall: Totals | null = null;
+
+  private get gameKey(): string {
+    return this.options.gameId ?? this.options.gameName.toLowerCase();
+  }
 
   constructor(private readonly options: BotPanelOptions) {
     this.status = el("span", { class: "hfgs-status", role: "status" });
@@ -191,9 +200,23 @@ export class BotPanel {
           ])),
           el("tr", null, [
             el("td", { class: "tcat" }, el("strong", null, "Totals")),
-            el("td", { class: "tcat" }, el("strong", null, "Recent results")),
+            el("td", { class: "tcat" }, [
+              el("strong", null, "Recent results"),
+              el(
+                "div",
+                { class: "float_right" },
+                collapseToggle(
+                  STORAGE_KEYS.collapsed(this.gameKey, "totals"),
+                  (collapsed) => {
+                    if (this.statsRow) this.statsRow.hidden = collapsed;
+                    if (this.chartRow) this.chartRow.hidden = collapsed;
+                  },
+                  "totals and recent results"
+                )
+              ),
+            ]),
           ]),
-          el("tr", null, [
+          (this.statsRow = el("tr", null, [
             el(
               "td",
               { class: "trow1", style: "vertical-align: top; width: 40%" },
@@ -234,10 +257,10 @@ export class BotPanel {
                 ]),
               ]),
             ]),
-          ]),
-          el("tr", null, [
+          ])),
+          (this.chartRow = el("tr", null, [
             el("td", { class: "trow2", colspan: 2 }, this.chart.element),
-          ]),
+          ])),
         ]),
       ]
     );
@@ -247,23 +270,44 @@ export class BotPanel {
 
   /**
    * Add a titled section under the controls (e.g. the strategy assistant).
-   * Returns a function that shows or hides it.
+   * With `collapseAs`, its header gets a Hide/Show toggle (remembered under
+   * that name). Returns a function that shows or hides the whole section.
    */
-  addSection(title: string, content: HTMLElement): (visible: boolean) => void {
-    const head = el(
-      "tr",
-      null,
-      el("td", { class: "tcat", colspan: 2 }, el("strong", null, title))
-    );
+  addSection(
+    title: string,
+    content: HTMLElement,
+    collapseAs?: string
+  ): (visible: boolean) => void {
+    let visible = true;
+    let collapsed = false;
     const body = el(
       "tr",
       null,
       el("td", { class: "trow1", colspan: 2 }, content)
     );
+    const toggle = collapseAs
+      ? collapseToggle(
+          STORAGE_KEYS.collapsed(this.gameKey, collapseAs),
+          (value) => {
+            collapsed = value;
+            body.hidden = !visible || collapsed;
+          },
+          title
+        )
+      : null;
+    const head = el(
+      "tr",
+      null,
+      el("td", { class: "tcat", colspan: 2 }, [
+        el("strong", null, title),
+        toggle && el("div", { class: "float_right" }, toggle),
+      ])
+    );
     this.controlsRow.after(head, body);
-    return (visible) => {
-      head.hidden = !visible;
-      body.hidden = !visible;
+    return (show) => {
+      visible = show;
+      head.hidden = !show;
+      body.hidden = !show || collapsed;
     };
   }
 

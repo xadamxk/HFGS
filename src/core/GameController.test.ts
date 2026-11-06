@@ -672,8 +672,8 @@ describe("GameController settings in HF's game table", () => {
     expect(toggle.textContent).toBe("▼ Show");
     await flush();
     expect(
-      (await chrome.storage.local.get("ui:settingsCollapsed:blackjack"))[
-        "ui:settingsCollapsed:blackjack"
+      (await chrome.storage.local.get("ui:collapsed:blackjack:settings"))[
+        "ui:collapsed:blackjack:settings"
       ]
     ).toBe(true);
 
@@ -690,7 +690,7 @@ describe("GameController settings in HF's game table", () => {
     expect(document.querySelector(".hfgs-in-game")).toBeNull();
     expect(
       [...controller.panel.element.querySelectorAll("td.tcat")].map(
-        (td) => td.textContent
+        (td) => td.querySelector("strong")?.textContent
       )
     ).toContain("Settings");
   });
