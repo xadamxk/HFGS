@@ -78,6 +78,16 @@ across pages.
 
 Both are disabled while "Run in background" is off, unless Q1 says otherwise.
 
+## Next to HF Convo Anywhere
+
+HF Convo Anywhere (a separate extension) keeps its chat dock, bubbles or list, and its chat
+windows along the bottom edge on one side: right by default, left with its "Dock side"
+setting (`#hfx-chat-dock`, plus the `hfx-chat-left` class when on the left). The card goes in
+the opposite bottom corner and follows the dock live with a MutationObserver: when it
+appears, switches sides or goes away. Without Convo Anywhere, the card stays bottom right.
+The card's z-index (9000) is below the dock's (100000), so on a narrow screen with several
+chat windows open, Convo covers the card rather than the other way round.
+
 ## Behaviour details
 
 - **Countdown:** it's worked out from `state.nextAt` and redrawn every second. At 0 it

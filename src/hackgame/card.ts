@@ -2,7 +2,9 @@
  * The Hack Game status card: a small card in the corner of every other Hack
  * Forums page while auto-play runs, with what it's doing and a countdown to its
  * next step. It only reads stored state, so it never contacts HF. Drawn in a
- * shadow root so HF's styles can't reach it. Design: docs/mocks/.
+ * shadow root so HF's styles can't reach it. Design: docs/mocks/. It sits in
+ * the bottom-right corner, or the bottom-left one when HF Convo Anywhere's chat
+ * dock is on the right.
  */
 import { el } from "../core/Dom";
 import { STORAGE_KEYS } from "../core/storage";
@@ -264,6 +266,59 @@ async function loadCardData(): Promise<CardData> {
   return { state, settings: settings.hackgame, prefs };
 }
 
+/** HF Convo Anywhere's chat dock (a separate extension), if it's on the page. */
+export const CONVO_DOCK_ID = "hfx-chat-dock";
+
+/**
+ * Which bottom corner the card goes in: the right, unless HF Convo Anywhere's
+ * dock is there. Its dock and chat windows take the bottom edge on their side
+ * (right by default, left with its "hfx-chat-left" class), so the card goes
+ * to the other corner.
+ */
+export function cardCorner(doc: Document): "left" | "right" {
+  const dock = doc.getElementById(CONVO_DOCK_ID);
+  if (!dock) return "right";
+  return dock.classList.contains("hfx-chat-left") ? "right" : "left";
+}
+
+/** Put the card in its corner. */
+export function placeCard(host: HTMLElement, doc: Document): void {
+  const corner = cardCorner(doc);
+  host.dataset.corner = corner;
+  host.style.left = corner === "left" ? "16px" : "auto";
+  host.style.right = corner === "right" ? "16px" : "auto";
+}
+
+/**
+ * Keep the card clear of HF Convo Anywhere's dock: move it when the dock
+ * appears, goes away, or switches sides. Returns a function that stops.
+ */
+export function followConvoDock(host: HTMLElement, doc: Document): () => void {
+  let watchedDock: HTMLElement | null = null;
+  const dockObserver = new MutationObserver(() => placeCard(host, doc));
+  const check = () => {
+    const dock = doc.getElementById(CONVO_DOCK_ID);
+    if (dock !== watchedDock) {
+      dockObserver.disconnect();
+      watchedDock = dock;
+      if (dock)
+        dockObserver.observe(dock, {
+          attributes: true,
+          attributeFilter: ["class"],
+        });
+    }
+    placeCard(host, doc);
+  };
+  // Convo adds its dock to <body> once it has loaded
+  const bodyObserver = new MutationObserver(check);
+  bodyObserver.observe(doc.body, { childList: true });
+  check();
+  return () => {
+    bodyObserver.disconnect();
+    dockObserver.disconnect();
+  };
+}
+
 /** Put the card on this page and keep it up to date. */
 export function mountStatusCard(doc: Document = document): () => void {
   const host = doc.createElement("div");
@@ -273,6 +328,7 @@ export function mountStatusCard(doc: Document = document): () => void {
   style.textContent = CARD_CSS;
   const slot = doc.createElement("div");
   shadow.append(style, slot);
+  const stopFollowing = followConvoDock(host, doc);
 
   const actions: CardActions = {
     stop: () => stopRun("Stopped.").catch(() => undefined),
@@ -327,6 +383,7 @@ export function mountStatusCard(doc: Document = document): () => void {
   }, 1000);
   return () => {
     clearInterval(timer);
+    stopFollowing();
     chrome.storage.onChanged.removeListener(onChange);
     host.remove();
   };
