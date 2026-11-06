@@ -8,7 +8,7 @@ import { STORAGE_KEYS } from "../core/storage";
 import { loadSettings } from "../settings";
 import { runCycle } from "./cycle";
 import { backgroundIO } from "./io";
-import { HackState, loadState, patchState } from "./store";
+import { HackState, loadState, patchState, runActive } from "./store";
 
 export const HACKGAME_ALARM = "hfgs-hackgame";
 const DEFAULT_TITLE = "HF Gaming Suite settings";
@@ -25,7 +25,7 @@ export async function tick(): Promise<void> {
   busy = true;
   try {
     const state = await loadState();
-    if (!state.running || !(await inBackgroundMode())) {
+    if (!runActive(state, await inBackgroundMode())) {
       await chrome.alarms.clear(HACKGAME_ALARM);
       return;
     }

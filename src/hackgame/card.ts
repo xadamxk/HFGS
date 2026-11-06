@@ -25,6 +25,7 @@ import {
   loadState,
   saveCardPrefs,
   startRun,
+  runActive,
   stalledReason,
   STALLED_AFTER_MS,
   stopRun,
@@ -92,7 +93,10 @@ export interface CardData {
 
 /** With Run in background off and nothing running, the card is a manual control. */
 export function isManual(data: CardData): boolean {
-  return !data.state.running && !data.settings.runInBackground;
+  return (
+    !data.settings.runInBackground &&
+    !runActive(data.state, data.settings.runInBackground)
+  );
 }
 
 interface ManualStatus {
@@ -495,7 +499,10 @@ export function mountStatusCard(doc: Document = document): () => void {
   const actions: CardActions = {
     play: () => playOnceLocked(tabIO()).catch(() => undefined),
     stop: () => stopRun("Stopped.").catch(() => undefined),
-    start: () => startRun().catch(() => undefined),
+    start: () =>
+      loadSettings()
+        .then((s) => startRun(s.hackgame.runInBackground))
+        .catch(() => undefined),
     collapse: (collapsed) =>
       saveCardPrefs({ collapsed }).catch(() => undefined),
     dismiss: () => {
@@ -506,7 +513,19 @@ export function mountStatusCard(doc: Document = document): () => void {
   };
 
   const draw = async () => {
-    const card = renderCard(await loadCardData(), actions);
+    const data = await loadCardData();
+    // A run left over from the other mode (Run in background was switched)
+    // can't go on: end it, so the card offers the Hack button instead.
+    if (
+      data.state.running &&
+      !runActive(data.state, data.settings.runInBackground)
+    ) {
+      await stopRun(
+        `Stopped because Run in background was turned ${data.settings.runInBackground ? "on" : "off"}. Press Start to run again.`
+      );
+      return; // the stored change draws the card again
+    }
+    const card = renderCard(data, actions);
     slot.replaceChildren(...(card ? [card] : []));
     if (card && !host.isConnected) doc.body.append(host);
     if (!card) host.remove();

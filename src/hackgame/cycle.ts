@@ -19,6 +19,7 @@ import {
 import { HackGameSettings, waitRange } from "./settings";
 import {
   chosenJob,
+  runActive,
   HackState,
   LastJob,
   loadChoice,
@@ -163,6 +164,13 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
     return { nextInMs };
   };
   const stop = (message: string) => save({ phase: "stopped", message }, null);
+
+  // "Run in background" changed since this run started: it doesn't carry on
+  if (!runActive(state, settings.runInBackground)) {
+    return stop(
+      `Stopped because Run in background was turned ${settings.runInBackground ? "on" : "off"}. Press Start to run again.`
+    );
+  }
   const failed = (message: string) => {
     const errors = state.errors + 1;
     if (errors >= MAX_ERRORS)
@@ -232,7 +240,11 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
     readyAt = io.now() + cooldown * 1000;
     if (cooldown > 0) {
       return save(
-        { phase: "waiting", message: "Waiting for the cooldown.", errors: 0 },
+        {
+          phase: "waiting",
+          message: "Waiting for HF's cooldown, then a random extra wait.",
+          errors: 0,
+        },
         clampWait(cooldown * 1000 + extraWait(settings, io))
       );
     }
@@ -276,7 +288,9 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
       errors: 0,
       last: last ?? state.last,
       message: last
-        ? "Waiting for the cooldown."
+        ? next > 0
+          ? "Waiting for HF's cooldown, then a random extra wait."
+          : "Random extra wait before the next job."
         : "Played a job, but couldn't read its result from the logs.",
     };
     if (settings.stopAfterJobs > 0 && jobsThisRun >= settings.stopAfterJobs) {

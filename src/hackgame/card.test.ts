@@ -19,6 +19,7 @@ function data(over: Partial<CardData> = {}, state = {}): CardData {
       ...idleState(),
       running: true,
       startedAt: NOW - 600_000,
+      mode: "background",
       phase: "waiting",
       message: "Waiting for the cooldown.",
       nextAt: NOW + 91_000,
@@ -172,7 +173,11 @@ describe("status card", () => {
   it('says a run is overdue instead of counting "Any moment…" forever', () => {
     const late = { nextAt: NOW - 120_000 };
     const tab = { ...defaultSettings().hackgame, runInBackground: false };
-    const card = renderCard(data({ settings: tab }, late), actions(), NOW)!;
+    const card = renderCard(
+      data({ settings: tab }, { ...late, mode: "tab" }),
+      actions(),
+      NOW
+    )!;
     expect(card.dataset.stalled).toBe("1");
     expect(card.querySelector(".chip")?.textContent).toBe("Overdue");
     expect(card.querySelector(".big")).toBeNull();
@@ -197,6 +202,9 @@ describe("status card", () => {
   it("takes itself down once the extension is reloaded under the page", async () => {
     await chrome.storage.local.clear();
     document.body.replaceChildren();
+    const background = defaultSettings();
+    background.hackgame.runInBackground = true;
+    await saveSettings(background);
     await saveState({ ...data().state, nextAt: Date.now() + 60_000 });
     const stop = mountStatusCard(document);
     await new Promise((r) => setTimeout(r, 20));
@@ -357,10 +365,26 @@ describe("manual status card (Run in background off)", () => {
     expect(a.collapse).toHaveBeenCalledWith(false);
   });
 
+  it("offers the Hack button instead of a run left over from background mode", () => {
+    const leftover = renderCard(
+      manual({
+        running: true,
+        mode: "background",
+        phase: "waiting",
+        nextAt: NOW - 600_000,
+      }),
+      actions(),
+      NOW
+    )!;
+    expect(leftover.dataset.manual).toBe("1");
+    expect(leftover.querySelector("button.play")).not.toBeNull();
+  });
+
   it("is the status card while a run goes, even with Run in background off", () => {
     const running = renderCard(
       manual({
         running: true,
+        mode: "tab",
         phase: "waiting",
         message: "Waiting for the cooldown.",
         nextAt: NOW + 60_000,

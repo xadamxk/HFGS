@@ -254,7 +254,7 @@ export class HackGamePanel {
 
   private async toggle(): Promise<void> {
     if (this.state?.running) await stopRun("Stopped.");
-    else await startRun();
+    else await startRun((await loadSettings()).hackgame.runInBackground);
   }
 
   private async refresh(): Promise<void> {

@@ -68,6 +68,8 @@ describe("background wake-up", () => {
     const settings = defaultSettings();
     settings.hackgame.runInBackground = true;
     await saveSettings(settings);
+    // Let the step the settings change starts finish first
+    await new Promise((r) => setTimeout(r, 20));
     const nextAt = Date.now() + 120_000;
     listeners.forEach((fn) =>
       fn(

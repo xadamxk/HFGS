@@ -95,7 +95,7 @@ async function setup(
       .filter((j) => tick.includes(j.id))
       .map((j) => ({ id: j.id, name: j.name }))
   );
-  await startRun(LOGGED_AT - 60_000);
+  await startRun(settings.hackgame.runInBackground, LOGGED_AT - 60_000);
 }
 
 beforeEach(async () => {
@@ -160,7 +160,9 @@ describe("runCycle", () => {
     hf.io.random = () => 0.5;
     expect((await runCycle(hf.io)).nextInMs).toBe(100_000 + 90_000);
     expect(hf.posts).toEqual([]);
-    expect((await loadState()).message).toBe("Waiting for the cooldown.");
+    expect((await loadState()).message).toBe(
+      "Waiting for HF's cooldown, then a random extra wait."
+    );
   });
 
   it("pauses below the power level and waits for the battery to reach the resume level", async () => {
@@ -259,6 +261,21 @@ describe("runCycle", () => {
       running: false,
       jobsThisRun: 1,
       message: "Finished 1 job.",
+    });
+  });
+
+  it("stops a run once Run in background no longer matches the mode it started in", async () => {
+    await setup();
+    const settings = defaultSettings();
+    settings.hackgame.runInBackground = true;
+    await saveSettings(settings);
+    const hf = fakeHF({ [SMALL]: smallhacks });
+    expect((await runCycle(hf.io)).nextInMs).toBeNull();
+    expect(hf.gets).toEqual([]);
+    expect(await loadState()).toMatchObject({
+      running: false,
+      message:
+        "Stopped because Run in background was turned on. Press Start to run again.",
     });
   });
 

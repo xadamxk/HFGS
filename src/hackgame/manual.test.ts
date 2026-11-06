@@ -116,9 +116,21 @@ describe("playing a job by hand", () => {
     );
   });
 
+  it("plays even with a run left over from background mode (no Hack Game tab needed)", async () => {
+    await pick();
+    await saveState({ ...idleState(), running: true, mode: "background" });
+    const hf = fakeHF({
+      [SMALL]: smallhacks,
+      post: smallhacks,
+      [LOGS]: successLogs,
+    });
+    await playOnce(hf.io);
+    expect(hf.posts).toHaveLength(1);
+  });
+
   it("leaves a running auto-play alone", async () => {
     await pick();
-    await saveState({ ...idleState(), running: true });
+    await saveState({ ...idleState(), running: true, mode: "tab" });
     const hf = fakeHF({ [SMALL]: smallhacks });
     await playOnce(hf.io);
     expect(hf.posts).toEqual([]);

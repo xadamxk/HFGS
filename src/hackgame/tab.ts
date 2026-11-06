@@ -8,13 +8,16 @@ import { STORAGE_KEYS } from "../core/storage";
 import { loadSettings } from "../settings";
 import { runCycle } from "./cycle";
 import { tabIO } from "./io";
-import { loadState } from "./store";
+import { loadState, runActive } from "./store";
 
 const LOCK = "hfgs-hackgame";
 
 async function shouldPlay(): Promise<boolean> {
   const [state, settings] = await Promise.all([loadState(), loadSettings()]);
-  return state.running && !settings.hackgame.runInBackground;
+  return (
+    !settings.hackgame.runInBackground &&
+    runActive(state, settings.hackgame.runInBackground)
+  );
 }
 
 /** Wait `ms`, or less if auto-play is started, stopped or switched meanwhile. */

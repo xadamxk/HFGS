@@ -58,6 +58,24 @@ export interface HackState {
   busy: boolean;
   /** Why the last job played by hand didn't happen, or null. */
   note: string | null;
+  /**
+   * Which mode the run was started in. A run only goes on in that mode:
+   * changing "Run in background" stops it. Runs from before this was stored
+   * were started in background mode (the default then).
+   */
+  mode?: RunMode;
+}
+
+export type RunMode = "background" | "tab";
+
+export const modeOf = (runInBackground: boolean): RunMode =>
+  runInBackground ? "background" : "tab";
+
+/** Whether a run is going in the current mode ("Run in background" on or off). */
+export function runActive(state: HackState, runInBackground: boolean): boolean {
+  return (
+    state.running && (state.mode ?? "background") === modeOf(runInBackground)
+  );
 }
 
 export interface HackTotals {
@@ -213,10 +231,14 @@ export async function patchState(
 }
 
 /** Start auto-play (from the panel). */
-export async function startRun(now = Date.now()): Promise<void> {
+export async function startRun(
+  runInBackground: boolean,
+  now = Date.now()
+): Promise<void> {
   const state = await loadState();
   await saveState({
     ...state,
+    mode: modeOf(runInBackground),
     running: true,
     startedAt: now,
     jobsThisRun: 0,

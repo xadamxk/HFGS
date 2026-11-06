@@ -13,8 +13,10 @@ import {
   postKey,
   powerPercent,
 } from "./parse";
+import { loadSettings } from "../settings";
 import {
   chosenJob,
+  runActive,
   HackState,
   loadChoice,
   loadState,
@@ -26,8 +28,8 @@ const LOCK = "hfgs-hackgame-play";
 
 /** Play the picked job once. Does nothing while auto-play runs or a play is going. */
 export async function playOnce(io: HackIO): Promise<void> {
-  const state = await loadState();
-  if (state.running || state.busy) return;
+  const [state, settings] = await Promise.all([loadState(), loadSettings()]);
+  if (runActive(state, settings.hackgame.runInBackground) || state.busy) return;
   await patchState({ busy: true, note: null });
 
   const result: Partial<HackState> = { busy: false };
