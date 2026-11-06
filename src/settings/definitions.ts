@@ -15,6 +15,12 @@ interface BaseDefinition<T, K extends keyof T & string> {
   id: K;
   label: string;
   description: string;
+  /**
+   * Settings with the same group are shown together under it as a heading, in
+   * the order the groups first appear. Settings without one come under the
+   * form's own title, if it has one.
+   */
+  group?: string;
   /** A checkbox setting that must be on for this one to apply (it's disabled otherwise). */
   enabledBy?: KeysOfType<T, boolean>;
 }

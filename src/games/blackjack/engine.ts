@@ -250,6 +250,8 @@ export const blackjackBot: GameBot = {
       : "";
     return `Play ${count} at ${s.baseBet} βytes${martingale}?`;
   },
+  roundUnit: (values) =>
+    values.martingale === true ? ["set", "sets"] : ["hand", "hands"],
   describeRounds: (rounds, played, values) => {
     const hands = `${played} hand${played === 1 ? "" : "s"}`;
     if (values.martingale !== true && rounds === played)

@@ -19,6 +19,8 @@ export interface SettingsFormOptions {
    * inputs get HF's own `textbox` class so they follow the forum theme.
    */
   compact?: boolean;
+  /** Heading for the settings that have no group. */
+  title?: string;
 }
 
 export interface SettingsForm {
@@ -28,6 +30,8 @@ export interface SettingsForm {
    * in keeps what the user is typing.
    */
   setValues(values: SettingValues): void;
+  /** A group's box, to add a note to it; undefined if there's no such group. */
+  group(name: string): HTMLElement | undefined;
 }
 
 interface Row {
@@ -65,7 +69,7 @@ export function settingsForm<T>(
       options
     )
   );
-  form.append(...rows.map((row) => row.element));
+  const groups = groupRows(form, rows, options);
 
   // Settings that only apply while a checkbox is on are disabled while it's off.
   const updateEnabled = () => {
@@ -78,6 +82,7 @@ export function settingsForm<T>(
 
   return {
     element: form,
+    group: (name) => groups.get(name),
     setValues(next) {
       for (const row of rows) {
         const value = next[row.definition.id];
@@ -89,6 +94,47 @@ export function settingsForm<T>(
       updateEnabled();
     },
   };
+}
+
+/**
+ * Put the rows in their groups, each under its heading. Returns each group's
+ * box by name (the settings without a group are under "").
+ */
+function groupRows(
+  form: HTMLFormElement,
+  rows: Row[],
+  { compact = false, title }: SettingsFormOptions
+): Map<string, HTMLElement> {
+  const order: string[] = [];
+  const members = new Map<string, HTMLElement[]>();
+  for (const row of rows) {
+    const name = row.definition.group ?? "";
+    if (!members.has(name)) {
+      members.set(name, []);
+      order.push(name);
+    }
+    members.get(name)!.push(row.element);
+  }
+  const boxes = new Map<string, HTMLElement>();
+  for (const name of order) {
+    const heading = name || title;
+    const box = compact
+      ? el(
+          "div",
+          { class: "hfgs-settings-group", "data-group": name || null },
+          [
+            heading && el("div", { class: "hfgs-settings-title" }, heading),
+            el("div", { class: "hfgs-settings-grid" }, members.get(name)!),
+          ]
+        )
+      : el("div", { class: "group", "data-group": name || null }, [
+          heading && el("h3", { class: "group-title" }, heading),
+          ...members.get(name)!,
+        ]);
+    boxes.set(name, box);
+    form.append(box);
+  }
+  return boxes;
 }
 
 function settingRow(

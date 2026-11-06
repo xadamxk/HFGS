@@ -98,6 +98,7 @@ export function createSlotsEngine(context: EngineContext): GameEngine {
 
 export const slotsBot: GameBot = {
   createEngine: createSlotsEngine,
+  roundUnit: () => ["spin", "spins"],
   summarize: (values) => {
     const s = values as unknown as SlotsSettings;
     const count = s.runUntilStopped

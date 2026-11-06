@@ -1,6 +1,12 @@
 import { HfError } from "./HfClient";
 import { RoundResult } from "./history";
-import { GameEngine, PlayedRound, Runner, RunLimits } from "./Runner";
+import {
+  describeLimits,
+  GameEngine,
+  PlayedRound,
+  Runner,
+  RunLimits,
+} from "./Runner";
 
 const NO_LIMITS: RunLimits = { maxRounds: null, stopLoss: 0, takeProfit: 0 };
 
@@ -34,6 +40,34 @@ const push = (n = 2): RoundResult => ({
   outcome: "TIE",
   wagered: n,
   returned: n,
+});
+
+describe("describeLimits", () => {
+  it("lists every limit that can stop a run", () => {
+    expect(
+      describeLimits({ maxRounds: 10, stopLoss: 200, takeProfit: 50 }, [
+        "set",
+        "sets",
+      ])
+    ).toEqual({
+      text: "Each run stops after 10 sets, once it's up 50 βytes or once it's down 200 βytes, whichever comes first, or when you press Stop.",
+      warn: false,
+    });
+    expect(
+      describeLimits({ maxRounds: 1, stopLoss: 5, takeProfit: 0 })
+    ).toEqual({
+      text: "Each run stops after 1 round or once it's down 5 βytes, whichever comes first, or when you press Stop.",
+      warn: false,
+    });
+  });
+
+  it("warns when nothing caps the losses of an endless run", () => {
+    expect(describeLimits(NO_LIMITS)).toEqual({
+      text: "Each run only stops when you press Stop (or HF refuses a bet). There's no stop-loss, so nothing caps the losses.",
+      warn: true,
+    });
+    expect(describeLimits({ ...NO_LIMITS, maxRounds: 3 }).warn).toBe(false);
+  });
 });
 
 describe("Runner", () => {

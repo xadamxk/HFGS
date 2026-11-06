@@ -319,6 +319,46 @@ describe("GameController settings on the game page", () => {
     controller.dispose();
   });
 
+  it("groups the settings and says when a run will stop, live", async () => {
+    const controller = setup();
+    await controller.init();
+    const titles = [
+      ...document.querySelectorAll(".hfgs-panel .hfgs-settings-title"),
+    ].map((t) => t.textContent);
+    expect(titles).toEqual([
+      "Slots",
+      "Stop the bot (all games)",
+      "Display and pacing (all games)",
+    ]);
+    const stopGroup = document.querySelector(
+      '[data-group="Stop the bot (all games)"]'
+    )!;
+    expect(stopGroup.querySelector("#hfgs-global-takeProfit")).not.toBeNull();
+    const note = () => stopGroup.querySelector(".hfgs-limits")!;
+    expect(note().textContent).toBe(
+      "Each run stops after 25 rounds, or when you press Stop. There's no stop-loss, so nothing caps the losses."
+    );
+
+    input("hfgs-slots-runUntilStopped").checked = true;
+    input("hfgs-slots-runUntilStopped").dispatchEvent(new Event("change"));
+    input("hfgs-global-takeProfit").value = "50";
+    input("hfgs-global-takeProfit").dispatchEvent(new Event("change"));
+    await flush();
+    expect(note().textContent).toBe(
+      "Each run stops once it's up 50 βytes, or when you press Stop. There's no stop-loss, so nothing caps the losses."
+    );
+    expect(note().classList.contains("hfgs-warn")).toBe(true);
+
+    input("hfgs-global-stopLoss").value = "200";
+    input("hfgs-global-stopLoss").dispatchEvent(new Event("change"));
+    await flush();
+    expect(note().textContent).toBe(
+      "Each run stops once it's up 50 βytes or once it's down 200 βytes, whichever comes first, or when you press Stop."
+    );
+    expect(note().classList.contains("hfgs-warn")).toBe(false);
+    controller.dispose();
+  });
+
   it("uses a setting changed on the page for the next round of a running bot", async () => {
     const settings = defaultSettings();
     settings.global.confirmStart = false;

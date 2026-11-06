@@ -50,7 +50,7 @@ export const slots: GameDefinition<SlotsSettings> = {
       id: "runUntilStopped",
       label: "Run until stopped",
       description:
-        "Ignore spins per session and keep spinning until you stop the bot or a stop-loss or take-profit limit is hit.",
+        "Ignore spins per session and keep spinning until you press Stop or the stop-loss or take-profit is hit. With both at 0, only Stop (or HF refusing a spin) ends the run.",
       default: false,
     },
   ],

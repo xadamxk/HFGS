@@ -75,6 +75,38 @@ export function describeStop(reason: StopReason): string {
   }
 }
 
+/**
+ * When a run with these limits stops, in a sentence, for the settings.
+ * `unit` names a round: ["hand", "hands"], ["set", "sets"]…
+ * `warn` is set when nothing caps the losses.
+ */
+export function describeLimits(
+  limits: RunLimits,
+  unit: [string, string] = ["round", "rounds"]
+): { text: string; warn: boolean } {
+  const parts: string[] = [];
+  if (limits.maxRounds !== null)
+    parts.push(
+      `after ${limits.maxRounds} ${unit[limits.maxRounds === 1 ? 0 : 1]}`
+    );
+  if (limits.takeProfit > 0)
+    parts.push(`once it's up ${limits.takeProfit} βytes`);
+  if (limits.stopLoss > 0)
+    parts.push(`once it's down ${limits.stopLoss} βytes`);
+  const list =
+    parts.length > 1
+      ? `${parts.slice(0, -1).join(", ")} or ${parts[parts.length - 1]}, whichever comes first`
+      : parts[0];
+  const text = list
+    ? `Each run stops ${list}, or when you press Stop.`
+    : "Each run only stops when you press Stop (or HF refuses a bet).";
+  if (limits.stopLoss > 0) return { text, warn: false };
+  return {
+    text: `${text} There's no stop-loss, so nothing caps the losses.`,
+    warn: limits.maxRounds === null,
+  };
+}
+
 export class Runner {
   private state: RunnerState = "idle";
   private signal = { stopRequested: false };

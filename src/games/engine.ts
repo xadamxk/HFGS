@@ -74,6 +74,8 @@ export type RunSummary = (gameSettings: SettingValues) => string;
 export interface GameBot {
   createEngine: EngineFactory;
   summarize: RunSummary;
+  /** What a round is called, e.g. ["hand", "hands"]. Defaults to rounds. */
+  roundUnit?: (gameSettings: SettingValues) => [string, string];
   /**
    * The status line when the round limit ends a session, e.g. "Finished 10
    * sets (23 hands)." Defaults to "Finished 10 rounds."

@@ -33,7 +33,10 @@ const CSS = `
 .hfgs-panel .hfgs-chart-tooltip { position: absolute; top: 4px; padding: 4px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 11px; line-height: 1.5; pointer-events: none; white-space: nowrap; }
 .hfgs-panel .hfgs-settings-groups { display: flex; flex-direction: column; gap: 8px; }
 .hfgs-panel .hfgs-settings-group > .hfgs-settings-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; margin-bottom: 4px; }
-.hfgs-panel .hfgs-settings { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 6px 24px; margin: 0; }
+.hfgs-panel .hfgs-settings { display: flex; flex-direction: column; gap: 10px; margin: 0; }
+.hfgs-panel .hfgs-settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 6px 24px; }
+.hfgs-panel .hfgs-limits { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+.hfgs-panel .hfgs-limits.hfgs-warn { color: #e0a000; opacity: 1; }
 .hfgs-panel .hfgs-setting { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
 .hfgs-panel .hfgs-setting-check { justify-content: flex-start; }
 .hfgs-panel .hfgs-setting label { cursor: pointer; }

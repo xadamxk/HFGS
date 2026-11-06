@@ -9,6 +9,7 @@ import { GameAssistant, GameBot, HistoryView, PlayedBy } from "../games/engine";
 import { GameDefinition } from "../games/types";
 import {
   GLOBAL_SETTINGS,
+  STOP_GROUP,
   GlobalSettings,
   HfgsSettings,
   saveSettings,
@@ -39,7 +40,7 @@ import {
   showOnPage,
   syncPage,
 } from "./pageBridge";
-import { describeStop, RunLimits, Runner } from "./Runner";
+import { describeLimits, describeStop, RunLimits, Runner } from "./Runner";
 import { STORAGE_KEYS } from "./storage";
 import { BESIDE_CSS, mountBeside } from "./ui/beside";
 import { BotPanel } from "./ui/BotPanel";
@@ -99,6 +100,8 @@ export class GameController {
   private sessionStartedAt: number | null = null;
   private gameForm: SettingsForm | null = null;
   private globalForm: SettingsForm | null = null;
+  /** In the Stop the bot group: when a run with the current settings stops. */
+  private limitsNote: HTMLElement | null = null;
   private savedNote: HTMLElement | null = null;
   private savedTimer: ReturnType<typeof setTimeout> | undefined;
   /** Rounds are written one at a time so totals never miss one. */
@@ -184,7 +187,7 @@ export class GameController {
             [game.id]: { ...this.gameSettings, ...change },
           },
         }),
-      { compact: true }
+      { compact: true, title: game.name }
     );
     this.globalForm = settingsForm(
       "hfgs-global",
@@ -197,24 +200,31 @@ export class GameController {
         }),
       { compact: true }
     );
+    this.limitsNote = el("div", { class: "hfgs-limits", role: "status" });
+    this.globalForm.group(STOP_GROUP)?.append(this.limitsNote);
+    this.updateLimitsNote();
     this.savedNote = el("span", { class: "hfgs-saved", role: "status" });
     this.panel.addSection(
       "Settings",
       el("div", { class: "hfgs-settings-groups" }, [
-        el("div", { class: "hfgs-settings-group" }, [
-          el("div", { class: "hfgs-settings-title" }, game.name),
-          this.gameForm.element,
-        ]),
-        el("div", { class: "hfgs-settings-group" }, [
-          el("div", { class: "hfgs-settings-title" }, "All games"),
-          this.globalForm.element,
-        ]),
+        this.gameForm.element,
+        this.globalForm.element,
         el("div", { class: "hfgs-settings-note" }, [
           "Changes save right away and apply from the next round, even while the bot runs. Hover a setting for details.",
           this.savedNote,
         ]),
       ])
     );
+  }
+
+  private updateLimitsNote(): void {
+    if (!this.limitsNote) return;
+    const { text, warn } = describeLimits(
+      limitsFrom(this.settings.global, this.gameSettings),
+      this.options.bot?.roundUnit?.(this.gameSettings)
+    );
+    this.limitsNote.textContent = text;
+    this.limitsNote.classList.toggle("hfgs-warn", warn);
   }
 
   /** The sound state last sent to HF's page. */
@@ -247,6 +257,7 @@ export class GameController {
     if (next.global.muteSounds !== this.mutedSent) this.applyMuted();
     this.client.minIntervalMs = next.global.actionDelayMs;
     this.setAssistantVisible?.(this.gameSettings.showAssistant !== false);
+    this.updateLimitsNote();
     try {
       await saveSettings(next);
       if (this.savedNote) this.savedNote.textContent = "Saved";
@@ -286,6 +297,7 @@ export class GameController {
       if (settings.global.muteSounds !== this.mutedSent) this.applyMuted();
       this.gameForm?.setValues(this.gameSettings);
       this.globalForm?.setValues(settings.global as unknown as SettingValues);
+      this.updateLimitsNote();
     });
     chrome.storage.onChanged.addListener(this.onStorageChanged);
   }

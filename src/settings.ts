@@ -22,48 +22,18 @@ export interface GlobalSettings {
   takeProfit: number;
 }
 
+/** The global settings' groups. Both apply to every game. */
+export const STOP_GROUP = "Stop the bot (all games)";
+export const DISPLAY_GROUP = "Display and pacing (all games)";
+
 export const GLOBAL_SETTINGS: SettingDefinition<GlobalSettings>[] = [
-  {
-    type: "checkbox",
-    id: "confirmStart",
-    label: "Confirm before starting",
-    description: "Ask before a bot starts placing bets.",
-    default: true,
-  },
-  {
-    type: "checkbox",
-    id: "headless",
-    label: "Headless Mode",
-    description:
-      "Play in the background without drawing each hand or spin on HF's page; only HF's balance is updated. Turn it off to watch the bot play with HF's own card and reel animations (slower: each round waits for its animation).",
-    default: true,
-  },
-  {
-    type: "checkbox",
-    id: "muteSounds",
-    label: "Mute game sounds",
-    description:
-      "Keep HF's blackjack and slots sounds off. Clicking HF's own sound button on a game page changes this too, so your choice is remembered next time.",
-    default: false,
-  },
-  {
-    type: "number",
-    id: "actionDelayMs",
-    label: "Delay between actions",
-    description:
-      "Wait this long between requests to HF (each hit, stand, deal or spin). HF rejects actions sent about a second apart as too quick, so keep this at 2 seconds or more.",
-    default: 2000,
-    min: 1000,
-    max: 10000,
-    step: 100,
-    unit: "ms",
-  },
   {
     type: "number",
     id: "stopLoss",
+    group: STOP_GROUP,
     label: "Stop-loss",
     description:
-      "Stop a session once it has lost this many βytes. 0 turns it off.",
+      "Stop any run once it is down this many βytes, even with Run until stopped on or partway through a martingale set. It's checked after each hand or spin, so the last bet can take the run past it. 0 turns it off.",
     default: 0,
     min: 0,
     max: 1000000,
@@ -73,14 +43,54 @@ export const GLOBAL_SETTINGS: SettingDefinition<GlobalSettings>[] = [
   {
     type: "number",
     id: "takeProfit",
+    group: STOP_GROUP,
     label: "Take-profit",
     description:
-      "Stop a session once it is up this many βytes. 0 turns it off.",
+      "Stop any run once it is up this many βytes, even with Run until stopped on or martingale betting on. 0 turns it off.",
     default: 0,
     min: 0,
     max: 1000000,
     step: 1,
     unit: "βytes",
+  },
+  {
+    type: "checkbox",
+    id: "confirmStart",
+    group: DISPLAY_GROUP,
+    label: "Confirm before starting",
+    description: "Ask before a bot starts placing bets.",
+    default: true,
+  },
+  {
+    type: "checkbox",
+    id: "headless",
+    group: DISPLAY_GROUP,
+    label: "Headless Mode",
+    description:
+      "Play in the background without drawing each hand or spin on HF's page; only HF's balance is updated. Turn it off to watch the bot play with HF's own card and reel animations (slower: each round waits for its animation).",
+    default: true,
+  },
+  {
+    type: "checkbox",
+    id: "muteSounds",
+    group: DISPLAY_GROUP,
+    label: "Mute game sounds",
+    description:
+      "Keep HF's blackjack and slots sounds off. Clicking HF's own sound button on a game page changes this too, so your choice is remembered next time.",
+    default: false,
+  },
+  {
+    type: "number",
+    id: "actionDelayMs",
+    group: DISPLAY_GROUP,
+    label: "Delay between actions",
+    description:
+      "Wait this long between requests to HF (each hit, stand, deal or spin). HF rejects actions sent about a second apart as too quick, so keep this at 2 seconds or more.",
+    default: 2000,
+    min: 1000,
+    max: 10000,
+    step: 100,
+    unit: "ms",
   },
 ];
 

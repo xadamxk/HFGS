@@ -58,12 +58,13 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       id: "runUntilStopped",
       label: "Run until stopped",
       description:
-        "Ignore rounds per session and keep playing until you stop the bot or a stop-loss or take-profit limit is hit.",
+        "Ignore rounds per session and keep playing until you press Stop or the stop-loss or take-profit is hit. With both at 0, only Stop (or HF refusing a bet) ends the run.",
       default: false,
     },
     {
       type: "checkbox",
       id: "martingale",
+      group: "Martingale",
       label: "Martingale betting",
       description:
         "Multiply the bet after each loss and go back to your bet after a win. Each set (up to that win) counts as one round, so a losing streak can run past your rounds per session and grows the bet fast: use a stop-loss.",
@@ -72,6 +73,7 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
     {
       type: "number",
       id: "martingaleMultiplier",
+      group: "Martingale",
       label: "Martingale multiplier",
       description: "How much the bet grows after each loss.",
       default: 2,
@@ -83,6 +85,7 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
     {
       type: "number",
       id: "maxBet",
+      group: "Martingale",
       label: "Martingale bet cap",
       description: "The bet never grows past this.",
       default: 100,
