@@ -18,7 +18,7 @@ import {
 } from "./parse";
 import { HackGameSettings, waitRange } from "./settings";
 import {
-  ChosenJob,
+  chosenJob,
   HackState,
   LastJob,
   loadChoice,
@@ -43,9 +43,12 @@ export interface CycleOutcome {
   nextInMs: number | null;
 }
 
-const SMALLHACKS = "gamecp.php?action=smallhacks";
+export const SMALLHACKS = "gamecp.php?action=smallhacks";
 const BATTERY = "gamecp.php?action=battery";
 const LOGS = "gamecp.php?action=logs";
+
+/** Power one Small Hack Job uses (seen live: 97% → 92%). */
+export const JOB_POWER = 5;
 
 /** Pause between the requests within one step (HF rejects quick repeats). */
 export const REQUEST_GAP_MS = 2500;
@@ -55,17 +58,59 @@ const MIN_WAIT_MS = 30_000;
 const MAX_WAIT_MS = 6 * 3600_000;
 const MAX_ERRORS = 3;
 
-/** The jobs the bot may play right now. */
-export function playableJobs(
-  jobs: HackJob[],
-  choice: ChosenJob[],
-  minRate: number
-): HackJob[] {
-  return jobs.filter(
-    (job) =>
-      choice.some((c) => c.id === job.id && c.name === job.name) ||
-      (minRate > 0 && job.rate >= minRate)
-  );
+export interface Attempt {
+  /** HF said "too quickly": the job wasn't played. */
+  flood: boolean;
+  /** The job's result from HF's logs, or null if it couldn't be read. */
+  last: LastJob | null;
+  /** Seconds until HF lets the next job be played. */
+  cooldown: number;
+}
+
+/**
+ * Play `job` once and read its result from HF's logs (the newest entry, if
+ * it's from just now). Records the result. Shared by auto-play and the status
+ * card's Hack button.
+ */
+export async function attemptJob(
+  io: HackIO,
+  job: HackJob,
+  key: string
+): Promise<Attempt> {
+  await io.sleep(REQUEST_GAP_MS);
+  const postedAt = io.now();
+  const answer = await io.post("gamecp.php", {
+    job_id: job.id,
+    my_post_key: key,
+    action: "do_smallhacks",
+    submit: "",
+  });
+  if (pageKind(answer) === "flood")
+    return { flood: true, last: null, cooldown: 0 };
+
+  await io.sleep(REQUEST_GAP_MS);
+  const logs = await io.get(LOGS);
+  const result = latestJobResult(logs);
+  const fresh =
+    result && (result.at === null || result.at >= postedAt - 120_000);
+  let last: LastJob | null = null;
+  if (result && fresh) {
+    last = {
+      // This computer's clock, like the run's start: HF's can be a few seconds off
+      at: postedAt,
+      job: job.name,
+      success: result.success,
+      rate: result.rate,
+      money: result.money,
+      xp: result.xp,
+    };
+    await recordJob(last);
+  }
+  return {
+    flood: false,
+    last,
+    cooldown: cooldownSeconds(logs) || cooldownSeconds(answer),
+  };
 }
 
 function extraWait(settings: HackGameSettings, io: HackIO): number {
@@ -99,6 +144,7 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
   const settings = (await loadSettings()).hackgame;
 
   let power: number | null | undefined;
+  let readyAt: number | undefined;
   const save = async (
     patch: Partial<HackState>,
     nextInMs: number | null
@@ -106,6 +152,7 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
     state = {
       ...(await loadState()),
       ...(power === undefined ? {} : { power }),
+      ...(readyAt === undefined ? {} : { readyAt }),
       ...patch,
       nextAt: nextInMs === null ? null : io.now() + nextInMs,
     };
@@ -182,6 +229,7 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
     }
 
     const cooldown = cooldownSeconds(page);
+    readyAt = io.now() + cooldown * 1000;
     if (cooldown > 0) {
       return save(
         { phase: "waiting", message: "Waiting for the cooldown.", errors: 0 },
@@ -196,59 +244,32 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
       return stop(`Finished ${state.jobsThisRun} jobs.`);
     }
 
-    const playable = playableJobs(jobs, await loadChoice(), settings.minRate);
-    if (!playable.length) {
+    const job = chosenJob(jobs, await loadChoice());
+    if (!job) {
       return stop(
         jobs.length
-          ? "No job to play: tick at least one job, or set a minimum success rate."
+          ? "No job picked: choose one in HF's Small Hack Jobs list."
           : "HF's page didn't list any jobs."
       );
     }
     const key = postKey(page);
     if (!key) return stop("No post key on HF's page. Are you signed in?");
 
-    const job = playable[Math.floor(io.random() * playable.length)];
     await save(
       { phase: "playing", message: `Playing "${job.name}" (${job.rate}%).` },
       0
     );
-    await io.sleep(REQUEST_GAP_MS);
-    const postedAt = io.now();
-    const answer = await io.post("gamecp.php", {
-      job_id: job.id,
-      my_post_key: key,
-      action: "do_smallhacks",
-      submit: "",
-    });
-    if (pageKind(answer) === "flood") {
+    const attempt = await attemptJob(io, job, key);
+    if (attempt.flood) {
       return save(
         { phase: "waiting", message: "HF asked to slow down." },
         MIN_WAIT_MS
       );
     }
-
-    // HF logs every job; the newest entry is this one if it's from just now
-    await io.sleep(REQUEST_GAP_MS);
-    const logs = await io.get(LOGS);
-    const result = latestJobResult(logs);
-    const fresh =
-      result && (result.at === null || result.at >= postedAt - 120_000);
+    const { last } = attempt;
+    const next = attempt.cooldown;
+    readyAt = io.now() + next * 1000;
     const jobsThisRun = state.jobsThisRun + 1;
-    let last: LastJob | null = null;
-    if (result && fresh) {
-      last = {
-        // This computer's clock, like the run's start: HF's can be a few seconds off
-        at: postedAt,
-        job: job.name,
-        success: result.success,
-        rate: result.rate,
-        money: result.money,
-        xp: result.xp,
-      };
-      await recordJob(last);
-    }
-
-    const next = cooldownSeconds(logs) || cooldownSeconds(answer);
     const patch: Partial<HackState> = {
       phase: "waiting",
       jobsThisRun,

@@ -45,9 +45,6 @@
       "matches": [
         "https://hackforums.net/*"
       ],
-      "exclude_matches": [
-        "https://hackforums.net/gamecp.php*"
-      ],
       "js": [
         "statuscard.js"
       ]

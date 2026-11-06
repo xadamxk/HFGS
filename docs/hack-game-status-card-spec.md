@@ -78,6 +78,17 @@ across pages.
 
 Both are disabled while "Run in background" is off, unless Q1 says otherwise.
 
+## Manual mode (Run in background off)
+
+With "Run in background" off (the default) and no run going, the card is a manual control,
+on every HF page including the Hack Game's own. It keeps to one row: the status label shows
+Ready, Cooldown, Playing, Success, Fail or Not played; the row shows "Ready", "Next job in
+02:44" or why a job wasn't played (for example "Not enough power (4%)."), with a **Hack**
+button at its end. Hack plays the job picked in HF's list once (`playOnce`), then the card
+shows the result and counts down to when HF allows the next job. The button is off during
+a cooldown or while a job plays. The collapsed pill keeps a ▶ button. The last job's
+details are in the row's tooltip. While a run is going, the card is the status card above.
+
 ## Next to HF Convo Anywhere
 
 HF Convo Anywhere (a separate extension) keeps its chat dock, bubbles or list, and its chat

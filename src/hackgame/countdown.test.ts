@@ -66,14 +66,15 @@ describe("menu countdown", () => {
     const doc = menu();
     const nextAt = Date.now() + 120_000;
     await saveState({ ...idleState(), running: true, nextAt });
+    const background = defaultSettings();
+    background.hackgame.runInBackground = true;
+    await saveSettings(background);
     const stop = startMenuCountdown(doc);
     await new Promise((r) => setTimeout(r, 20));
-    // Run in background is on by default: HF's countdown stays
+    // In background mode HF's countdown stays
     expect(shown()).toEqual(["02:44"]);
 
-    const settings = defaultSettings();
-    settings.hackgame.runInBackground = false;
-    await saveSettings(settings);
+    await saveSettings(defaultSettings()); // Run in background: off (the default)
     await new Promise((r) => setTimeout(r, 20));
     expect(shown()).toEqual(["02:00"]);
 

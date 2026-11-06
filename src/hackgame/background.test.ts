@@ -65,6 +65,9 @@ describe("background wake-up", () => {
     registerHackGame();
     chrome.storage.onChanged.addListener = realOnChanged;
 
+    const settings = defaultSettings();
+    settings.hackgame.runInBackground = true;
+    await saveSettings(settings);
     const nextAt = Date.now() + 120_000;
     listeners.forEach((fn) =>
       fn(

@@ -2,10 +2,11 @@ import fs from "fs";
 import path from "path";
 import { loadHistory } from "../core/history";
 import { defaultSettings, saveSettings } from "../settings";
-import { HackIO, playableJobs, rechargeWait, runCycle } from "./cycle";
+import { HackIO, rechargeWait, runCycle } from "./cycle";
 import { parseJobs } from "./parse";
 import { HackGameSettings } from "./settings";
 import {
+  chosenJob,
   HACKGAME_ID,
   loadChoice,
   loadJobCache,
@@ -201,8 +202,7 @@ describe("runCycle", () => {
     expect(await loadState()).toMatchObject({
       running: false,
       phase: "stopped",
-      message:
-        "No job to play: tick at least one job, or set a minimum success rate.",
+      message: "No job picked: choose one in HF's Small Hack Jobs list.",
     });
 
     await setup();
@@ -212,17 +212,6 @@ describe("runCycle", () => {
     await setup();
     await runCycle(fakeHF({ [SMALL]: "<p>Please log in</p>" }).io);
     expect((await loadState()).message).toMatch(/signed out/);
-  });
-
-  it("also plays any job at or above the minimum success rate", async () => {
-    await setup({ minRate: 99 }, []);
-    const hf = fakeHF({
-      [SMALL]: smallhacks,
-      post: smallhacks,
-      [LOGS]: successLogs,
-    });
-    await runCycle(hf.io);
-    expect(hf.posts[0].form.job_id).toBe("28");
   });
 
   it("waits when locked out, and slows down on a flood page", async () => {
@@ -300,15 +289,11 @@ describe("job list storage", () => {
     expect((await loadJobCache())?.dropped).toEqual([jobs[0].name]);
   });
 
-  it("picks from the ticked jobs and the minimum rate", () => {
+  it("plays the job picked in HF's list, while HF still has it under that name", () => {
     const jobs = parseJobs(smallhacks);
-    expect(
-      playableJobs(jobs, [{ id: "41", name: jobs[15].name }], 0).map(
-        (j) => j.id
-      )
-    ).toEqual(["41"]);
-    expect(playableJobs(jobs, [], 92).map((j) => j.rate)).toEqual([99, 95, 92]);
-    expect(playableJobs(jobs, [{ id: "41", name: "old name" }], 0)).toEqual([]);
+    expect(chosenJob(jobs, [{ id: "41", name: jobs[15].name }])?.id).toBe("41");
+    expect(chosenJob(jobs, [])).toBeNull();
+    expect(chosenJob(jobs, [{ id: "41", name: "old name" }])).toBeNull();
   });
 });
 

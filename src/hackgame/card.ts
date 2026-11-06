@@ -1,7 +1,9 @@
 /**
  * The Hack Game status card: a small card in the corner of every other Hack
- * Forums page while auto-play runs, with what it's doing and a countdown to its
- * next step. It only reads stored state, so it never contacts HF. Drawn in a
+ * Forums page. While auto-play runs, it shows what it's doing and a countdown
+ * to its next step, from stored state only. With "Run in background" off and
+ * nothing running, it's a manual control instead: a Hack button that plays the
+ * picked job once, the result, and the time until HF allows the next job. Drawn in a
  * shadow root so HF's styles can't reach it. Design: docs/mocks/. It sits in
  * the bottom-right corner, or the bottom-left one when HF Convo Anywhere's chat
  * dock is on the right.
@@ -10,10 +12,14 @@ import { el } from "../core/Dom";
 import { STORAGE_KEYS } from "../core/storage";
 import { loadSettings } from "../settings";
 import { extensionAlive, formatCountdown } from "./countdown";
+import { tabIO } from "./io";
+import { playOnceLocked } from "./manual";
 import { HackGameSettings } from "./settings";
 import {
   CardPrefs,
+  ChosenJob,
   HACKGAME_KEYS,
+  loadChoice,
   HackState,
   loadCardPrefs,
   loadState,
@@ -65,6 +71,14 @@ export const CARD_CSS = `
 .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .pill b { color: #fff; }
 .pill .time { font-size: inherit; font-weight: normal; color: #ddd; }
+.big .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.big .play { margin-left: auto; align-self: center; flex: none; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn:disabled:hover { background: #2d2d2d; }
+.pill.manual { cursor: default; padding: 2px 4px 2px 8px; }
+.pill-btn { background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.pill .play { background: #2d2d2d; border: 1px solid #3a3a3a; border-radius: 10px; color: #ddd; font: 10px/1 Verdana, Arial, sans-serif; padding: 3px 6px; cursor: pointer; }
+.pill .play:disabled { opacity: .45; cursor: default; }
 `;
 
 /** What the card needs to draw itself. */
@@ -72,6 +86,65 @@ export interface CardData {
   state: HackState;
   settings: HackGameSettings;
   prefs: CardPrefs;
+  /** The job picked in HF's list, for the Hack button's tooltip. */
+  job?: ChosenJob | null;
+}
+
+/** With Run in background off and nothing running, the card is a manual control. */
+export function isManual(data: CardData): boolean {
+  return !data.state.running && !data.settings.runInBackground;
+}
+
+interface ManualStatus {
+  chip: string;
+  tone: string;
+  label: string;
+  /** Count down to when HF allows the next job. */
+  cooling: boolean;
+  canPlay: boolean;
+  /** Tooltip with the last result or why it didn't play. */
+  title: string;
+}
+
+/** What the manual card shows: the last result, or why it didn't play, and the timer. */
+export function manualStatus(state: HackState, now: number): ManualStatus {
+  const cooling = state.readyAt !== null && state.readyAt > now;
+  const last = state.last;
+  const lastText = last
+    ? `Last: ${last.job}: ${last.success ? "Success" : "Fail"} (${last.rate}%)${
+        last.success
+          ? `, $${last.money.toFixed(2)}, ${last.xp.toFixed(2)} xp`
+          : ""
+      }`
+    : "";
+  if (state.busy)
+    return {
+      chip: "Playing",
+      tone: "s-playing",
+      label: "Playing…",
+      cooling: false,
+      canPlay: false,
+      title: "",
+    };
+  const [chip, tone] = state.note
+    ? ["Not played", "s-error"]
+    : last
+      ? last.success
+        ? ["Success", "s-playing"]
+        : ["Fail", "s-error"]
+      : cooling
+        ? ["Cooldown", "s-waiting"]
+        : ["Ready", "s-playing"];
+  return {
+    chip,
+    tone,
+    label: state.note ?? (cooling ? "Next job in" : "Ready"),
+    cooling,
+    canPlay: !cooling,
+    title: state.note
+      ? `${state.note}${lastText ? `\n${lastText}` : ""}`
+      : lastText,
+  };
 }
 
 const PHASES = {
@@ -97,7 +170,7 @@ export function countdownText(nextAt: number | null, now: number): string {
 export function cardVisible(data: CardData): boolean {
   const { state, settings, prefs } = data;
   if (!settings.statusCard) return false;
-  if (state.running) return true;
+  if (state.running || isManual(data)) return true;
   // A run that stopped on its own (not by your Stop) shows why, until dismissed
   return (
     state.phase === "stopped" &&
@@ -109,6 +182,8 @@ export function cardVisible(data: CardData): boolean {
 }
 
 export interface CardActions {
+  /** Play the picked job once (the manual card's Hack button). */
+  play(): void;
   stop(): void;
   start(): void;
   collapse(collapsed: boolean): void;
@@ -138,6 +213,8 @@ export function renderCard(
     b.addEventListener("click", onClick);
     return b;
   };
+
+  if (isManual(data)) return renderManual(data, actions, button, now);
 
   if (prefs.collapsed) {
     const pill = button("", () => actions.collapse(false), `pill ${tone}`);
@@ -249,6 +326,90 @@ export function renderCard(
   );
 }
 
+type ButtonMaker = (
+  text: string,
+  onClick: () => void,
+  cls?: string
+) => HTMLButtonElement;
+
+/** The manual card: status, the timer and the Hack button, in one row. */
+function renderManual(
+  data: CardData,
+  actions: CardActions,
+  button: ButtonMaker,
+  now: number
+): HTMLElement {
+  const { state, settings, prefs, job } = data;
+  const status = manualStatus(state, now);
+  const playTitle = job
+    ? `Play "${job.name}" once`
+    : "Pick a job in HF's Small Hack Jobs list first";
+  const play = (cls: string, text: string) => {
+    const b = button(text, actions.play, cls);
+    b.disabled = !status.canPlay;
+    b.title = playTitle;
+    return b;
+  };
+  const time = () =>
+    el(
+      "span",
+      { class: `time ${status.tone}`, "data-next": state.readyAt ?? "" },
+      countdownText(state.readyAt, now)
+    );
+
+  if (prefs.collapsed) {
+    const expand = button("", () => actions.collapse(false), "pill-btn");
+    expand.title = "Hack Game: click to expand";
+    expand.append(
+      el("span", { class: "dot" }),
+      el("b", null, "HG"),
+      status.cooling && !state.busy ? time() : el("span", null, status.chip)
+    );
+    return el(
+      "div",
+      {
+        class: `pill manual ${status.tone}`,
+        "data-manual": "1",
+        title: status.title || null,
+      },
+      [expand, play("play", "▶")]
+    );
+  }
+
+  const compact = settings.compactCard;
+  return el(
+    "div",
+    {
+      class: `card${compact ? " compact" : ""}`,
+      "data-manual": "1",
+      role: "status",
+      "aria-label": `Hack Game: ${status.chip}`,
+    },
+    [
+      el("div", { class: "head" }, [
+        el(
+          "a",
+          { class: "title", href: GAME_URL, title: "Open Small Hack Jobs" },
+          "Hack Game"
+        ),
+        el(
+          "span",
+          { class: `chip ${status.tone}`, title: status.title || null },
+          status.chip
+        ),
+        button("–", () => actions.collapse(true), "icon"),
+      ]),
+      el("div", { class: "body" }, [
+        el("div", { class: "big", title: status.title || null }, [
+          el("span", { class: "label" }, status.label),
+          status.cooling ? time() : null,
+          play("btn play", "Hack"),
+        ]),
+      ]),
+    ]
+  );
+}
+
 /** Keep the countdowns in a drawn card current. */
 export function tickCard(root: ParentNode, now = Date.now()): void {
   root.querySelectorAll<HTMLElement>("[data-next]").forEach((node) => {
@@ -258,12 +419,13 @@ export function tickCard(root: ParentNode, now = Date.now()): void {
 }
 
 async function loadCardData(): Promise<CardData> {
-  const [state, settings, prefs] = await Promise.all([
+  const [state, settings, prefs, choice] = await Promise.all([
     loadState(),
     loadSettings(),
     loadCardPrefs(),
+    loadChoice(),
   ]);
-  return { state, settings: settings.hackgame, prefs };
+  return { state, settings: settings.hackgame, prefs, job: choice[0] ?? null };
 }
 
 /** HF Convo Anywhere's chat dock (a separate extension), if it's on the page. */
@@ -331,6 +493,7 @@ export function mountStatusCard(doc: Document = document): () => void {
   const stopFollowing = followConvoDock(host, doc);
 
   const actions: CardActions = {
+    play: () => playOnceLocked(tabIO()).catch(() => undefined),
     stop: () => stopRun("Stopped.").catch(() => undefined),
     start: () => startRun().catch(() => undefined),
     collapse: (collapsed) =>
@@ -372,14 +535,17 @@ export function mountStatusCard(doc: Document = document): () => void {
       return;
     }
     tickCard(shadow);
-    // A step long overdue: redraw to say why instead of "Any moment…"
-    const overdue = [
-      ...shadow.querySelectorAll<HTMLElement>("[data-next]"),
-    ].some((node) => {
-      const next = Number(node.dataset.next);
-      return next > 0 && Date.now() - next >= STALLED_AFTER_MS;
-    });
-    if (overdue) draw().catch(() => undefined);
+    // Redraw when a countdown runs out: the manual card turns Ready (and its
+    // button comes back), a long-overdue step says why instead of "Any moment…"
+    const manual = Boolean(shadow.querySelector("[data-manual]"));
+    const due = [...shadow.querySelectorAll<HTMLElement>("[data-next]")].some(
+      (node) => {
+        const next = Number(node.dataset.next);
+        const late = Date.now() - next;
+        return next > 0 && (manual ? late >= 0 : late >= STALLED_AFTER_MS);
+      }
+    );
+    if (due) draw().catch(() => undefined);
   }, 1000);
   return () => {
     clearInterval(timer);

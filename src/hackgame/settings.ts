@@ -9,7 +9,6 @@ export interface HackGameSettings {
   runInBackground: boolean;
   statusCard: boolean;
   compactCard: boolean;
-  minRate: number;
   waitMin: number;
   waitMax: number;
   pauseBelow: number;
@@ -24,8 +23,8 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     id: "runInBackground",
     label: "Run in background",
     description:
-      "Keep playing with no HF tab open, as long as the browser is running and you're signed in to HF. Turn it off to play only while a Hack Game page is open in a tab.",
-    default: true,
+      "Keep playing with no HF tab open, as long as the browser is running and you're signed in to HF. Off: auto-play runs only from an open Hack Game page, and the status card on other HF pages gets a Hack button to play your job by hand.",
+    default: false,
   },
   {
     type: "checkbox",
@@ -33,7 +32,7 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     group: "Status card",
     label: "Status card on HF pages",
     description:
-      "While auto-play runs, show a small card in the corner of every other Hack Forums page with what it's doing and the time to its next step.",
+      "Show a small card in the corner of every other Hack Forums page: what auto-play is doing and the time to its next step, or, with Run in background off, a Hack button and the time until the next job.",
     default: true,
   },
   {
@@ -45,18 +44,6 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
       "A narrower status card with tighter spacing and a smaller countdown.",
     default: false,
     enabledBy: "statusCard",
-  },
-  {
-    type: "number",
-    id: "minRate",
-    group: "Jobs",
-    label: "Also any job at or above (%)",
-    description:
-      "Besides the jobs you tick, play any job with at least this success rate, so new or renamed jobs count too. 0 turns it off.",
-    default: 0,
-    min: 0,
-    max: 100,
-    step: 1,
   },
   {
     type: "number",

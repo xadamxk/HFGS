@@ -114,9 +114,10 @@ export function registerHackGame(): void {
     }
     const settingsChange = changes[STORAGE_KEYS.settings];
     if (settingsChange) {
-      // Missing means the default (on)
-      const before = settingsChange.oldValue?.hackgame?.runInBackground ?? true;
-      const after = settingsChange.newValue?.hackgame?.runInBackground ?? true;
+      // Missing means the default (off)
+      const before =
+        settingsChange.oldValue?.hackgame?.runInBackground ?? false;
+      const after = settingsChange.newValue?.hackgame?.runInBackground ?? false;
       if (before !== after) tick();
     }
   });

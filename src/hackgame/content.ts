@@ -9,8 +9,9 @@ import { migrateStorage } from "../core/storage";
 import { BotPanel } from "../core/ui/BotPanel";
 import { startMenuCountdown } from "./countdown";
 import { HackGamePanel, HACKGAME_CSS } from "./panel";
-import { parseJobs } from "./parse";
-import { updateJobs } from "./store";
+import { rememberPickedJob } from "./jobsView";
+import { cooldownSeconds, parseJobs, powerPercent } from "./parse";
+import { patchState, updateJobs } from "./store";
 import { startTabPlayer } from "./tab";
 
 async function main(): Promise<void> {
@@ -18,10 +19,19 @@ async function main(): Promise<void> {
   if (!current) return;
   await migrateStorage();
 
-  // On the Small Hack Jobs page, store the jobs (only rewritten if HF changed them)
+  const html = document.documentElement.outerHTML;
+  // On the Small Hack Jobs page: store the jobs (only rewritten if HF changed
+  // them), select the remembered job and remember the one picked
   if (new URLSearchParams(location.search).get("action") === "smallhacks") {
-    await updateJobs(parseJobs(document.documentElement.outerHTML));
+    const jobs = parseJobs(html);
+    await updateJobs(jobs);
+    await rememberPickedJob(document, jobs);
   }
+  // Every game page shows HF's cooldown: the status card counts down to it
+  await patchState({
+    readyAt: Date.now() + cooldownSeconds(html) * 1000,
+    power: powerPercent(html),
+  });
 
   BotPanel.injectStyles();
   if (!document.getElementById("hfgs-hackgame-styles")) {

@@ -92,7 +92,7 @@ export class HackGamePanel {
   private settings: HfgsSettings | null = null;
   private state: HackState | null = null;
   private form: ReturnType<typeof settingsForm> | null = null;
-  private readonly jobs = jobsView("hfgs-hackgame", true);
+  private readonly jobs = jobsView(true);
   private readonly settingsCell = el("td", { class: "trow1", colspan: 2 });
   private stopWatching: (() => void) | null = null;
   private clock: ReturnType<typeof setInterval> | null = null;
@@ -122,6 +122,7 @@ export class HackGamePanel {
         el("tr", null, [
           el("td", { class: "trow1", colspan: 2 }, [
             el("div", { class: "hfgs-controls" }, [this.button, this.status]),
+            this.jobs.element,
             this.mode,
             this.last,
           ]),
@@ -224,11 +225,6 @@ export class HackGamePanel {
       (change) => this.persist(change as Partial<HackGameSettings>),
       { compact: true, title: "Mode" }
     );
-    // The tick list goes at the top of the Jobs group
-    this.form
-      .group("Jobs")
-      ?.querySelector(".hfgs-settings-title")
-      ?.after(this.jobs.element);
     this.settingsCell.replaceChildren(
       el("div", { class: "hfgs-settings-groups" }, [
         this.form.element,
@@ -328,7 +324,7 @@ export class HackGamePanel {
     this.status.textContent = describeState(
       state,
       Date.now(),
-      this.settings?.hackgame.runInBackground ?? true
+      this.settings?.hackgame.runInBackground ?? false
     );
     this.status.classList.toggle(
       "hfgs-error",
@@ -336,10 +332,10 @@ export class HackGamePanel {
         state.phase === "stopped" &&
         /error|signed out|Cloudflare|post key/i.test(state.message)
     );
-    const background = this.settings?.hackgame.runInBackground ?? true;
+    const background = this.settings?.hackgame.runInBackground ?? false;
     this.mode.textContent = background
       ? "Runs in the background: no HF tab needs to stay open while the browser runs."
-      : "Runs from an open tab: keep an HF game page open (this one or another) while it plays.";
+      : "Start runs from an open tab: keep an HF game page open while it plays. Or play one job at a time with the status card's Hack button.";
     this.last.textContent = state.last
       ? `Last job ${time(state.last.at)}: ${state.last.job}: ${state.last.success ? "Success" : "Fail"} (${state.last.rate}%)${
           state.last.success

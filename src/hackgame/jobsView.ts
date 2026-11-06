@@ -1,11 +1,15 @@
 /**
- * The "Jobs to play" tick list, drawn from the job list the bot last read
- * from HF. Used on the game pages and the settings page; it follows changes
- * made anywhere else.
+ * The job the bot plays: the one last picked in HF's own Small Hack Jobs list,
+ * which HFGS remembers and keeps selected there. This shows it (with its
+ * success rate) on the game page panel and the settings page, and follows
+ * changes made anywhere else.
  */
 import { el } from "../core/Dom";
 import { STORAGE_KEYS } from "../core/storage";
+import { GAME_URL } from "./card";
+import { HackJob } from "./parse";
 import {
+  chosenJob,
   ChosenJob,
   JobCache,
   loadChoice,
@@ -18,64 +22,39 @@ export interface JobsView {
   dispose(): void;
 }
 
-/** `compact` lays the jobs out in columns, for the game page panel. */
-export function jobsView(idPrefix: string, compact = false): JobsView {
-  const element = el("div", { class: compact ? "hfgs-jobs" : "jobs" });
+/** "Job: Cracking a Public Wi-Fi Password (99%)", or how to pick one. */
+export function jobsView(compact = false): JobsView {
+  const element = el("div", { class: compact ? "hfgs-last" : "description" });
   let cache: JobCache | null = null;
   let choice: ChosenJob[] = [];
 
   const render = () => {
-    if (!cache?.jobs.length) {
-      element.replaceChildren(
-        el(
-          "p",
-          { class: compact ? "hfgs-jobs-note" : "description" },
-          "No jobs loaded yet. Open HF's Small Hack Jobs page once (or start the bot) and they'll appear here."
-        )
-      );
-      return;
-    }
-    const ticked = (id: string, name: string) =>
-      choice.some((c) => c.id === id && c.name === name);
-    const rows = cache.jobs.map((job) => {
-      const input = el("input", {
-        type: "checkbox",
-        id: `${idPrefix}-job-${job.id}`,
-        checked: ticked(job.id, job.name),
-      });
-      input.addEventListener("change", () => {
-        const others = choice.filter((c) => c.id !== job.id);
-        choice = input.checked
-          ? [...others, { id: job.id, name: job.name }]
-          : others;
-        saveChoice(choice).catch(() => undefined);
-      });
-      return el(
-        "label",
-        { class: compact ? "hfgs-job" : "choice", title: job.name },
-        [
-          input,
-          el("span", { class: "hfgs-job-name" }, job.name),
-          el("span", { class: "hfgs-job-rate" }, `${job.rate}%`),
-        ]
-      );
-    });
+    const job = cache ? chosenJob(cache.jobs, choice) : null;
+    const pickHere = /action=smallhacks/.test(location.search);
+    const where = pickHere
+      ? "in HF's list above"
+      : el("a", { href: GAME_URL }, "in HF's Small Hack Jobs list");
     element.replaceChildren(
-      el("div", { class: compact ? "hfgs-jobs-grid" : "choices" }, rows),
-      cache.dropped.length
+      ...(job
+        ? [
+            el("strong", null, "Job: "),
+            `${job.name} (${job.rate}%). Pick another `,
+            where,
+            " to change it.",
+          ]
+        : [
+            el("strong", null, "Job: "),
+            "none yet. Pick one ",
+            where,
+            "; HFGS remembers it and keeps it selected.",
+          ]),
+      cache?.dropped.length
         ? el(
-            "p",
-            { class: compact ? "hfgs-jobs-note hfgs-warn" : "description" },
-            `HF changed its job list, so these were unticked: ${cache.dropped.join(", ")}.`
+            "span",
+            { class: compact ? "hfgs-warn" : "" },
+            ` HF changed its job list, so "${cache.dropped.join(", ")}" was forgotten.`
           )
-        : "",
-      el(
-        "p",
-        { class: compact ? "hfgs-jobs-note" : "description" },
-        `The bot picks one ticked job at random each time. List last changed ${new Date(
-          cache.changedAt
-        ).toLocaleString()}.`
-      )
+        : ""
     );
   };
 
@@ -102,4 +81,32 @@ export function jobsView(idPrefix: string, compact = false): JobsView {
     element,
     dispose: () => chrome.storage.onChanged.removeListener(onChange),
   };
+}
+
+/**
+ * On HF's Small Hack Jobs page: select the remembered job, and remember the
+ * job picked from now on. `jobs` is the page's list (for the names as stored).
+ */
+export async function rememberPickedJob(
+  doc: Document,
+  jobs: HackJob[]
+): Promise<void> {
+  const radios = [
+    ...doc.querySelectorAll<HTMLInputElement>(
+      'input.contract_checkbox[name="job_id"]'
+    ),
+  ];
+  const picked = chosenJob(jobs, await loadChoice());
+  if (picked) {
+    const radio = radios.find((r) => r.value === picked.id);
+    if (radio && !radio.checked) radio.checked = true;
+  }
+  for (const radio of radios) {
+    radio.addEventListener("change", () => {
+      if (!radio.checked) return;
+      const job = jobs.find((j) => j.id === radio.value);
+      if (job)
+        saveChoice([{ id: job.id, name: job.name }]).catch(() => undefined);
+    });
+  }
 }

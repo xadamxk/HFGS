@@ -33,13 +33,14 @@ function data(over: Partial<CardData> = {}, state = {}): CardData {
       },
       ...state,
     },
-    settings: defaultSettings().hackgame,
+    settings: { ...defaultSettings().hackgame, runInBackground: true },
     prefs: { collapsed: false, dismissedRun: null },
     ...over,
   };
 }
 
 const actions = (): CardActions & Record<string, jest.Mock> => ({
+  play: jest.fn(),
   stop: jest.fn(),
   start: jest.fn(),
   collapse: jest.fn(),
@@ -109,7 +110,11 @@ describe("status card", () => {
   });
 
   it("is smaller in compact mode", () => {
-    const settings = { ...defaultSettings().hackgame, compactCard: true };
+    const settings = {
+      ...defaultSettings().hackgame,
+      runInBackground: true,
+      compactCard: true,
+    };
     const card = renderCard(data({ settings }), actions(), NOW)!;
     expect(card.classList.contains("compact")).toBe(true);
     expect(big(card)).toBe("Next job in 01:31");
@@ -209,7 +214,11 @@ describe("status card", () => {
   });
 
   it("is hidden when the setting is off", () => {
-    const settings = { ...defaultSettings().hackgame, statusCard: false };
+    const settings = {
+      ...defaultSettings().hackgame,
+      runInBackground: true,
+      statusCard: false,
+    };
     expect(renderCard(data({ settings }), actions(), NOW)).toBeNull();
   });
 
@@ -225,7 +234,9 @@ describe("status card", () => {
   it("appears on the page while a run is going and goes away when stopped", async () => {
     await chrome.storage.local.clear();
     document.body.replaceChildren();
-    await saveSettings(defaultSettings());
+    const background = defaultSettings();
+    background.hackgame.runInBackground = true;
+    await saveSettings(background);
     const stop = mountStatusCard(document);
     await new Promise((r) => setTimeout(r, 20));
     expect(document.getElementById("hfgs-hackgame-card")).toBeNull();
@@ -251,5 +262,113 @@ describe("status card", () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(document.getElementById("hfgs-hackgame-card")).toBeNull();
     stop();
+  });
+});
+
+describe("manual status card (Run in background off)", () => {
+  const manual = (
+    state = {},
+    prefs = { collapsed: false, dismissedRun: null }
+  ): CardData => ({
+    state: { ...idleState(), ...state },
+    settings: defaultSettings().hackgame,
+    prefs,
+    job: { id: "28", name: "Cracking a Public Wi-Fi Password" },
+  });
+
+  it("shows Ready and a Hack button in one row when nothing is running", () => {
+    const a = actions();
+    const card = renderCard(manual(), a, NOW)!;
+    expect(card.dataset.manual).toBe("1");
+    expect(card.querySelector(".chip")?.textContent).toBe("Ready");
+    const row = card.querySelector(".big")!;
+    expect(card.querySelector(".body")!.children).toHaveLength(1);
+    expect(row.querySelector(".label")?.textContent).toBe("Ready");
+    const hack = row.querySelector("button.play") as HTMLButtonElement;
+    expect(hack.textContent).toBe("Hack");
+    expect(hack.disabled).toBe(false);
+    expect(hack.title).toBe('Play "Cracking a Public Wi-Fi Password" once');
+    hack.click();
+    expect(a.play).toHaveBeenCalled();
+  });
+
+  it("shows the result and counts down to the next job, with the button off meanwhile", () => {
+    const last = {
+      at: NOW - 5000,
+      job: "Spoofing a Caller ID",
+      success: false,
+      rate: 90,
+      money: 0,
+      xp: 0,
+    };
+    const card = renderCard(
+      manual({ last, readyAt: NOW + 164_000 }),
+      actions(),
+      NOW
+    )!;
+    expect(card.querySelector(".chip")?.textContent).toBe("Fail");
+    expect(big(card)).toBe("Next job in 02:44 Hack");
+    expect(
+      (card.querySelector("button.play") as HTMLButtonElement).disabled
+    ).toBe(true);
+    expect((card.querySelector(".big") as HTMLElement).title).toBe(
+      "Last: Spoofing a Caller ID: Fail (90%)"
+    );
+
+    const won = { ...last, success: true, money: 0.44, xp: 0.238 };
+    const ready = renderCard(
+      manual({ last: won, readyAt: NOW - 1 }),
+      actions(),
+      NOW
+    )!;
+    expect(ready.querySelector(".chip")?.textContent).toBe("Success");
+    expect(big(ready)).toBe("Ready Hack");
+  });
+
+  it("says why a job wasn't played, and shows Playing while it runs", () => {
+    const blocked = renderCard(
+      manual({ note: "Not enough power (4%)." }),
+      actions(),
+      NOW
+    )!;
+    expect(blocked.querySelector(".chip")?.textContent).toBe("Not played");
+    expect(blocked.querySelector(".label")?.textContent).toBe(
+      "Not enough power (4%)."
+    );
+    const busy = renderCard(manual({ busy: true }), actions(), NOW)!;
+    expect(busy.querySelector(".chip")?.textContent).toBe("Playing");
+    expect(
+      (busy.querySelector("button.play") as HTMLButtonElement).disabled
+    ).toBe(true);
+  });
+
+  it("keeps a ▶ button on the collapsed pill", () => {
+    const a = actions();
+    const pill = renderCard(
+      manual({}, { collapsed: true, dismissedRun: null }),
+      a,
+      NOW
+    )!;
+    expect(pill.classList.contains("manual")).toBe(true);
+    expect(text(pill)).toBe("HGReady▶");
+    (pill.querySelector("button.play") as HTMLButtonElement).click();
+    expect(a.play).toHaveBeenCalled();
+    (pill.querySelector("button.pill-btn") as HTMLButtonElement).click();
+    expect(a.collapse).toHaveBeenCalledWith(false);
+  });
+
+  it("is the status card while a run goes, even with Run in background off", () => {
+    const running = renderCard(
+      manual({
+        running: true,
+        phase: "waiting",
+        message: "Waiting for the cooldown.",
+        nextAt: NOW + 60_000,
+      }),
+      actions(),
+      NOW
+    )!;
+    expect(running.dataset.manual).toBeUndefined();
+    expect(running.querySelector(".chip")?.textContent).toBe("Waiting");
   });
 });

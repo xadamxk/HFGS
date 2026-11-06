@@ -25,11 +25,11 @@ Slots
 • Spins at a fixed bet using HF's bet steps, and never bets more than your credits
 
 Hack Game
-• Auto-plays Small Hack Jobs whenever the cooldown is over, from the jobs you tick (or any job above a success rate)
+• Plays the Small Hack Job you pick in HF's list (remembered and kept selected) whenever the cooldown is over
 • A random extra wait after each cooldown, so it doesn't play like clockwork
 • Pauses when power runs low and starts again by itself once the battery has recharged
-• Runs in the background with no Hack Forums tab open, or only while a Hack Game page is open: your choice
-• A status card on every Hack Forums page shows what it's doing and counts down to its next step (compact mode available)
+• Runs in the background with no Hack Forums tab open, or from an open Hack Game page: your choice
+• A status card on every Hack Forums page shows what it's doing and counts down to its next step, or gives you a Hack button to play one job at a time
 
 Strategy assistant (blackjack)
 • Beside the table: your cards, the dealer's upcard and what HF offers go in; the best play and each option's expected value come out

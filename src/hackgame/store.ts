@@ -17,7 +17,10 @@ export interface JobCache {
   dropped: string[];
 }
 
-/** A ticked job: its id, and its name when ticked (HF can reuse ids). */
+/**
+ * The job picked in HF's Small Hack Jobs list: its id, and its name when
+ * picked (HF can reuse ids). Stored as a one-item list.
+ */
 export interface ChosenJob {
   id: string;
   name: string;
@@ -49,6 +52,12 @@ export interface HackState {
   last: LastJob | null;
   /** Power (%) when last read, for the status card's battery bar. */
   power: number | null;
+  /** When HF lets the next job be played (from its cooldown timer). */
+  readyAt: number | null;
+  /** A job is being played by hand from a status card. */
+  busy: boolean;
+  /** Why the last job played by hand didn't happen, or null. */
+  note: string | null;
 }
 
 export interface HackTotals {
@@ -69,6 +78,9 @@ export function idleState(): HackState {
     errors: 0,
     last: null,
     power: null,
+    readyAt: null,
+    busy: false,
+    note: null,
   };
 }
 
@@ -129,6 +141,19 @@ export const HACKGAME_KEYS = [
 export async function loadJobCache(): Promise<JobCache | null> {
   const cache = await getItem<JobCache>(STORAGE_KEYS.hackgameJobs);
   return cache && Array.isArray(cache.jobs) ? cache : null;
+}
+
+/** The picked job in HF's current list, or null if none is picked or it's gone. */
+export function chosenJob(
+  jobs: HackJob[],
+  choice: ChosenJob[]
+): HackJob | null {
+  const picked = choice[0];
+  return (
+    (picked &&
+      jobs.find((job) => job.id === picked.id && job.name === picked.name)) ||
+    null
+  );
 }
 
 export async function loadChoice(): Promise<ChosenJob[]> {
