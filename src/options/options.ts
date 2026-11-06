@@ -1,7 +1,12 @@
 import { el } from "../core/Dom";
 import { loadHistory } from "../core/history";
 import { GAMES } from "../games/registry";
-import { download, HistorySection, renderHistorySection } from "./history";
+import {
+  download,
+  HACKGAME_HISTORY,
+  HistorySection,
+  renderHistorySection,
+} from "./history";
 import { SettingValues } from "../settings/definitions";
 import { settingsForm } from "../settings/form";
 import { HACKGAME_SETTINGS, HackGameSettings } from "../hackgame/settings";
@@ -113,8 +118,13 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
   // History sections listen for storage changes; drop the old ones on re-render.
   activeHistory.forEach((section) => section.dispose());
   activeHistory = await Promise.all(
-    GAMES.map((game) => renderHistorySection(game, showStatus))
+    [...GAMES, HACKGAME_HISTORY].map((game) =>
+      renderHistorySection(game, showStatus)
+    )
   );
+  const historyFor = (id: string) =>
+    activeHistory.find((h) => h.element.dataset.history === id)?.element ??
+    null;
 
   const exportAll = el(
     "button",
@@ -133,25 +143,109 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
     }
   });
 
+  // One tab per game: its settings, then its history
+  const tabs = [
+    ...GAMES.map((game, i) => ({
+      id: game.id,
+      name: game.name,
+      content: [gameSections[i], historyFor(game.id)],
+    })),
+    {
+      id: "hackgame",
+      name: "Hack Game",
+      content: [hackgameSection, historyFor("hackgame")],
+    },
+  ];
+
   root.replaceChildren(
     el("header", null, [
       el("img", { src: "assets/icons/icon48.png", alt: "", width: 32 }),
       el("h1", null, "HF Gaming Suite"),
     ]),
-    el("h2", { class: "group" }, "Settings"),
-    ...gameSections,
-    hackgameSection,
-    reset,
-    el("h2", { class: "group" }, "History"),
+    gameTabs(tabs),
+    el("div", { class: "actions page-actions" }, [reset, exportAll]),
     el(
       "p",
-      { class: "description intro" },
-      "Results the bots played, kept in this browser only."
+      { class: "description" },
+      "Settings and history are kept in this browser only."
     ),
-    ...activeHistory.map((section) => section.element),
-    el("div", { class: "actions" }, [exportAll]),
     status
   );
+}
+
+let onHashChange: (() => void) | null = null;
+
+interface Tab {
+  id: string;
+  name: string;
+  content: (HTMLElement | null)[];
+}
+
+/**
+ * Tabs, one per game. The open tab is kept in the address (#slots), so a
+ * reload or a link opens the same one; arrow keys move between tabs.
+ */
+export function gameTabs(tabs: Tab[]): HTMLElement {
+  const fromHash = () =>
+    tabs.find((tab) => `#${tab.id}` === location.hash)?.id ?? tabs[0].id;
+  const buttons = tabs.map((tab) =>
+    el(
+      "button",
+      {
+        type: "button",
+        role: "tab",
+        id: `tab-${tab.id}`,
+        class: "tab",
+        "aria-controls": `panel-${tab.id}`,
+      },
+      tab.name
+    )
+  );
+  const panels = tabs.map((tab) =>
+    el(
+      "div",
+      {
+        role: "tabpanel",
+        id: `panel-${tab.id}`,
+        class: "tab-panel",
+        "aria-labelledby": `tab-${tab.id}`,
+      },
+      tab.content
+    )
+  );
+  const select = (id: string, focus = false) => {
+    tabs.forEach((tab, i) => {
+      const on = tab.id === id;
+      buttons[i].setAttribute("aria-selected", String(on));
+      buttons[i].tabIndex = on ? 0 : -1;
+      panels[i].hidden = !on;
+      if (on && focus) buttons[i].focus();
+    });
+    if (location.hash !== `#${id}`) history.replaceState(null, "", `#${id}`);
+  };
+  buttons.forEach((button, i) => {
+    button.addEventListener("click", () => select(tabs[i].id));
+    button.addEventListener("keydown", (event) => {
+      const step =
+        event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+      if (!step) return;
+      event.preventDefault();
+      select(tabs[(i + step + tabs.length) % tabs.length].id, true);
+    });
+  });
+  select(fromHash());
+  // A link or the back button changing the address switches tabs too
+  if (onHashChange) window.removeEventListener("hashchange", onHashChange);
+  onHashChange = () => select(fromHash());
+  window.addEventListener("hashchange", onHashChange);
+  return el("div", { class: "tabs" }, [
+    el(
+      "div",
+      { class: "tab-list", role: "tablist", "aria-label": "Games" },
+      buttons
+    ),
+    ...panels,
+  ]);
 }
 
 let activeHistory: HistorySection[] = [];
@@ -166,7 +260,7 @@ export async function exportEverything() {
     settings: await loadSettings(),
     history: Object.fromEntries(
       await Promise.all(
-        GAMES.map(
+        [...GAMES, HACKGAME_HISTORY].map(
           async (game) => [game.id, await loadHistory(game.id)] as const
         )
       )

@@ -23,10 +23,7 @@ describe("options page", () => {
     const sections = [...root.querySelectorAll("section[data-game]")].map(
       (section) => section.getAttribute("data-game")
     );
-    expect(sections).toEqual([
-      ...GAMES.map((game) => game.id),
-      "hackgame",
-    ]);
+    expect(sections).toEqual([...GAMES.map((game) => game.id), "hackgame"]);
   });
 
   it("saves a game setting as soon as it changes", async () => {
@@ -94,15 +91,72 @@ describe("options page", () => {
     expect(multiplier.disabled).toBe(false);
   });
 
-  it("lists settings first, then each game's history", async () => {
+  it("has a tab per game with its settings, then its history; reset comes after the tabs", async () => {
+    history.replaceState(null, "", "#");
     const root = await render();
-    const groups = [...root.querySelectorAll("h2.group")].map(
-      (h) => h.textContent
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      "Blackjack",
+      "Slots",
+      "Hack Game",
+    ]);
+    const panels = [...root.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+    expect(
+      panels.map((panel) =>
+        [...panel.querySelectorAll("section")].map(
+          (s) => s.dataset.game ?? `history:${s.dataset.history}`
+        )
+      )
+    ).toEqual([
+      ["blackjack", "history:blackjack"],
+      ["slots", "history:slots"],
+      ["hackgame", "history:hackgame"],
+    ]);
+    // The first tab is open; the others are hidden
+    expect(panels.map((p) => p.hidden)).toEqual([false, true, true]);
+    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+
+    // Reset all settings comes after the tabs' contents
+    const reset = [...root.querySelectorAll("button")].find((b) =>
+      b.textContent?.startsWith("Reset all settings")
+    )!;
+    const tabsBox = root.querySelector(".tabs")!;
+    expect(
+      tabsBox.compareDocumentPosition(reset) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(tabsBox.contains(reset)).toBe(false);
+  });
+
+  it("switches tabs by click and arrow keys, and keeps the open tab in the address", async () => {
+    history.replaceState(null, "", "#");
+    const root = await render();
+    const tab = (name: string) =>
+      [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
+        (t) => t.textContent === name
+      )!;
+    const open = () =>
+      [...root.querySelectorAll<HTMLElement>('[role="tabpanel"]')].find(
+        (p) => !p.hidden
+      )!.id;
+    tab("Slots").click();
+    expect(open()).toBe("panel-slots");
+    expect(location.hash).toBe("#slots");
+    tab("Slots").dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowRight" })
     );
-    expect(groups).toEqual(["Settings", "History"]);
-    const history = [...root.querySelectorAll("section[data-history]")].map(
-      (section) => section.getAttribute("data-history")
+    expect(open()).toBe("panel-hackgame");
+    tab("Hack Game").dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowRight" })
     );
-    expect(history).toEqual(GAMES.map((game) => game.id));
+    expect(open()).toBe("panel-blackjack");
+
+    // A reload (or a link) with #hackgame opens that tab
+    history.replaceState(null, "", "#hackgame");
+    const again = await render();
+    expect(
+      [...again.querySelectorAll<HTMLElement>('[role="tabpanel"]')].find(
+        (p) => !p.hidden
+      )!.id
+    ).toBe("panel-hackgame");
   });
 });

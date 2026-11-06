@@ -16,6 +16,23 @@ import { STORAGE_KEYS } from "../core/storage";
 import { formatAmount, formatWinRate } from "../core/ui/format";
 import { GameDefinition } from "../games/types";
 
+/**
+ * The Hack Game's history in the same section: its entries are jobs (cash and
+ * xp earned), not βytes bets. Used as the "game" for its history section.
+ */
+export const HACKGAME_HISTORY: GameDefinition = {
+  id: "hackgame",
+  name: "Hack Game",
+  description: "",
+  path: "/gamecp.php",
+  settings: [],
+  describeResult: (details) => String(details.job ?? ""),
+};
+
+const isJobs = (game: GameDefinition) => game.id === HACKGAME_HISTORY.id;
+const cash = (n: number) => `$${n.toFixed(2)}`;
+const xpOf = (entry: HistoryEntry) => Number(entry.details?.xp) || 0;
+
 /** How many results the table shows; exports include every stored result. */
 export const SHOWN_ENTRIES = 50;
 
@@ -30,6 +47,21 @@ export function historyToCsv(
   game: GameDefinition,
   entries: HistoryEntry[]
 ): string {
+  if (isJobs(game)) {
+    const rows = [...entries]
+      .reverse()
+      .map((entry) =>
+        [
+          new Date(entry.at).toISOString(),
+          csvText(String(entry.details?.job ?? "")),
+          entry.outcome === "SUCCESS" ? "success" : "fail",
+          entry.details?.rate ?? "",
+          entry.returned,
+          xpOf(entry),
+        ].join(",")
+      );
+    return ["time,job,result,rate,cash,xp", ...rows].join("\r\n") + "\r\n";
+  }
   const header = "time,outcome,wagered,returned,net,balance,details";
   const rows = [...entries]
     .reverse()
@@ -61,6 +93,65 @@ const dateStamp = () => new Date().toISOString().slice(0, 10);
 
 function signClass(n: number): string | null {
   return n > 0 ? "pos" : n < 0 ? "neg" : null;
+}
+
+/** The Hack Game's totals: from the kept entries (the totals count bets). */
+function jobsTotalsLine(entries: HistoryEntry[]): HTMLElement {
+  const succeeded = entries.filter((e) => e.outcome === "SUCCESS").length;
+  const item = (label: string, value: string) =>
+    el("span", { class: "total" }, [label, " ", el("strong", null, value)]);
+  return el("p", { class: "totals" }, [
+    item("Jobs", String(entries.length)),
+    item(
+      "Succeeded",
+      `${succeeded}${entries.length ? ` (${Math.round((succeeded / entries.length) * 100)}%)` : ""}`
+    ),
+    item("Cash", cash(entries.reduce((sum, e) => sum + e.returned, 0))),
+    item("XP", entries.reduce((sum, e) => sum + xpOf(e), 0).toFixed(2)),
+  ]);
+}
+
+function jobsTable(entries: HistoryEntry[]): HTMLElement {
+  if (!entries.length)
+    return el("p", { class: "description" }, "No jobs played by HFGS yet.");
+  return el("div", { class: "results" }, [
+    el("table", null, [
+      el(
+        "thead",
+        null,
+        el(
+          "tr",
+          null,
+          ["Time", "Job", "Result", "Cash", "XP"].map((h) => el("th", null, h))
+        )
+      ),
+      el(
+        "tbody",
+        null,
+        entries.slice(0, SHOWN_ENTRIES).map((entry) => {
+          const won = entry.outcome === "SUCCESS";
+          return el("tr", null, [
+            el("td", null, new Date(entry.at).toLocaleString()),
+            el("td", { class: "details" }, String(entry.details?.job ?? "")),
+            el(
+              "td",
+              { class: won ? "pos" : "neg" },
+              `${won ? "Success" : "Fail"} (${entry.details?.rate ?? "?"}%)`
+            ),
+            el("td", { class: "num" }, cash(entry.returned)),
+            el("td", { class: "num" }, xpOf(entry).toFixed(2)),
+          ]);
+        })
+      ),
+    ]),
+    entries.length > SHOWN_ENTRIES
+      ? el(
+          "p",
+          { class: "description" },
+          `Showing the latest ${SHOWN_ENTRIES} of ${entries.length}. Exports include them all.`
+        )
+      : null,
+  ]);
 }
 
 function totalsLine(totals: Totals): HTMLElement {
@@ -219,8 +310,9 @@ export async function renderHistorySection(
     const empty = history.totals.rounds === 0 && !history.entries.length;
     exportCsv.disabled = exportJson.disabled = clear.disabled = empty;
     body.replaceChildren(
-      totalsLine(history.totals),
-      resultsTable(game, history.entries)
+      ...(isJobs(game)
+        ? [jobsTotalsLine(history.entries), jobsTable(history.entries)]
+        : [totalsLine(history.totals), resultsTable(game, history.entries)])
     );
   };
   const refresh = async () => {
@@ -239,7 +331,7 @@ export async function renderHistorySection(
   chrome.storage.onChanged.addListener(onChanged);
 
   const element = el("section", { class: "history", "data-history": game.id }, [
-    el("h2", null, `${game.name} history`),
+    el("h3", { class: "history-title" }, "History"),
     body,
     el("div", { class: "actions" }, [exportCsv, exportJson, clear]),
   ]);

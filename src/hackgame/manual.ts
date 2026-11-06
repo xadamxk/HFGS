@@ -61,7 +61,7 @@ export async function playOnce(io: HackIO): Promise<void> {
     const power = powerPercent(page);
     result.power = power;
     if (cooldown > 0) {
-      result.note = "Still cooling down.";
+      result.note = "Cooling down...";
       return;
     }
     if (power !== null && power < JOB_POWER) {

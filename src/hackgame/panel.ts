@@ -223,7 +223,7 @@ export class HackGamePanel {
       HACKGAME_SETTINGS,
       values,
       (change) => this.persist(change as Partial<HackGameSettings>),
-      { compact: true, title: "Mode" }
+      { compact: true }
     );
     this.settingsCell.replaceChildren(
       el("div", { class: "hfgs-settings-groups" }, [

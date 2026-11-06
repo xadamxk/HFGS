@@ -204,7 +204,11 @@ describe("exportEverything", () => {
       toEntry({ outcome: "WIN", wagered: 1, returned: 4 }, 1)
     );
     const backup = await exportEverything();
-    expect(Object.keys(backup.history)).toEqual(["blackjack", "slots"]);
+    expect(Object.keys(backup.history)).toEqual([
+      "blackjack",
+      "slots",
+      "hackgame",
+    ]);
     expect(backup.history.slots.totals.net).toBe(3);
     expect(backup.settings.games.slots.bet).toBe(1);
   });

@@ -3,7 +3,7 @@
  * Which jobs to play is kept apart (see store.ts), because HF's job list
  * changes and the choice is a list, not a single value.
  */
-import { SettingDefinition, STOP_GROUP } from "../settings/definitions";
+import { SettingDefinition } from "../settings/definitions";
 
 export interface HackGameSettings {
   runInBackground: boolean;
@@ -17,22 +17,17 @@ export interface HackGameSettings {
   stopAfterJobs: number;
 }
 
+/** The heading for running in the background and the settings it uses. */
+export const BACKGROUND_GROUP = "Run in background";
+
 export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
-  {
-    type: "checkbox",
-    id: "runInBackground",
-    label: "Run in background",
-    description:
-      "Keep playing with no HF tab open, as long as the browser is running and you're signed in to HF. Off: auto-play runs only from an open Hack Game page, and the status card on other HF pages gets a Hack button to play your job by hand.",
-    default: false,
-  },
   {
     type: "checkbox",
     id: "statusCard",
     group: "Status card",
     label: "Status card on HF pages",
     description:
-      "Show a small card in the corner of every other Hack Forums page: what auto-play is doing and the time to its next step, or, with Run in background off, a Hack button and the time until the next job.",
+      "Show a small card in the corner of every Hack Forums page: what a run is doing and the time to its next step, or, with Run in background off, a Hack button and the time until the next job.",
     default: true,
   },
   {
@@ -46,12 +41,21 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     enabledBy: "statusCard",
   },
   {
+    type: "checkbox",
+    id: "runInBackground",
+    group: BACKGROUND_GROUP,
+    label: "Run in background",
+    description:
+      "Press Start on a Hack Game page and keep playing with no HF tab open, as long as the browser is running and you're signed in to HF. The settings below set how a run plays. Off (the default): Start only plays while a Hack Game page is open, and the status card's Hack button plays one job at a time.",
+    default: false,
+  },
+  {
     type: "number",
     id: "waitMin",
-    group: "Timing",
+    group: BACKGROUND_GROUP,
     label: "Extra wait, shortest (s)",
     description:
-      "After each cooldown ends, the bot waits a random extra time between the shortest and longest before the next job, so it doesn't play like clockwork.",
+      "After each cooldown ends, a run waits a random extra time between the shortest and longest before the next job, so it doesn't play like clockwork. The Hack button doesn't wait.",
     default: 30,
     min: 0,
     max: 1800,
@@ -60,7 +64,7 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
   {
     type: "number",
     id: "waitMax",
-    group: "Timing",
+    group: BACKGROUND_GROUP,
     label: "Extra wait, longest (s)",
     description:
       "The longest random extra wait after a cooldown. If it's below the shortest, the two are swapped.",
@@ -72,10 +76,10 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
   {
     type: "number",
     id: "pauseBelow",
-    group: "Power",
+    group: BACKGROUND_GROUP,
     label: "Pause below power (%)",
     description:
-      "When power drops below this, the bot stops playing until the battery has recharged.",
+      "When power drops below this, a run stops playing until the battery has recharged.",
     default: 5,
     min: 0,
     max: 100,
@@ -84,10 +88,10 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
   {
     type: "number",
     id: "resumeAt",
-    group: "Power",
+    group: BACKGROUND_GROUP,
     label: "Resume at power (%)",
     description:
-      "After a pause for power, play starts again by itself once power is back to this. 100 waits for a full charge.",
+      "After a pause for power, a run starts playing again by itself once power is back to this. 100 waits for a full charge.",
     default: 100,
     min: 1,
     max: 100,
@@ -96,10 +100,10 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
   {
     type: "number",
     id: "lockedWaitMin",
-    group: STOP_GROUP,
+    group: BACKGROUND_GROUP,
     label: "Locked out, check again after (min)",
     description:
-      "If the FBI locks you out of the game, wait this long before checking again.",
+      "If the FBI locks you out of the game, a run waits this long before checking again.",
     default: 7,
     min: 1,
     max: 240,
@@ -108,10 +112,10 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
   {
     type: "number",
     id: "stopAfterJobs",
-    group: STOP_GROUP,
+    group: BACKGROUND_GROUP,
     label: "Stop after (jobs)",
     description:
-      "Stop once this many jobs have been played since you pressed Start. 0 keeps going until you press Stop.",
+      "Stop a run once it has played this many jobs. 0 keeps going until you press Stop.",
     default: 0,
     min: 0,
     max: 100000,

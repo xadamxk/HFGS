@@ -100,7 +100,7 @@ describe("playing a job by hand", () => {
     await pick();
     await playOnce(fakeHF({ [SMALL]: withCooldown(smallhacks, 60) }).io);
     expect(await loadState()).toMatchObject({
-      note: "Still cooling down.",
+      note: "Cooling down...",
       readyAt: LOGGED_AT + 60_000,
     });
 
