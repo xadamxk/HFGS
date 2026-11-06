@@ -17,6 +17,8 @@ export const STORAGE_KEYS = {
   hackgameChoice: "hackgame:choice",
   /** Whether auto-play is running, and what it's doing now. */
   hackgameState: "hackgame:state",
+  /** Whether a game page's settings (in HF's table) are collapsed. */
+  settingsCollapsed: (gameId: string) => `ui:settingsCollapsed:${gameId}`,
 } as const;
 
 export const STORAGE_SCHEMA_VERSION = 2;

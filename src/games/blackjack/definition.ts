@@ -24,6 +24,8 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
     "Plays each hand by basic strategy for HF's table rules (dealer hits soft 17, double any two cards, one split, late surrender).",
   path: "/blackjack.php",
   describeResult: describeBlackjack,
+  // Between HF's "βytes Blackjack" header and "Risk your βytes…" row
+  settingsInGameTable: true,
   settings: [
     {
       type: "checkbox",
@@ -71,7 +73,7 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       group: "Martingale",
       label: "Bet cap",
       description: "The bet never grows past this.",
-      default: 100,
+      default: 650,
       min: BLACKJACK_MIN_BET,
       max: BLACKJACK_MAX_BET,
       step: 1,
@@ -86,7 +88,7 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       label: "Rounds",
       description:
         "How many rounds to play each time you start the bot. A round is one hand, or with martingale betting on, one whole set: from your bet up to the win that ends it.",
-      default: 10,
+      default: 3,
       min: 1,
       max: 10000,
       step: 1,

@@ -16,4 +16,9 @@ export interface GameDefinition<T = SettingValues> {
   settings: SettingDefinition<T>[];
   /** A result's details as short text for history tables (cards, reels). */
   describeResult?: (details: Record<string, unknown>) => string;
+  /**
+   * Show the settings inside HF's own game table, right under its header row,
+   * instead of in the HFGS panel below the game.
+   */
+  settingsInGameTable?: boolean;
 }

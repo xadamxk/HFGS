@@ -14,6 +14,9 @@ export { formatAmount };
 
 const CSS = `
 .hfgs-panel { margin-top: 10px; width: 100%; }
+.hfgs-panel.hfgs-in-game { margin-top: 0; }
+.hfgs-in-game-head .hfgs-collapse { background: none; border: 0; padding: 0 2px; color: inherit; font: inherit; font-size: 11px; opacity: 0.8; cursor: pointer; }
+.hfgs-in-game-head .hfgs-collapse:hover { opacity: 1; text-decoration: underline; }
 .hfgs-panel .hfgs-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .hfgs-panel .hfgs-status { margin-left: 4px; }
 .hfgs-panel .hfgs-status.hfgs-error { color: #ff2121; }

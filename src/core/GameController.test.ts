@@ -465,7 +465,8 @@ describe("GameController sounds", () => {
     );
     await flush();
     expect(
-      (await chrome.storage.local.get("settings")).settings.games.slots.muteSounds
+      (await chrome.storage.local.get("settings")).settings.games.slots
+        .muteSounds
     ).toBe(false);
     expect(setPageMuted).toHaveBeenLastCalledWith(false);
 
@@ -608,3 +609,89 @@ function statRow(label: string): string[] {
   );
   return row ? [...row.children].map((td) => td.textContent ?? "") : [];
 }
+
+describe("GameController settings in HF's game table", () => {
+  /** HF's blackjack table, as on the live page (2026-11-06). */
+  function hfTable(): void {
+    document.body.innerHTML = `
+      <table class="tborder"><tbody>
+        <tr><td class="thead" colspan="2"><strong>βytes Blackjack</strong></td></tr>
+        <tr><td class="tcat" colspan="2"><strong>Risk your βytes for a chance to win more!</strong></td></tr>
+        <tr><td class="trow1"><div id="PageContainer"></div></td></tr>
+      </tbody></table>`;
+  }
+  const controllerFor = (game: GameDefinition) =>
+    new GameController({
+      game,
+      bot: fakeBot(),
+      settings: defaultSettings(),
+      page,
+      client: new HfClient({
+        postKey: "key",
+        minIntervalMs: 0,
+        fetch: jest.fn(),
+      }),
+      openSettings: jest.fn(),
+    });
+
+  it("puts blackjack's settings between HF's header and the Risk your βytes row", () => {
+    hfTable();
+    const controller = controllerFor(blackjack as unknown as GameDefinition);
+    document.body.append(controller.panel.element);
+    const rows = [
+      ...document.querySelectorAll("table.tborder > tbody > tr"),
+    ].map((row) => row.textContent?.replace(/\s+/g, " ").trim().slice(0, 40));
+    expect(rows[0]).toBe("βytes Blackjack");
+    expect(rows[1]).toBe("HF Gaming Suite settings▲ Hide");
+    expect(rows[2]).toMatch(/^Blackjack/);
+    expect(rows[3]).toMatch(/^Risk your βytes for a chance to win more/);
+    expect(
+      document.querySelector(".hfgs-in-game #hfgs-blackjack-baseBet")
+    ).not.toBeNull();
+    // Not in the panel too
+    expect(
+      [...controller.panel.element.querySelectorAll("td.tcat")].map(
+        (td) => td.textContent
+      )
+    ).not.toContain("Settings");
+  });
+
+  it("collapses and expands the settings, and remembers it", async () => {
+    await chrome.storage.local.clear();
+    hfTable();
+    controllerFor(blackjack as unknown as GameDefinition);
+    await flush();
+    const toggle = document.querySelector(
+      ".hfgs-collapse"
+    ) as HTMLButtonElement;
+    const row = document.getElementById("hfgs-in-game-row")!;
+    expect(row.hidden).toBe(false);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    toggle.click();
+    expect(row.hidden).toBe(true);
+    expect(toggle.textContent).toBe("▼ Show");
+    await flush();
+    expect(
+      (await chrome.storage.local.get("ui:settingsCollapsed:blackjack"))[
+        "ui:settingsCollapsed:blackjack"
+      ]
+    ).toBe(true);
+
+    // The next page load starts collapsed
+    hfTable();
+    controllerFor(blackjack as unknown as GameDefinition);
+    await flush();
+    expect(document.getElementById("hfgs-in-game-row")!.hidden).toBe(true);
+  });
+
+  it("keeps slots' settings in the panel", () => {
+    hfTable();
+    const controller = controllerFor(slots as unknown as GameDefinition);
+    expect(document.querySelector(".hfgs-in-game")).toBeNull();
+    expect(
+      [...controller.panel.element.querySelectorAll("td.tcat")].map(
+        (td) => td.textContent
+      )
+    ).toContain("Settings");
+  });
+});

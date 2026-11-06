@@ -601,7 +601,7 @@ describe("blackjack bot", () => {
     expect(
       blackjackBot.summarize(values({ gamesPerSession: 1, martingale: true }))
     ).toBe(
-      "Play 1 set at 2 βytes, martingale ×2 up to 100. Each set keeps going until a win?"
+      "Play 1 set at 2 βytes, martingale ×2 up to 650. Each set keeps going until a win?"
     );
   });
 

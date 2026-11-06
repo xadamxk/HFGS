@@ -196,16 +196,70 @@ export class GameController {
     if (display) this.panel.addToControls(display);
     this.updateLimitsNote();
     this.savedNote = el("span", { class: "hfgs-saved", role: "status" });
-    this.panel.addSection(
-      "Settings",
-      el("div", { class: "hfgs-settings-groups" }, [
-        this.gameForm.element,
-        el("div", { class: "hfgs-settings-note" }, [
-          "Changes save right away and apply from the next round, even while the bot runs. Hover a setting for details.",
-          this.savedNote,
-        ]),
-      ])
+    const content = el("div", { class: "hfgs-settings-groups" }, [
+      this.gameForm.element,
+      el("div", { class: "hfgs-settings-note" }, [
+        "Changes save right away and apply from the next round, even while the bot runs. Hover a setting for details.",
+        this.savedNote,
+      ]),
+    ]);
+    if (!(game.settingsInGameTable && this.mountInGameTable(content)))
+      this.panel.addSection("Settings", content);
+  }
+
+  /**
+   * Put the settings in HF's game table, right under its header row (for
+   * blackjack: between "βytes Blackjack" and "Risk your βytes…"). False if
+   * HF's page doesn't have that table, so they go in the panel instead.
+   */
+  private mountInGameTable(content: HTMLElement): boolean {
+    const table = document
+      .getElementById("PageContainer")
+      ?.closest("table.tborder");
+    const header = table?.querySelector("td.thead")?.closest("tr");
+    if (!header) return false;
+    // The panel's styles are scoped to .hfgs-panel: carry the class along
+    const box = el("div", { class: "hfgs-panel hfgs-in-game" }, content);
+    const toggle = el("button", {
+      type: "button",
+      class: "hfgs-collapse",
+      "aria-controls": "hfgs-in-game-row",
+    });
+    const row = el(
+      "tr",
+      { class: "hfgs-in-game-row", id: "hfgs-in-game-row" },
+      el("td", { class: "trow1", colspan: 2 }, box)
     );
+    const setCollapsed = (collapsed: boolean) => {
+      row.hidden = collapsed;
+      toggle.textContent = collapsed ? "▼ Show" : "▲ Hide";
+      toggle.title = collapsed ? "Show the settings" : "Hide the settings";
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+    };
+    // Remembered per game, on every page and tab
+    const key = STORAGE_KEYS.settingsCollapsed(this.options.game.id);
+    setCollapsed(false);
+    chrome.storage.local
+      .get(key)
+      .then((stored) => setCollapsed(stored?.[key] === true))
+      .catch(() => undefined);
+    toggle.addEventListener("click", () => {
+      const collapsed = !row.hidden;
+      setCollapsed(collapsed);
+      chrome.storage.local.set({ [key]: collapsed }).catch(() => undefined);
+    });
+    header.after(
+      el(
+        "tr",
+        { class: "hfgs-in-game-head" },
+        el("td", { class: "tcat", colspan: 2 }, [
+          el("strong", null, "HF Gaming Suite settings"),
+          el("div", { class: "float_right" }, toggle),
+        ])
+      ),
+      row
+    );
+    return true;
   }
 
   private updateLimitsNote(): void {
