@@ -1,122 +1,391 @@
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>Hack Game status card</title>
-<link rel="stylesheet" href="page.css">
-<style>
-  /* HF's Small Hack Jobs page, made small */
-  .gbar { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 18px; background: #222; font-size: 12px; color: #9a9a9a; }
-  .gbar .tab { padding: 4px 10px; border-radius: 4px; background: #2c2c2c; }
-  .gbar .tab.on { background: #4b2e5f; color: #fff; }
-  .gbar .pw { margin-left: auto; display: flex; align-items: center; gap: 6px; color: #e0a000; }
-  .gbar .pw i { width: 22px; height: 11px; border: 2px solid currentColor; border-radius: 2px; position: relative; }
-  .gbar .pw i::after { content: ""; position: absolute; left: 1px; top: 1px; bottom: 1px; width: 80%; background: currentColor; }
-  .jobs { margin: 10px 18px 0; font-size: 12.5px; }
-  .job { display: grid; grid-template-columns: 26px 1fr 60px; align-items: center; height: 31px; padding: 0 10px; border-bottom: 1px solid #262626; color: #cfcfcf; }
-  .job.th { color: #8f8f8f; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; height: 26px; }
-  .job .r { width: 13px; height: 13px; border-radius: 50%; border: 2px solid #666; }
-  .job.on { background: #2a2233; color: #fff; }
-  .job.on .r { border-color: #b48fd4; background: radial-gradient(#b48fd4 40%, transparent 45%); }
-  .job span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
-  .attempt { opacity: .5; }
-  .cd { color: #ff4710; font-weight: bold; font-size: 15px; font-variant-numeric: tabular-nums; }
+  <head>
+    <meta charset="utf-8" />
+    <title>Hack Game status card</title>
+    <link rel="stylesheet" href="page.css" />
+    <style>
+      /* HF's Small Hack Jobs page, made small */
+      .gbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 36px;
+        padding: 0 18px;
+        background: #222;
+        font-size: 12px;
+        color: #9a9a9a;
+      }
+      .gbar .tab {
+        padding: 4px 10px;
+        border-radius: 4px;
+        background: #2c2c2c;
+      }
+      .gbar .tab.on {
+        background: #4b2e5f;
+        color: #fff;
+      }
+      .gbar .pw {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #e0a000;
+      }
+      .gbar .pw i {
+        width: 22px;
+        height: 11px;
+        border: 2px solid currentColor;
+        border-radius: 2px;
+        position: relative;
+      }
+      .gbar .pw i::after {
+        content: "";
+        position: absolute;
+        left: 1px;
+        top: 1px;
+        bottom: 1px;
+        width: 80%;
+        background: currentColor;
+      }
+      .jobs {
+        margin: 10px 18px 0;
+        font-size: 12.5px;
+      }
+      .job {
+        display: grid;
+        grid-template-columns: 26px 1fr 60px;
+        align-items: center;
+        height: 31px;
+        padding: 0 10px;
+        border-bottom: 1px solid #262626;
+        color: #cfcfcf;
+      }
+      .job.th {
+        color: #8f8f8f;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        height: 26px;
+      }
+      .job .r {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        border: 2px solid #666;
+      }
+      .job.on {
+        background: #2a2233;
+        color: #fff;
+      }
+      .job.on .r {
+        border-color: #b48fd4;
+        background: radial-gradient(#b48fd4 40%, transparent 45%);
+      }
+      .job span:last-child {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .attempt {
+        opacity: 0.5;
+      }
+      .cd {
+        color: #ff4710;
+        font-weight: bold;
+        font-size: 15px;
+        font-variant-numeric: tabular-nums;
+      }
 
-  /* The real status card's styles (card.ts CARD_CSS), shown 1.5x */
-  .show { display: flex; flex-direction: column; gap: 16px; }
-  .cap { font-size: 13px; color: #cfcfcf; margin-bottom: 7px; }
-  .cap b { color: #fff; }
-  .z { zoom: 1.5; font: 12px/1.4 Verdana, Arial, sans-serif; color: #ddd; }
-  .hc { width: 276px; background: #1f1f1f; border: 1px solid #2b2b2b; border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.55); overflow: hidden; }
-  .hc .head { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 10px; background: #3d2a4b; }
-  .hc .title { font-weight: bold; flex: 1; color: #fff; }
-  .hc .chip { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 9px; border: 1px solid currentColor; }
-  .hc .icon { color: #bbb; font-size: 14px; padding: 0 4px; }
-  .hc .body { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-  .hc .big { display: flex; align-items: baseline; gap: 8px; }
-  .hc .label { color: #aaa; }
-  .hc .time { font-size: 22px; font-weight: bold; font-variant-numeric: tabular-nums; }
-  .hc .hbtn { margin-left: auto; align-self: center; background: #2d2d2d; color: #ddd; border: 1px solid #3a3a3a; border-radius: 3px; padding: 3px 10px; }
-  .hc .bar { height: 6px; background: #2c2c2c; border-radius: 3px; position: relative; overflow: hidden; }
-  .hc .fill { position: absolute; top: 0; bottom: 0; left: 0; background: #e0a000; border-radius: 3px; }
-  .hc .goal { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #ddd; }
-  .s-playing { color: #4AD635; } .s-waiting { color: #ff4710; } .s-recharging { color: #e0a000; }
-  .pill { display: inline-flex; align-items: center; gap: 6px; background: #1f1f1f; border: 1px solid #2b2b2b; border-radius: 14px; padding: 2px 4px 2px 8px; box-shadow: 0 4px 14px rgba(0,0,0,.5); font-variant-numeric: tabular-nums; }
-  .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-  .pill b { color: #fff; }
-  .pill .t { color: #ddd; }
-  .pill .play { background: #2d2d2d; border: 1px solid #3a3a3a; border-radius: 10px; color: #ddd; font-size: 10px; line-height: 1; padding: 3px 6px; }
-  .pillrow { display: flex; align-items: center; gap: 14px; }
-</style>
-</head>
-<body>
-  <div class="logo"><i></i></div>
-  <div class="crumb"></div>
-  <div class="nav">
-    <b style="left:20px"></b><b style="left:59px"></b><b style="left:98px"></b><b style="left:137px"></b>
-    <s style="left:194px"></s><s style="left:274px"></s><s style="left:354px"></s>
-    <b style="left:928px"></b><b style="left:967px"></b><b style="left:1006px"></b><b style="left:1045px"></b><b style="left:1084px"></b><b style="left:1123px"></b><b style="left:1162px"></b>
-  </div>
+      /* The real status card's styles (card.ts CARD_CSS), shown 1.5x */
+      .show {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .cap {
+        font-size: 13px;
+        color: #cfcfcf;
+        margin-bottom: 7px;
+      }
+      .cap b {
+        color: #fff;
+      }
+      .z {
+        zoom: 1.5;
+        font:
+          12px/1.4 Verdana,
+          Arial,
+          sans-serif;
+        color: #ddd;
+      }
+      .hc {
+        width: 276px;
+        background: #1f1f1f;
+        border: 1px solid #2b2b2b;
+        border-radius: 6px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+        overflow: hidden;
+      }
+      .hc .head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px 6px 10px;
+        background: #3d2a4b;
+      }
+      .hc .title {
+        font-weight: bold;
+        flex: 1;
+        color: #fff;
+      }
+      .hc .chip {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1px 6px;
+        border-radius: 9px;
+        border: 1px solid currentColor;
+      }
+      .hc .icon {
+        color: #bbb;
+        font-size: 14px;
+        padding: 0 4px;
+      }
+      .hc .body {
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .hc .big {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .hc .label {
+        color: #aaa;
+      }
+      .hc .time {
+        font-size: 22px;
+        font-weight: bold;
+        font-variant-numeric: tabular-nums;
+      }
+      .hc .hbtn {
+        margin-left: auto;
+        align-self: center;
+        background: #2d2d2d;
+        color: #ddd;
+        border: 1px solid #3a3a3a;
+        border-radius: 3px;
+        padding: 3px 10px;
+      }
+      .hc .bar {
+        height: 6px;
+        background: #2c2c2c;
+        border-radius: 3px;
+        position: relative;
+        overflow: hidden;
+      }
+      .hc .fill {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        background: #e0a000;
+        border-radius: 3px;
+      }
+      .hc .goal {
+        position: absolute;
+        top: -2px;
+        bottom: -2px;
+        width: 2px;
+        background: #ddd;
+      }
+      .s-playing {
+        color: #4ad635;
+      }
+      .s-waiting {
+        color: #ff4710;
+      }
+      .s-recharging {
+        color: #e0a000;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #1f1f1f;
+        border: 1px solid #2b2b2b;
+        border-radius: 14px;
+        padding: 2px 4px 2px 8px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+        font-variant-numeric: tabular-nums;
+      }
+      .pill .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .pill b {
+        color: #fff;
+      }
+      .pill .t {
+        color: #ddd;
+      }
+      .pill .play {
+        background: #2d2d2d;
+        border: 1px solid #3a3a3a;
+        border-radius: 10px;
+        color: #ddd;
+        font-size: 10px;
+        line-height: 1;
+        padding: 3px 6px;
+      }
+      .pillrow {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="logo"><i></i></div>
+    <div class="crumb"></div>
+    <div class="nav">
+      <b style="left: 20px"></b><b style="left: 59px"></b
+      ><b style="left: 98px"></b><b style="left: 137px"></b>
+      <s style="left: 194px"></s><s style="left: 274px"></s
+      ><s style="left: 354px"></s> <b style="left: 928px"></b
+      ><b style="left: 967px"></b><b style="left: 1006px"></b
+      ><b style="left: 1045px"></b><b style="left: 1084px"></b
+      ><b style="left: 1123px"></b><b style="left: 1162px"></b>
+    </div>
 
-  <div class="tbl">
-    <div class="thead">Hack Game</div>
-    <div class="gbar">
-      <span class="tab on">Small Hack Jobs</span><span class="tab">PC Hack</span><span class="tab">Logs</span>
-      <span class="pw"><i></i>80%</span>
-    </div>
-    <div class="jobs">
-      <div class="job th"><span></span><span>Job</span><span>Success</span></div>
-      <div class="job"><i class="r"></i><span>Cracking a Public Wi-Fi Password</span><span>99%</span></div>
-      <div class="job"><i class="r"></i><span>Bypassing a School Website Filter</span><span>95%</span></div>
-      <div class="job on"><i class="r"></i><span>Phishing a Tech Support Scam</span><span>92%</span></div>
-      <div class="job"><i class="r"></i><span>Spoofing a Caller ID</span><span>90%</span></div>
-      <div class="job"><i class="r"></i><span>Social Engineering a Streaming Service Login</span><span>85%</span></div>
-      <div class="job"><i class="r"></i><span>Hijacking a Rideshare Driver's Account</span><span>75%</span></div>
-      <div class="job"><i class="r"></i><span>Hacking a Smart Home Door Lock</span><span>70%</span></div>
-      <div class="job"><i class="r"></i><span>Phishing a Corporate Employee</span><span>65%</span></div>
-    </div>
-    <div class="btns">
-      <span class="cd">02:14</span>
-      <div class="btn attempt">Attempt Hack</div>
-    </div>
-  </div>
-
-  <div class="assist">
-    <div class="ahead">
-      <img src="../icons/purple/48_1.png" alt="">
-      <b>Hack Game status card</b>
-      <em>HF Gaming Suite</em>
-    </div>
-    <div class="abody show">
-      <div>
-        <div class="cap"><b>Hack from any HF page</b>, no game tab needed</div>
-        <div class="z"><div class="hc">
-          <div class="head"><span class="title">Hack Game</span><span class="chip s-playing">Success</span><span class="icon">–</span></div>
-          <div class="body"><div class="big"><span class="label">Next job in</span><span class="time s-playing">02:14</span><span class="hbtn" style="opacity:.45">Hack</span></div></div>
-        </div></div>
+    <div class="tbl">
+      <div class="thead">Hack Game</div>
+      <div class="gbar">
+        <span class="tab on">Small Hack Jobs</span
+        ><span class="tab">PC Hack</span><span class="tab">Logs</span>
+        <span class="pw"><i></i>80%</span>
       </div>
-      <div>
-        <div class="cap"><b>Or let it play in the background</b>, pausing to recharge</div>
-        <div class="z"><div class="hc">
-          <div class="head"><span class="title">Hack Game</span><span class="chip s-recharging">Recharging</span><span class="icon">–</span></div>
-          <div class="body">
-            <div class="big"><span class="label">Resumes in</span><span class="time s-recharging">41:05</span></div>
-            <div class="bar"><div class="fill" style="width:62%"></div><div class="goal" style="left:calc(100% - 2px)"></div></div>
+      <div class="jobs">
+        <div class="job th">
+          <span></span><span>Job</span><span>Success</span>
+        </div>
+        <div class="job">
+          <i class="r"></i><span>Cracking a Public Wi-Fi Password</span
+          ><span>99%</span>
+        </div>
+        <div class="job">
+          <i class="r"></i><span>Bypassing a School Website Filter</span
+          ><span>95%</span>
+        </div>
+        <div class="job on">
+          <i class="r"></i><span>Phishing a Tech Support Scam</span
+          ><span>92%</span>
+        </div>
+        <div class="job">
+          <i class="r"></i><span>Spoofing a Caller ID</span><span>90%</span>
+        </div>
+        <div class="job">
+          <i class="r"></i
+          ><span>Social Engineering a Streaming Service Login</span
+          ><span>85%</span>
+        </div>
+        <div class="job">
+          <i class="r"></i><span>Hijacking a Rideshare Driver's Account</span
+          ><span>75%</span>
+        </div>
+        <div class="job">
+          <i class="r"></i><span>Hacking a Smart Home Door Lock</span
+          ><span>70%</span>
+        </div>
+        <div class="job">
+          <i class="r"></i><span>Phishing a Corporate Employee</span
+          ><span>65%</span>
+        </div>
+      </div>
+      <div class="btns">
+        <span class="cd">02:14</span>
+        <div class="btn attempt">Attempt Hack</div>
+      </div>
+    </div>
+
+    <div class="assist">
+      <div class="ahead">
+        <img src="../icons/purple/48_1.png" alt="" />
+        <b>Hack Game status card</b>
+        <em>HF Gaming Suite</em>
+      </div>
+      <div class="abody show">
+        <div>
+          <div class="cap">
+            <b>Hack from any HF page</b>, no game tab needed
           </div>
-        </div></div>
-      </div>
-      <div class="pillrow">
-        <div class="z"><span class="pill s-playing"><span class="dot"></span><b>HG</b><span class="t">02:14</span><span class="play" style="opacity:.45">▶</span></span></div>
-        <div class="cap" style="margin:0"><b>Collapses to a pill</b></div>
+          <div class="z">
+            <div class="hc">
+              <div class="head">
+                <span class="title">Hack Game</span
+                ><span class="chip s-playing">Success</span
+                ><span class="icon">–</span>
+              </div>
+              <div class="body">
+                <div class="big">
+                  <span class="label">Next job in</span
+                  ><span class="time s-playing">02:14</span
+                  ><span class="hbtn" style="opacity: 0.45">Hack</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="cap">
+            <b>Or let it play in the background</b>, pausing to recharge
+          </div>
+          <div class="z">
+            <div class="hc">
+              <div class="head">
+                <span class="title">Hack Game</span
+                ><span class="chip s-recharging">Recharging</span
+                ><span class="icon">–</span>
+              </div>
+              <div class="body">
+                <div class="big">
+                  <span class="label">Resumes in</span
+                  ><span class="time s-recharging">41:05</span>
+                </div>
+                <div class="bar">
+                  <div class="fill" style="width: 62%"></div>
+                  <div class="goal" style="left: calc(100% - 2px)"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pillrow">
+          <div class="z">
+            <span class="pill s-playing"
+              ><span class="dot"></span><b>HG</b><span class="t">02:14</span
+              ><span class="play" style="opacity: 0.45">▶</span></span
+            >
+          </div>
+          <div class="cap" style="margin: 0"><b>Collapses to a pill</b></div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="foot">
-    <s style="left:24px;top:20px;width:110px"></s><s style="left:150px;top:20px;width:70px"></s><s style="left:236px;top:20px;width:90px"></s><s style="left:342px;top:20px;width:60px"></s>
-    <s style="left:24px;top:44px;width:260px;background:#2e2e2e"></s>
-    <b style="left:1086px;top:22px"></b><b style="left:1118px;top:22px"></b><b style="left:1150px;top:22px"></b>
-  </div>
-  <script src="page.js"></script>
-</body>
+    <div class="foot">
+      <s style="left: 24px; top: 20px; width: 110px"></s
+      ><s style="left: 150px; top: 20px; width: 70px"></s
+      ><s style="left: 236px; top: 20px; width: 90px"></s
+      ><s style="left: 342px; top: 20px; width: 60px"></s>
+      <s style="left: 24px; top: 44px; width: 260px; background: #2e2e2e"></s>
+      <b style="left: 1086px; top: 22px"></b
+      ><b style="left: 1118px; top: 22px"></b
+      ><b style="left: 1150px; top: 22px"></b>
+    </div>
+    <script src="page.js"></script>
+  </body>
 </html>

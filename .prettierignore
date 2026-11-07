@@ -7,3 +7,5 @@ extension/
 package-lock.json
 *.json
 !.prettierrc.json
+# Saved copies of HF's own pages: the parser tests rely on them exactly as HF serves them
+fixtures/

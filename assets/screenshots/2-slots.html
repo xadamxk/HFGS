@@ -1,100 +1,240 @@
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>Slots auto-spin bot</title>
-<link rel="stylesheet" href="page.css">
-<style>
-  .status { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
-  .status b { font-size: 22px; color: #fff; }
-  .status span { font-size: 14px; color: #b9b9b9; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: #57d184; box-shadow: 0 0 8px #57d184; align-self: center; }
-  .prog { height: 8px; background: #2c2c2c; border-radius: 4px; overflow: hidden; margin-bottom: 16px; }
-  .prog i { display: block; height: 100%; width: 37%; background: #8a5bb0; border-radius: 4px; }
-  .chips { display: flex; gap: 8px; margin-bottom: 18px; }
-  .chip { font-size: 12px; padding: 4px 10px; border-radius: 12px; background: #2a2a2a; border: 1px solid #444; color: #ddd; }
-  .chip b { color: #fff; }
-  .net { font-size: 40px; font-weight: bold; letter-spacing: .01em; margin: 2px 0 10px; font-variant-numeric: tabular-nums; }
-  .net small { font-size: 18px; font-weight: normal; color: #b9b9b9; margin-left: 6px; }
-  /* Net between stop-loss and take-profit */
-  .range { position: relative; height: 34px; margin: 0 4px 16px; }
-  .range .line { position: absolute; left: 0; right: 0; top: 8px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #5a2c2a, #2c2c2c 37.5%, #2c2c2c 37.5%, #1f4a30); }
-  .range .zero { position: absolute; left: 37.5%; top: 2px; width: 2px; height: 20px; background: #666; }
-  .range .me { position: absolute; left: 45%; top: 3px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: #fff; border: 4px solid #57d184; }
-  .range .end { position: absolute; top: 22px; font-size: 11px; color: #9a9a9a; }
-  .stop { margin-top: 16px; display: flex; align-items: center; gap: 12px; }
-  .stop .btn { width: 110px; background: #5a2c2a; color: #fff; font-weight: bold; }
-</style>
-</head>
-<body>
-  <div class="logo"><i></i></div>
-  <div class="crumb"></div>
-  <div class="nav">
-    <b style="left:20px"></b><b style="left:59px"></b><b style="left:98px"></b><b style="left:137px"></b>
-    <s style="left:194px"></s><s style="left:274px"></s><s style="left:354px"></s>
-    <b style="left:928px"></b><b style="left:967px"></b><b style="left:1006px"></b><b style="left:1045px"></b><b style="left:1084px"></b><b style="left:1123px"></b><b style="left:1162px"></b>
-  </div>
-
-  <div class="tbl">
-    <div class="thead">βytes Slots</div>
-    <div class="tcat">Spin the reels for a chance to win βytes!</div>
-    <div class="machine">
-      <div class="marquee">★ SLOTS ★</div>
-      <div class="reels">
-        <div class="reel"><span>🔔</span><span class="mid">🍒</span><span>🍋</span></div>
-        <div class="reel"><span>⭐</span><span class="mid">🍒</span><span>🔔</span></div>
-        <div class="reel"><span>🍋</span><span class="mid">7️⃣</span><span>🍒</span></div>
-      </div>
-      <div class="payline"></div>
-      <div class="win">Win: 20 βytes</div>
+  <head>
+    <meta charset="utf-8" />
+    <title>Slots auto-spin bot</title>
+    <link rel="stylesheet" href="page.css" />
+    <style>
+      .status {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .status b {
+        font-size: 22px;
+        color: #fff;
+      }
+      .status span {
+        font-size: 14px;
+        color: #b9b9b9;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #57d184;
+        box-shadow: 0 0 8px #57d184;
+        align-self: center;
+      }
+      .prog {
+        height: 8px;
+        background: #2c2c2c;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 16px;
+      }
+      .prog i {
+        display: block;
+        height: 100%;
+        width: 37%;
+        background: #8a5bb0;
+        border-radius: 4px;
+      }
+      .chips {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+      .chip {
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        background: #2a2a2a;
+        border: 1px solid #444;
+        color: #ddd;
+      }
+      .chip b {
+        color: #fff;
+      }
+      .net {
+        font-size: 40px;
+        font-weight: bold;
+        letter-spacing: 0.01em;
+        margin: 2px 0 10px;
+        font-variant-numeric: tabular-nums;
+      }
+      .net small {
+        font-size: 18px;
+        font-weight: normal;
+        color: #b9b9b9;
+        margin-left: 6px;
+      }
+      /* Net between stop-loss and take-profit */
+      .range {
+        position: relative;
+        height: 34px;
+        margin: 0 4px 16px;
+      }
+      .range .line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 8px;
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(
+          90deg,
+          #5a2c2a,
+          #2c2c2c 37.5%,
+          #2c2c2c 37.5%,
+          #1f4a30
+        );
+      }
+      .range .zero {
+        position: absolute;
+        left: 37.5%;
+        top: 2px;
+        width: 2px;
+        height: 20px;
+        background: #666;
+      }
+      .range .me {
+        position: absolute;
+        left: 45%;
+        top: 3px;
+        width: 18px;
+        height: 18px;
+        margin-left: -9px;
+        border-radius: 50%;
+        background: #fff;
+        border: 4px solid #57d184;
+      }
+      .range .end {
+        position: absolute;
+        top: 22px;
+        font-size: 11px;
+        color: #9a9a9a;
+      }
+      .stop {
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .stop .btn {
+        width: 110px;
+        background: #5a2c2a;
+        color: #fff;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="logo"><i></i></div>
+    <div class="crumb"></div>
+    <div class="nav">
+      <b style="left: 20px"></b><b style="left: 59px"></b
+      ><b style="left: 98px"></b><b style="left: 137px"></b>
+      <s style="left: 194px"></s><s style="left: 274px"></s
+      ><s style="left: 354px"></s> <b style="left: 928px"></b
+      ><b style="left: 967px"></b><b style="left: 1006px"></b
+      ><b style="left: 1045px"></b><b style="left: 1084px"></b
+      ><b style="left: 1123px"></b><b style="left: 1162px"></b>
     </div>
-    <div class="btns">
-      <div class="bet"><i>−</i><span>Bet 10</span><i>+</i></div>
-      <div class="btn spin">Spin</div>
-    </div>
-  </div>
 
-  <div class="assist">
-    <div class="ahead">
-      <img src="../icons/purple/48_1.png" alt="">
-      <b>Slots bot</b>
-      <em>HF Gaming Suite</em>
-    </div>
-    <div class="abody">
-      <div class="status"><i class="dot"></i><b>Spinning</b><span>37 of 100 spins</span></div>
-      <div class="prog"><i></i></div>
-
-      <div class="chips">
-        <span class="chip">Bet <b>10 βytes</b></span>
-        <span class="chip">Take-profit <b>+500</b></span>
-        <span class="chip">Stop-loss <b>−300</b></span>
+    <div class="tbl">
+      <div class="thead">βytes Slots</div>
+      <div class="tcat">Spin the reels for a chance to win βytes!</div>
+      <div class="machine">
+        <div class="marquee">★ SLOTS ★</div>
+        <div class="reels">
+          <div class="reel">
+            <span>🔔</span><span class="mid">🍒</span><span>🍋</span>
+          </div>
+          <div class="reel">
+            <span>⭐</span><span class="mid">🍒</span><span>🔔</span>
+          </div>
+          <div class="reel">
+            <span>🍋</span><span class="mid">7️⃣</span><span>🍒</span>
+          </div>
+        </div>
+        <div class="payline"></div>
+        <div class="win">Win: 20 βytes</div>
       </div>
-
-      <div class="lbl">Net this run</div>
-      <div class="net up">+60<small>βytes</small></div>
-      <div class="range">
-        <div class="line"></div><div class="zero"></div><div class="me"></div>
-        <span class="end" style="left:0">−300 stops</span>
-        <span class="end" style="left:37.5%;transform:translateX(-50%)">0</span>
-        <span class="end" style="right:0">+500 stops</span>
+      <div class="btns">
+        <div class="bet"><i>−</i><span>Bet 10</span><i>+</i></div>
+        <div class="btn spin">Spin</div>
       </div>
-
-      <div class="tiles">
-        <div class="tile"><div class="v">37</div><div class="k">Spins</div></div>
-        <div class="tile"><div class="v">11</div><div class="k">Wins</div></div>
-        <div class="tile"><div class="v">29.7%</div><div class="k">Win rate</div></div>
-        <div class="tile"><div class="v up">+40</div><div class="k">Best win</div></div>
-      </div>
-
-      <div class="stop"><div class="btn">Stop</div><span class="note">Stops by itself at either limit.</span></div>
     </div>
-  </div>
 
-  <div class="foot">
-    <s style="left:24px;top:20px;width:110px"></s><s style="left:150px;top:20px;width:70px"></s><s style="left:236px;top:20px;width:90px"></s><s style="left:342px;top:20px;width:60px"></s>
-    <s style="left:24px;top:44px;width:260px;background:#2e2e2e"></s>
-    <b style="left:1086px;top:22px"></b><b style="left:1118px;top:22px"></b><b style="left:1150px;top:22px"></b>
-  </div>
-  <script src="page.js"></script>
-</body>
+    <div class="assist">
+      <div class="ahead">
+        <img src="../icons/purple/48_1.png" alt="" />
+        <b>Slots bot</b>
+        <em>HF Gaming Suite</em>
+      </div>
+      <div class="abody">
+        <div class="status">
+          <i class="dot"></i><b>Spinning</b><span>37 of 100 spins</span>
+        </div>
+        <div class="prog"><i></i></div>
+
+        <div class="chips">
+          <span class="chip">Bet <b>10 βytes</b></span>
+          <span class="chip">Take-profit <b>+500</b></span>
+          <span class="chip">Stop-loss <b>−300</b></span>
+        </div>
+
+        <div class="lbl">Net this run</div>
+        <div class="net up">+60<small>βytes</small></div>
+        <div class="range">
+          <div class="line"></div>
+          <div class="zero"></div>
+          <div class="me"></div>
+          <span class="end" style="left: 0">−300 stops</span>
+          <span class="end" style="left: 37.5%; transform: translateX(-50%)"
+            >0</span
+          >
+          <span class="end" style="right: 0">+500 stops</span>
+        </div>
+
+        <div class="tiles">
+          <div class="tile">
+            <div class="v">37</div>
+            <div class="k">Spins</div>
+          </div>
+          <div class="tile">
+            <div class="v">11</div>
+            <div class="k">Wins</div>
+          </div>
+          <div class="tile">
+            <div class="v">29.7%</div>
+            <div class="k">Win rate</div>
+          </div>
+          <div class="tile">
+            <div class="v up">+40</div>
+            <div class="k">Best win</div>
+          </div>
+        </div>
+
+        <div class="stop">
+          <div class="btn">Stop</div>
+          <span class="note">Stops by itself at either limit.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <s style="left: 24px; top: 20px; width: 110px"></s
+      ><s style="left: 150px; top: 20px; width: 70px"></s
+      ><s style="left: 236px; top: 20px; width: 90px"></s
+      ><s style="left: 342px; top: 20px; width: 60px"></s>
+      <s style="left: 24px; top: 44px; width: 260px; background: #2e2e2e"></s>
+      <b style="left: 1086px; top: 22px"></b
+      ><b style="left: 1118px; top: 22px"></b
+      ><b style="left: 1150px; top: 22px"></b>
+    </div>
+    <script src="page.js"></script>
+  </body>
 </html>

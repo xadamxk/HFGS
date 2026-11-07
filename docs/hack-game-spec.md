@@ -15,15 +15,15 @@ missions and the shop are also out of scope.
 
 ## What the live game looks like now (checked 2026-11-05, read only)
 
-| Thing | Where it is | Notes |
-|---|---|---|
-| Job list | `gamecp.php?action=smallhacks`. Each job is `input.contract_checkbox[name=job_id]` with a value. Its name is in `.game_smallhack_desc` and its success rate is in the next `.gtd` | 16 jobs, ids **26–41**, success rates 99% down to 2%. The old script's ids (11–23) and names are all gone, so job choices must be read from the page, not hard-coded. |
-| Running a job | Plain form `POST gamecp.php` with `job_id`, `my_post_key`, `action=do_smallhacks`, `submit` | It's a full page submit, not AJAX. The response page still needs to be checked (see Unknowns). |
-| Cooldown | Every gamecp page runs `countdownTimer('game-countdown-smallhacks', <seconds>)` | 164 s was left when checked. The Attempt Hack button stays disabled until the countdown ends. |
-| Power % | Every gamecp page has `.game-top-right-icons a[href*="action=battery"]` with `title="95%"` | |
-| Full-charge time | `gamecp.php?action=battery` shows "Full Charge: In 49 minutes", with the exact time in a `span[title="Nov 5, 2026 09:56 PM"]` | Power was 95 / 100 kWh. It recharges slowly (about 5% in 49 minutes). |
-| Results | `gamecp.php?action=logs` shows lines like "Success 92% $4.0696 2.0482 xp" or "Fail 50%" | Lower success rates pay much more: 99% pays about $0.45, 95% about $2.35, 92% about $4.07. |
-| FBI lock | The old script checked for `img[src$="/game/fbi-interrogating.jpg"]` | I haven't seen it live. |
+| Thing            | Where it is                                                                                                                                                                       | Notes                                                                                                                                                                 |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Job list         | `gamecp.php?action=smallhacks`. Each job is `input.contract_checkbox[name=job_id]` with a value. Its name is in `.game_smallhack_desc` and its success rate is in the next `.gtd` | 16 jobs, ids **26–41**, success rates 99% down to 2%. The old script's ids (11–23) and names are all gone, so job choices must be read from the page, not hard-coded. |
+| Running a job    | Plain form `POST gamecp.php` with `job_id`, `my_post_key`, `action=do_smallhacks`, `submit`                                                                                       | It's a full page submit, not AJAX. The response page still needs to be checked (see Unknowns).                                                                        |
+| Cooldown         | Every gamecp page runs `countdownTimer('game-countdown-smallhacks', <seconds>)`                                                                                                   | 164 s was left when checked. The Attempt Hack button stays disabled until the countdown ends.                                                                         |
+| Power %          | Every gamecp page has `.game-top-right-icons a[href*="action=battery"]` with `title="95%"`                                                                                        |                                                                                                                                                                       |
+| Full-charge time | `gamecp.php?action=battery` shows "Full Charge: In 49 minutes", with the exact time in a `span[title="Nov 5, 2026 09:56 PM"]`                                                     | Power was 95 / 100 kWh. It recharges slowly (about 5% in 49 minutes).                                                                                                 |
+| Results          | `gamecp.php?action=logs` shows lines like "Success 92% $4.0696 2.0482 xp" or "Fail 50%"                                                                                           | Lower success rates pay much more: 99% pays about $0.45, 95% about $2.35, 92% about $4.07.                                                                            |
+| FBI lock         | The old script checked for `img[src$="/game/fbi-interrogating.jpg"]`                                                                                                              | I haven't seen it live.                                                                                                                                               |
 
 ## Does a page need to stay open?
 
@@ -36,7 +36,7 @@ small hacks page with your HF cookies, reads the post key, cooldown, power and j
 from the HTML, posts the job, and reads the result. Alarms survive the service worker
 being shut down, and in MV3 they can wake it as often as every 30 s, which is plenty
 for cooldowns measured in minutes. Nothing reloads, because no page is involved. If an
-HF game page *is* open, its panel updates live from storage.
+HF game page _is_ open, its panel updates live from storage.
 
 Costs and risks:
 
@@ -86,16 +86,16 @@ start ──► fetch smallhacks page ──► parse it
 
 Hack Game section, on the settings page and on the game page's panel:
 
-| Setting | Label | Hover text | Default |
-|---|---|---|---|
-| Job choice | **Jobs to play** (ticked list) | Ticks from the current job list, showing each job's success rate. Each cycle the bot picks one ticked job at random. | none ticked; Start says "Tick at least one job" |
-| (alternative, see Q2) | **Or: any job at or above (% success)** | Works even when HF renames jobs or changes their rates. | off |
-| `intervalVariableLow` | **Extra wait after cooldown, shortest (s)** | After a cooldown ends, the bot waits a random extra time between the shortest and longest before the next job, so it doesn't play like clockwork. | 30 |
-| `intervalVariableHigh` | **Extra wait after cooldown, longest (s)** | | 180 |
-| `batteryThreshold` | **Pause below power (%)** | When power drops below this, the bot stops playing until the battery recharges. | 5 |
-| new | **Resume at power (%)** | Play starts again by itself once power is back to this. 100 waits for a full charge. | 100 |
-| new | **When locked out, check again after (min)** | If the FBI locks your account in the game, wait this long before checking again. | 7 |
-| new | **Stop after (jobs)** | 0 means keep going until you press Stop. | 0 |
+| Setting                | Label                                        | Hover text                                                                                                                                        | Default                                         |
+| ---------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Job choice             | **Jobs to play** (ticked list)               | Ticks from the current job list, showing each job's success rate. Each cycle the bot picks one ticked job at random.                              | none ticked; Start says "Tick at least one job" |
+| (alternative, see Q2)  | **Or: any job at or above (% success)**      | Works even when HF renames jobs or changes their rates.                                                                                           | off                                             |
+| `intervalVariableLow`  | **Extra wait after cooldown, shortest (s)**  | After a cooldown ends, the bot waits a random extra time between the shortest and longest before the next job, so it doesn't play like clockwork. | 30                                              |
+| `intervalVariableHigh` | **Extra wait after cooldown, longest (s)**   |                                                                                                                                                   | 180                                             |
+| `batteryThreshold`     | **Pause below power (%)**                    | When power drops below this, the bot stops playing until the battery recharges.                                                                   | 5                                               |
+| new                    | **Resume at power (%)**                      | Play starts again by itself once power is back to this. 100 waits for a full charge.                                                              | 100                                             |
+| new                    | **When locked out, check again after (min)** | If the FBI locks your account in the game, wait this long before checking again.                                                                  | 7                                               |
+| new                    | **Stop after (jobs)**                        | 0 means keep going until you press Stop.                                                                                                          | 0                                               |
 
 Two notes on the old script:
 

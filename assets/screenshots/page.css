@@ -1,59 +1,349 @@
 /* Shared look for the store screenshots: a dark HF page skeleton (same style as
    HF Convo Anywhere's store shots), HF's game box on the left, an HFGS card on
    the right and a footer. Each screenshot is 1280x800. */
-* { box-sizing: border-box; }
-html, body { margin: 0; width: 1280px; height: 800px; overflow: hidden; background: #000; font-family: Verdana, "Segoe UI", sans-serif; color: #e6e6e6; }
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  width: 1280px;
+  height: 800px;
+  overflow: hidden;
+  background: #000;
+  font-family: Verdana, "Segoe UI", sans-serif;
+  color: #e6e6e6;
+}
 
-.logo { position: absolute; left: 377px; top: 25px; width: 526px; height: 110px; background: #1c1c1c; border-radius: 12px; }
-.logo i { position: absolute; left: 92px; top: 34px; width: 342px; height: 41px; background: #2b2b2b; border-radius: 6px; }
-.crumb { position: absolute; left: 105px; top: 155px; width: 252px; height: 10px; border-radius: 5px; background: #4a4a4a; }
-.nav { position: absolute; left: 37px; top: 178px; width: 1206px; height: 39px; background: #1f1f1f; border-radius: 4px; }
-.nav b { position: absolute; top: 11px; width: 18px; height: 18px; background: #3a3a3a; border-radius: 4px; }
-.nav s { position: absolute; top: 15px; height: 9px; width: 60px; background: #3a3a3a; border-radius: 5px; }
+.logo {
+  position: absolute;
+  left: 377px;
+  top: 25px;
+  width: 526px;
+  height: 110px;
+  background: #1c1c1c;
+  border-radius: 12px;
+}
+.logo i {
+  position: absolute;
+  left: 92px;
+  top: 34px;
+  width: 342px;
+  height: 41px;
+  background: #2b2b2b;
+  border-radius: 6px;
+}
+.crumb {
+  position: absolute;
+  left: 105px;
+  top: 155px;
+  width: 252px;
+  height: 10px;
+  border-radius: 5px;
+  background: #4a4a4a;
+}
+.nav {
+  position: absolute;
+  left: 37px;
+  top: 178px;
+  width: 1206px;
+  height: 39px;
+  background: #1f1f1f;
+  border-radius: 4px;
+}
+.nav b {
+  position: absolute;
+  top: 11px;
+  width: 18px;
+  height: 18px;
+  background: #3a3a3a;
+  border-radius: 4px;
+}
+.nav s {
+  position: absolute;
+  top: 15px;
+  height: 9px;
+  width: 60px;
+  background: #3a3a3a;
+  border-radius: 5px;
+}
 
 /* HF's game box; its height is matched to the HFGS card by page.js */
-.tbl { position: absolute; left: 37px; top: 238px; width: 720px; height: 466px; background: #1a1a1a; border-radius: 0 0 6px 6px; }
-.thead { height: 42px; background: #4b2e5f; display: flex; align-items: center; padding: 0 18px; font-weight: bold; font-size: 15px; color: #f1e8f7; }
-.tcat { height: 30px; background: #222; display: flex; align-items: center; padding: 0 18px; font-size: 12px; color: #9a9a9a; }
-.btns { position: absolute; left: 22px; right: 22px; bottom: 22px; display: flex; gap: 10px; justify-content: center; align-items: center; }
-.btn { width: 120px; height: 38px; border-radius: 4px; background: #3a3a3a; color: #ddd; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.tbl {
+  position: absolute;
+  left: 37px;
+  top: 238px;
+  width: 720px;
+  height: 466px;
+  background: #1a1a1a;
+  border-radius: 0 0 6px 6px;
+}
+.thead {
+  height: 42px;
+  background: #4b2e5f;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  font-weight: bold;
+  font-size: 15px;
+  color: #f1e8f7;
+}
+.tcat {
+  height: 30px;
+  background: #222;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  font-size: 12px;
+  color: #9a9a9a;
+}
+.btns {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 22px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+.btn {
+  width: 120px;
+  height: 38px;
+  border-radius: 4px;
+  background: #3a3a3a;
+  color: #ddd;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-.foot { position: absolute; left: 37px; top: 728px; width: 1206px; height: 72px; background: #1f1f1f; border-radius: 6px 6px 0 0; }
-.foot s { position: absolute; height: 9px; background: #3a3a3a; border-radius: 5px; }
-.foot b { position: absolute; width: 18px; height: 18px; background: #3a3a3a; border-radius: 4px; }
+.foot {
+  position: absolute;
+  left: 37px;
+  top: 728px;
+  width: 1206px;
+  height: 72px;
+  background: #1f1f1f;
+  border-radius: 6px 6px 0 0;
+}
+.foot s {
+  position: absolute;
+  height: 9px;
+  background: #3a3a3a;
+  border-radius: 5px;
+}
+.foot b {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: #3a3a3a;
+  border-radius: 4px;
+}
 
 /* HFGS card */
-.assist { position: absolute; left: 790px; top: 238px; width: 452px; background: #202020; border: 1px solid #3a3a3a; border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.6); overflow: hidden; }
-.ahead { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #2a2a2a; border-bottom: 1px solid #3a3a3a; }
-.ahead img { width: 26px; height: 26px; }
-.ahead b { font-size: 16px; }
-.ahead em { margin-left: auto; font-style: normal; font-size: 12px; color: #aaa; border: 1px solid #555; padding: 2px 8px; border-radius: 10px; }
-.abody { padding: 16px 18px 18px; }
-.lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #8f8f8f; margin-bottom: 6px; }
-.note { font-size: 12px; color: #8f8f8f; }
-.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.tile { background: #272727; border-radius: 8px; padding: 9px 10px; }
-.tile .v { font-size: 18px; font-weight: bold; color: #fff; font-variant-numeric: tabular-nums; }
-.tile .k { font-size: 11px; color: #9a9a9a; margin-top: 2px; }
-.up { color: #57d184 !important; } .down { color: #e87a72 !important; }
+.assist {
+  position: absolute;
+  left: 790px;
+  top: 238px;
+  width: 452px;
+  background: #202020;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.ahead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #2a2a2a;
+  border-bottom: 1px solid #3a3a3a;
+}
+.ahead img {
+  width: 26px;
+  height: 26px;
+}
+.ahead b {
+  font-size: 16px;
+}
+.ahead em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 12px;
+  color: #aaa;
+  border: 1px solid #555;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.abody {
+  padding: 16px 18px 18px;
+}
+.lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8f8f8f;
+  margin-bottom: 6px;
+}
+.note {
+  font-size: 12px;
+  color: #8f8f8f;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.tile {
+  background: #272727;
+  border-radius: 8px;
+  padding: 9px 10px;
+}
+.tile .v {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.tile .k {
+  font-size: 11px;
+  color: #9a9a9a;
+  margin-top: 2px;
+}
+.up {
+  color: #57d184 !important;
+}
+.down {
+  color: #e87a72 !important;
+}
 
 /* HF's slot machine, made small */
-.machine { position: absolute; left: 110px; top: 92px; width: 500px; height: 250px; border-radius: 18px; background: linear-gradient(#3b2350, #26163a); border: 3px solid #6b4a85; box-shadow: 0 8px 22px rgba(0,0,0,.55), inset 0 0 0 4px #2a1838; }
-.marquee { position: absolute; left: 0; right: 0; top: 14px; text-align: center; font-weight: bold; font-size: 15px; letter-spacing: .3em; color: #f3d77a; text-shadow: 0 0 8px rgba(243,215,122,.5); }
-.reels { position: absolute; left: 40px; right: 40px; top: 48px; height: 150px; display: flex; gap: 10px; }
-.reel { flex: 1; background: linear-gradient(#cfcfcf, #fff 25%, #fff 75%, #cfcfcf); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; box-shadow: inset 0 0 0 3px #1a1022; }
-.reel span { font-size: 30px; line-height: 46px; opacity: .35; filter: grayscale(.4); }
-.reel span.mid { font-size: 52px; line-height: 58px; opacity: 1; filter: none; }
-.payline { position: absolute; left: 30px; right: 30px; top: 122px; height: 2px; background: rgba(243,215,122,.85); box-shadow: 0 0 6px rgba(243,215,122,.8); }
-.win { position: absolute; left: 0; right: 0; top: 210px; text-align: center; font-size: 13px; color: #f3d77a; }
-.bet { display: flex; align-items: center; gap: 0; height: 38px; border-radius: 4px; overflow: hidden; background: #2c2c2c; font-size: 14px; }
-.bet i { font-style: normal; width: 34px; text-align: center; color: #aaa; background: #3a3a3a; line-height: 38px; }
-.bet span { padding: 0 14px; color: #fff; }
-.btn.spin { background: #4b2e5f; color: #fff; font-weight: bold; }
+.machine {
+  position: absolute;
+  left: 110px;
+  top: 92px;
+  width: 500px;
+  height: 250px;
+  border-radius: 18px;
+  background: linear-gradient(#3b2350, #26163a);
+  border: 3px solid #6b4a85;
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 4px #2a1838;
+}
+.marquee {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 14px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 15px;
+  letter-spacing: 0.3em;
+  color: #f3d77a;
+  text-shadow: 0 0 8px rgba(243, 215, 122, 0.5);
+}
+.reels {
+  position: absolute;
+  left: 40px;
+  right: 40px;
+  top: 48px;
+  height: 150px;
+  display: flex;
+  gap: 10px;
+}
+.reel {
+  flex: 1;
+  background: linear-gradient(#cfcfcf, #fff 25%, #fff 75%, #cfcfcf);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 3px #1a1022;
+}
+.reel span {
+  font-size: 30px;
+  line-height: 46px;
+  opacity: 0.35;
+  filter: grayscale(0.4);
+}
+.reel span.mid {
+  font-size: 52px;
+  line-height: 58px;
+  opacity: 1;
+  filter: none;
+}
+.payline {
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  top: 122px;
+  height: 2px;
+  background: rgba(243, 215, 122, 0.85);
+  box-shadow: 0 0 6px rgba(243, 215, 122, 0.8);
+}
+.win {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 210px;
+  text-align: center;
+  font-size: 13px;
+  color: #f3d77a;
+}
+.bet {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 38px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #2c2c2c;
+  font-size: 14px;
+}
+.bet i {
+  font-style: normal;
+  width: 34px;
+  text-align: center;
+  color: #aaa;
+  background: #3a3a3a;
+  line-height: 38px;
+}
+.bet span {
+  padding: 0 14px;
+  color: #fff;
+}
+.btn.spin {
+  background: #4b2e5f;
+  color: #fff;
+  font-weight: bold;
+}
 
 /* Bare mode (see page.js) */
-.bare, .bare body { background: transparent; }
-.bare .logo, .bare .crumb, .bare .nav, .bare .foot, .bare .thead, .bare .tcat, .bare .gbar { display: none; }
-.bare .tbl { background: transparent; }
-.bare-card .tbl { display: none; }
-.bare .btns { display: none; }
+.bare,
+.bare body {
+  background: transparent;
+}
+.bare .logo,
+.bare .crumb,
+.bare .nav,
+.bare .foot,
+.bare .thead,
+.bare .tcat,
+.bare .gbar {
+  display: none;
+}
+.bare .tbl {
+  background: transparent;
+}
+.bare-card .tbl {
+  display: none;
+}
+.bare .btns {
+  display: none;
+}

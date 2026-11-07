@@ -28,15 +28,15 @@ page stays cheap.
 
 ## When the card shows
 
-| Situation | Card |
-|---|---|
-| Setting off | Never |
-| Auto-play isn't running and never stopped with a message | Hidden |
-| Running in the background | Shown, with live countdown |
+| Situation                                                       | Card                                                                  |
+| --------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Setting off                                                     | Never                                                                 |
+| Auto-play isn't running and never stopped with a message        | Hidden                                                                |
+| Running in the background                                       | Shown, with live countdown                                            |
 | Stopped with a reason (finished, error, Cloudflare, signed out) | Shown once with the reason, until you dismiss it or press Start again |
-| On Hack Game pages (`gamecp.php`) | Hidden: the full panel is already there |
-| In frames | Never (top page only) |
-| Run in background off | The manual card with the Hack button (see Manual mode) |
+| On Hack Game pages (`gamecp.php`)                               | Hidden: the full panel is already there                               |
+| In frames                                                       | Never (top page only)                                                 |
+| Run in background off                                           | The manual card with the Hack button (see Manual mode)                |
 
 ## What it shows
 
@@ -71,10 +71,10 @@ across pages.
 
 ## Settings (Hack Game, Mode group)
 
-| Setting | Label | Hover text | Default |
-|---|---|---|---|
-| `statusCard` | **Status card on HF pages** | While auto-play runs in the background, show a small card on every Hack Forums page with what it's doing and the time to its next step. | on |
-| `statusCardCorner` | **Card position** (radio: Bottom right, Bottom left) | Which corner of the page the card sits in. | Bottom right |
+| Setting            | Label                                                | Hover text                                                                                                                              | Default      |
+| ------------------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `statusCard`       | **Status card on HF pages**                          | While auto-play runs in the background, show a small card on every Hack Forums page with what it's doing and the time to its next step. | on           |
+| `statusCardCorner` | **Card position** (radio: Bottom right, Bottom left) | Which corner of the page the card sits in.                                                                                              | Bottom right |
 
 Both are disabled while "Run in background" is off, unless Q1 says otherwise.
 

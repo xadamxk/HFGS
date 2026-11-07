@@ -1,229 +1,516 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Status Card Mock</title>
-<style>
-  /* Page backdrop, roughly HF's dark theme */
-  body { margin: 0; background: #141414; color: #ddd; font: 13px/1.4 Verdana, Arial, sans-serif; padding: 24px 16px 120px; }
-  h1 { font-size: 18px; margin: 0 0 4px; }
-  p.lede { margin: 0 0 20px; color: #999; max-width: 760px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px 20px; max-width: 1000px; }
-  .state h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #888; margin: 0 0 8px; font-weight: normal; }
-  .pills { display: flex; gap: 10px; flex-wrap: wrap; }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Status Card Mock</title>
+    <style>
+      /* Page backdrop, roughly HF's dark theme */
+      body {
+        margin: 0;
+        background: #141414;
+        color: #ddd;
+        font:
+          13px/1.4 Verdana,
+          Arial,
+          sans-serif;
+        padding: 24px 16px 120px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 4px;
+      }
+      p.lede {
+        margin: 0 0 20px;
+        color: #999;
+        max-width: 760px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 24px 20px;
+        max-width: 1000px;
+      }
+      .state h2 {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #888;
+        margin: 0 0 8px;
+        font-weight: normal;
+      }
+      .pills {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
 
-  /* ---- The card (what would ship as the content script's CSS) ---- */
-  .hfgs-card { width: 280px; box-sizing: border-box; background: #1f1f1f; border: 1px solid #2b2b2b; border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.55); color: #ddd; font-size: 12px; overflow: hidden; }
-  .hfgs-card.fixed { position: fixed; right: 16px; bottom: 16px; z-index: 9000; }
-  .hfgs-card-head { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 10px; background: #3d2a4b; }
-  .hfgs-card-title { font-weight: bold; flex: 1; color: #fff; }
-  .hfgs-chip { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 9px; border: 1px solid currentColor; }
-  .hfgs-icon-btn { background: none; border: 0; color: #bbb; cursor: pointer; font-size: 14px; line-height: 1; padding: 2px 4px; }
-  .hfgs-icon-btn:hover { color: #fff; }
-  .hfgs-card-body { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-  .hfgs-big { display: flex; align-items: baseline; gap: 8px; }
-  .hfgs-big .label { color: #aaa; }
-  .hfgs-big .time { font-size: 22px; font-weight: bold; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
-  .hfgs-detail { color: #999; }
-  .hfgs-bar { height: 6px; background: #2c2c2c; border-radius: 3px; position: relative; overflow: hidden; }
-  .hfgs-bar .fill { position: absolute; inset: 0 auto 0 0; background: #e0a000; border-radius: 3px; }
-  .hfgs-bar .goal { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #ddd; }
-  .hfgs-row { display: flex; justify-content: space-between; gap: 8px; }
-  .hfgs-muted { color: #888; }
-  .hfgs-last { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ok { color: #4AD635; } .bad { color: #ff2121; }
-  .hfgs-actions { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
-  .hfgs-btn { background: #2d2d2d; color: #ddd; border: 1px solid #3a3a3a; border-radius: 3px; padding: 3px 10px; font: inherit; cursor: pointer; }
-  .hfgs-btn:hover { background: #383838; }
-  .hfgs-actions a { color: #b48fd4; text-decoration: none; margin-left: auto; }
-  .hfgs-actions a:hover { text-decoration: underline; }
-  .hfgs-reason { padding: 6px 8px; border-radius: 4px; background: #262626; }
-  .hfgs-reason.error { background: #3a1a1a; color: #ffb3b3; }
+      /* ---- The card (what would ship as the content script's CSS) ---- */
+      .hfgs-card {
+        width: 280px;
+        box-sizing: border-box;
+        background: #1f1f1f;
+        border: 1px solid #2b2b2b;
+        border-radius: 6px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+        color: #ddd;
+        font-size: 12px;
+        overflow: hidden;
+      }
+      .hfgs-card.fixed {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 9000;
+      }
+      .hfgs-card-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px 6px 10px;
+        background: #3d2a4b;
+      }
+      .hfgs-card-title {
+        font-weight: bold;
+        flex: 1;
+        color: #fff;
+      }
+      .hfgs-chip {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1px 6px;
+        border-radius: 9px;
+        border: 1px solid currentColor;
+      }
+      .hfgs-icon-btn {
+        background: none;
+        border: 0;
+        color: #bbb;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        padding: 2px 4px;
+      }
+      .hfgs-icon-btn:hover {
+        color: #fff;
+      }
+      .hfgs-card-body {
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .hfgs-big {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .hfgs-big .label {
+        color: #aaa;
+      }
+      .hfgs-big .time {
+        font-size: 22px;
+        font-weight: bold;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.02em;
+      }
+      .hfgs-detail {
+        color: #999;
+      }
+      .hfgs-bar {
+        height: 6px;
+        background: #2c2c2c;
+        border-radius: 3px;
+        position: relative;
+        overflow: hidden;
+      }
+      .hfgs-bar .fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        background: #e0a000;
+        border-radius: 3px;
+      }
+      .hfgs-bar .goal {
+        position: absolute;
+        top: -2px;
+        bottom: -2px;
+        width: 2px;
+        background: #ddd;
+      }
+      .hfgs-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .hfgs-muted {
+        color: #888;
+      }
+      .hfgs-last {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .ok {
+        color: #4ad635;
+      }
+      .bad {
+        color: #ff2121;
+      }
+      .hfgs-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 2px;
+      }
+      .hfgs-btn {
+        background: #2d2d2d;
+        color: #ddd;
+        border: 1px solid #3a3a3a;
+        border-radius: 3px;
+        padding: 3px 10px;
+        font: inherit;
+        cursor: pointer;
+      }
+      .hfgs-btn:hover {
+        background: #383838;
+      }
+      .hfgs-actions a {
+        color: #b48fd4;
+        text-decoration: none;
+        margin-left: auto;
+      }
+      .hfgs-actions a:hover {
+        text-decoration: underline;
+      }
+      .hfgs-reason {
+        padding: 6px 8px;
+        border-radius: 4px;
+        background: #262626;
+      }
+      .hfgs-reason.error {
+        background: #3a1a1a;
+        color: #ffb3b3;
+      }
 
-  /* Status colours */
-  .s-playing { color: #4AD635; } .s-waiting { color: #ff4710; } .s-recharging { color: #e0a000; }
-  .s-locked { color: #ff2121; } .s-stopped { color: #aaa; } .s-error { color: #ff2121; }
+      /* Status colours */
+      .s-playing {
+        color: #4ad635;
+      }
+      .s-waiting {
+        color: #ff4710;
+      }
+      .s-recharging {
+        color: #e0a000;
+      }
+      .s-locked {
+        color: #ff2121;
+      }
+      .s-stopped {
+        color: #aaa;
+      }
+      .s-error {
+        color: #ff2121;
+      }
 
-  /* Collapsed pill */
-  .hfgs-pill { display: inline-flex; align-items: center; gap: 6px; background: #1f1f1f; border: 1px solid #2b2b2b; border-radius: 14px; padding: 4px 10px 4px 8px; box-shadow: 0 4px 14px rgba(0,0,0,.5); cursor: pointer; font-size: 12px; font-variant-numeric: tabular-nums; }
-  .hfgs-pill .time { color: #ddd; }
-  .hfgs-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-  .hfgs-pill b { color: #fff; font-weight: bold; }
-</style>
-</head>
-<body>
-<h1>Hack Game status card: mock</h1>
-<p class="lede">Shown on every Hack Forums page while auto-play runs in the background (hidden on Hack Game pages, where the full panel is). It only reads the bot's stored state, so it never contacts HF. The countdowns tick live in this mock; the card in the bottom-right corner is how it sits on a page.</p>
+      /* Collapsed pill */
+      .hfgs-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #1f1f1f;
+        border: 1px solid #2b2b2b;
+        border-radius: 14px;
+        padding: 4px 10px 4px 8px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+      .hfgs-pill .time {
+        color: #ddd;
+      }
+      .hfgs-pill .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .hfgs-pill b {
+        color: #fff;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Hack Game status card: mock</h1>
+    <p class="lede">
+      Shown on every Hack Forums page while auto-play runs in the background
+      (hidden on Hack Game pages, where the full panel is). It only reads the
+      bot's stored state, so it never contacts HF. The countdowns tick live in
+      this mock; the card in the bottom-right corner is how it sits on a page.
+    </p>
 
-<div class="grid">
-  <div class="state">
-    <h2>Waiting for the cooldown</h2>
-    <div class="hfgs-card" data-countdown="91">
+    <div class="grid">
+      <div class="state">
+        <h2>Waiting for the cooldown</h2>
+        <div class="hfgs-card" data-countdown="91">
+          <div class="hfgs-card-head">
+            <span class="hfgs-card-title">Hack Game</span>
+            <span class="hfgs-chip s-waiting">Waiting</span>
+            <button class="hfgs-icon-btn" title="Minimize">–</button>
+          </div>
+          <div class="hfgs-card-body">
+            <div class="hfgs-big">
+              <span class="label">Next job in</span
+              ><span class="time s-waiting">01:31</span>
+            </div>
+            <div class="hfgs-detail">
+              at 10:12 PM · Waiting for the cooldown
+            </div>
+            <div class="hfgs-last">
+              Last: Cracking a Public Wi-Fi Password ·
+              <span class="ok">Success</span> · $0.44 · 0.24 xp
+            </div>
+            <div class="hfgs-row hfgs-muted">
+              <span>This run: 3 jobs · 3 succeeded</span><span>$1.32</span>
+            </div>
+            <div class="hfgs-actions">
+              <button class="hfgs-btn">Stop</button><a href="#">Open game ›</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state">
+        <h2>Recharging</h2>
+        <div class="hfgs-card" data-countdown="2530">
+          <div class="hfgs-card-head">
+            <span class="hfgs-card-title">Hack Game</span>
+            <span class="hfgs-chip s-recharging">Recharging</span>
+            <button class="hfgs-icon-btn" title="Minimize">–</button>
+          </div>
+          <div class="hfgs-card-body">
+            <div class="hfgs-big">
+              <span class="label">Resumes in</span
+              ><span class="time s-recharging">42:10</span>
+            </div>
+            <div class="hfgs-detail">
+              at 10:54 PM · Power 4% → resumes at 100%
+            </div>
+            <div class="hfgs-bar" title="Power 4% of the 100% it waits for">
+              <div class="fill" style="width: 4%"></div>
+              <div class="goal" style="left: calc(100% - 2px)"></div>
+            </div>
+            <div class="hfgs-last">
+              Last: Spoofing a Caller ID · <span class="bad">Fail</span> (90%)
+            </div>
+            <div class="hfgs-row hfgs-muted">
+              <span>This run: 19 jobs · 17 succeeded</span><span>$21.06</span>
+            </div>
+            <div class="hfgs-actions">
+              <button class="hfgs-btn">Stop</button><a href="#">Open game ›</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state">
+        <h2>Recharging to a lower resume level (60%)</h2>
+        <div class="hfgs-card" data-countdown="1370">
+          <div class="hfgs-card-head">
+            <span class="hfgs-card-title">Hack Game</span>
+            <span class="hfgs-chip s-recharging">Recharging</span>
+            <button class="hfgs-icon-btn" title="Minimize">–</button>
+          </div>
+          <div class="hfgs-card-body">
+            <div class="hfgs-big">
+              <span class="label">Resumes in</span
+              ><span class="time s-recharging">22:50</span>
+            </div>
+            <div class="hfgs-detail">
+              at 10:35 PM · Power 31% → resumes at 60%
+            </div>
+            <div class="hfgs-bar" title="Power 31%; play resumes at 60%">
+              <div class="fill" style="width: 31%"></div>
+              <div class="goal" style="left: 60%"></div>
+            </div>
+            <div class="hfgs-row hfgs-muted">
+              <span>This run: 14 jobs · 13 succeeded</span><span>$9.87</span>
+            </div>
+            <div class="hfgs-actions">
+              <button class="hfgs-btn">Stop</button><a href="#">Open game ›</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state">
+        <h2>Playing a job</h2>
+        <div class="hfgs-card">
+          <div class="hfgs-card-head">
+            <span class="hfgs-card-title">Hack Game</span>
+            <span class="hfgs-chip s-playing">Playing</span>
+            <button class="hfgs-icon-btn" title="Minimize">–</button>
+          </div>
+          <div class="hfgs-card-body">
+            <div class="hfgs-big">
+              <span class="time s-playing" style="font-size: 16px"
+                >Playing now…</span
+              >
+            </div>
+            <div class="hfgs-detail">Phishing a Corporate Employee (65%)</div>
+            <div class="hfgs-row hfgs-muted">
+              <span>This run: 4 jobs · 4 succeeded</span><span>$1.76</span>
+            </div>
+            <div class="hfgs-actions">
+              <button class="hfgs-btn">Stop</button><a href="#">Open game ›</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state">
+        <h2>Locked out</h2>
+        <div class="hfgs-card" data-countdown="372">
+          <div class="hfgs-card-head">
+            <span class="hfgs-card-title">Hack Game</span>
+            <span class="hfgs-chip s-locked">Locked out</span>
+            <button class="hfgs-icon-btn" title="Minimize">–</button>
+          </div>
+          <div class="hfgs-card-body">
+            <div class="hfgs-big">
+              <span class="label">Checks again in</span
+              ><span class="time s-locked">06:12</span>
+            </div>
+            <div class="hfgs-detail">at 10:18 PM · Locked out by the FBI</div>
+            <div class="hfgs-row hfgs-muted">
+              <span>This run: 8 jobs · 6 succeeded</span><span>$12.40</span>
+            </div>
+            <div class="hfgs-actions">
+              <button class="hfgs-btn">Stop</button><a href="#">Open game ›</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state">
+        <h2>Stopped: finished</h2>
+        <div class="hfgs-card">
+          <div class="hfgs-card-head">
+            <span class="hfgs-card-title">Hack Game</span>
+            <span class="hfgs-chip s-stopped">Stopped</span>
+            <button class="hfgs-icon-btn" title="Dismiss">×</button>
+          </div>
+          <div class="hfgs-card-body">
+            <div class="hfgs-reason">Finished 25 jobs.</div>
+            <div class="hfgs-row hfgs-muted">
+              <span>That run: 25 jobs · 23 succeeded</span><span>$31.18</span>
+            </div>
+            <div class="hfgs-actions">
+              <button class="hfgs-btn">Start again</button
+              ><a href="#">Open game ›</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state">
+        <h2>Stopped: needs you</h2>
+        <div class="hfgs-card">
+          <div class="hfgs-card-head">
+            <span class="hfgs-card-title">Hack Game</span>
+            <span class="hfgs-chip s-error">Stopped</span>
+            <button class="hfgs-icon-btn" title="Dismiss">×</button>
+          </div>
+          <div class="hfgs-card-body">
+            <div class="hfgs-reason error">
+              HF showed a Cloudflare check. Open HF in a tab, then press Start
+              again.
+            </div>
+            <div class="hfgs-row hfgs-muted">
+              <span>That run: 11 jobs · 10 succeeded</span><span>$8.95</span>
+            </div>
+            <div class="hfgs-actions">
+              <button class="hfgs-btn">Start again</button
+              ><a href="#">Open game ›</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state">
+        <h2>Collapsed (click to expand)</h2>
+        <div class="pills">
+          <span class="hfgs-pill s-waiting" data-countdown="91"
+            ><span class="dot"></span><b>HG</b>
+            <span class="time">01:31</span></span
+          >
+          <span class="hfgs-pill s-recharging" data-countdown="2530"
+            ><span class="dot"></span><b>HG</b>
+            <span class="time">42:10</span></span
+          >
+          <span class="hfgs-pill s-locked" data-countdown="372"
+            ><span class="dot"></span><b>HG</b>
+            <span class="time">06:12</span></span
+          >
+          <span class="hfgs-pill s-playing"
+            ><span class="dot"></span><b>HG</b> Playing</span
+          >
+          <span class="hfgs-pill s-error"
+            ><span class="dot"></span><b>HG</b> Stopped</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- How it sits on a page -->
+    <div class="hfgs-card fixed" data-countdown="91">
       <div class="hfgs-card-head">
         <span class="hfgs-card-title">Hack Game</span>
         <span class="hfgs-chip s-waiting">Waiting</span>
         <button class="hfgs-icon-btn" title="Minimize">–</button>
       </div>
       <div class="hfgs-card-body">
-        <div class="hfgs-big"><span class="label">Next job in</span><span class="time s-waiting">01:31</span></div>
+        <div class="hfgs-big">
+          <span class="label">Next job in</span
+          ><span class="time s-waiting">01:31</span>
+        </div>
         <div class="hfgs-detail">at 10:12 PM · Waiting for the cooldown</div>
-        <div class="hfgs-last">Last: Cracking a Public Wi-Fi Password · <span class="ok">Success</span> · $0.44 · 0.24 xp</div>
-        <div class="hfgs-row hfgs-muted"><span>This run: 3 jobs · 3 succeeded</span><span>$1.32</span></div>
-        <div class="hfgs-actions"><button class="hfgs-btn">Stop</button><a href="#">Open game ›</a></div>
+        <div class="hfgs-last">
+          Last: Cracking a Public Wi-Fi Password ·
+          <span class="ok">Success</span> · $0.44 · 0.24 xp
+        </div>
+        <div class="hfgs-row hfgs-muted">
+          <span>This run: 3 jobs · 3 succeeded</span><span>$1.32</span>
+        </div>
+        <div class="hfgs-actions">
+          <button class="hfgs-btn">Stop</button><a href="#">Open game ›</a>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="state">
-    <h2>Recharging</h2>
-    <div class="hfgs-card" data-countdown="2530">
-      <div class="hfgs-card-head">
-        <span class="hfgs-card-title">Hack Game</span>
-        <span class="hfgs-chip s-recharging">Recharging</span>
-        <button class="hfgs-icon-btn" title="Minimize">–</button>
-      </div>
-      <div class="hfgs-card-body">
-        <div class="hfgs-big"><span class="label">Resumes in</span><span class="time s-recharging">42:10</span></div>
-        <div class="hfgs-detail">at 10:54 PM · Power 4% → resumes at 100%</div>
-        <div class="hfgs-bar" title="Power 4% of the 100% it waits for"><div class="fill" style="width:4%"></div><div class="goal" style="left:calc(100% - 2px)"></div></div>
-        <div class="hfgs-last">Last: Spoofing a Caller ID · <span class="bad">Fail</span> (90%)</div>
-        <div class="hfgs-row hfgs-muted"><span>This run: 19 jobs · 17 succeeded</span><span>$21.06</span></div>
-        <div class="hfgs-actions"><button class="hfgs-btn">Stop</button><a href="#">Open game ›</a></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="state">
-    <h2>Recharging to a lower resume level (60%)</h2>
-    <div class="hfgs-card" data-countdown="1370">
-      <div class="hfgs-card-head">
-        <span class="hfgs-card-title">Hack Game</span>
-        <span class="hfgs-chip s-recharging">Recharging</span>
-        <button class="hfgs-icon-btn" title="Minimize">–</button>
-      </div>
-      <div class="hfgs-card-body">
-        <div class="hfgs-big"><span class="label">Resumes in</span><span class="time s-recharging">22:50</span></div>
-        <div class="hfgs-detail">at 10:35 PM · Power 31% → resumes at 60%</div>
-        <div class="hfgs-bar" title="Power 31%; play resumes at 60%"><div class="fill" style="width:31%"></div><div class="goal" style="left:60%"></div></div>
-        <div class="hfgs-row hfgs-muted"><span>This run: 14 jobs · 13 succeeded</span><span>$9.87</span></div>
-        <div class="hfgs-actions"><button class="hfgs-btn">Stop</button><a href="#">Open game ›</a></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="state">
-    <h2>Playing a job</h2>
-    <div class="hfgs-card">
-      <div class="hfgs-card-head">
-        <span class="hfgs-card-title">Hack Game</span>
-        <span class="hfgs-chip s-playing">Playing</span>
-        <button class="hfgs-icon-btn" title="Minimize">–</button>
-      </div>
-      <div class="hfgs-card-body">
-        <div class="hfgs-big"><span class="time s-playing" style="font-size:16px">Playing now…</span></div>
-        <div class="hfgs-detail">Phishing a Corporate Employee (65%)</div>
-        <div class="hfgs-row hfgs-muted"><span>This run: 4 jobs · 4 succeeded</span><span>$1.76</span></div>
-        <div class="hfgs-actions"><button class="hfgs-btn">Stop</button><a href="#">Open game ›</a></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="state">
-    <h2>Locked out</h2>
-    <div class="hfgs-card" data-countdown="372">
-      <div class="hfgs-card-head">
-        <span class="hfgs-card-title">Hack Game</span>
-        <span class="hfgs-chip s-locked">Locked out</span>
-        <button class="hfgs-icon-btn" title="Minimize">–</button>
-      </div>
-      <div class="hfgs-card-body">
-        <div class="hfgs-big"><span class="label">Checks again in</span><span class="time s-locked">06:12</span></div>
-        <div class="hfgs-detail">at 10:18 PM · Locked out by the FBI</div>
-        <div class="hfgs-row hfgs-muted"><span>This run: 8 jobs · 6 succeeded</span><span>$12.40</span></div>
-        <div class="hfgs-actions"><button class="hfgs-btn">Stop</button><a href="#">Open game ›</a></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="state">
-    <h2>Stopped: finished</h2>
-    <div class="hfgs-card">
-      <div class="hfgs-card-head">
-        <span class="hfgs-card-title">Hack Game</span>
-        <span class="hfgs-chip s-stopped">Stopped</span>
-        <button class="hfgs-icon-btn" title="Dismiss">×</button>
-      </div>
-      <div class="hfgs-card-body">
-        <div class="hfgs-reason">Finished 25 jobs.</div>
-        <div class="hfgs-row hfgs-muted"><span>That run: 25 jobs · 23 succeeded</span><span>$31.18</span></div>
-        <div class="hfgs-actions"><button class="hfgs-btn">Start again</button><a href="#">Open game ›</a></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="state">
-    <h2>Stopped: needs you</h2>
-    <div class="hfgs-card">
-      <div class="hfgs-card-head">
-        <span class="hfgs-card-title">Hack Game</span>
-        <span class="hfgs-chip s-error">Stopped</span>
-        <button class="hfgs-icon-btn" title="Dismiss">×</button>
-      </div>
-      <div class="hfgs-card-body">
-        <div class="hfgs-reason error">HF showed a Cloudflare check. Open HF in a tab, then press Start again.</div>
-        <div class="hfgs-row hfgs-muted"><span>That run: 11 jobs · 10 succeeded</span><span>$8.95</span></div>
-        <div class="hfgs-actions"><button class="hfgs-btn">Start again</button><a href="#">Open game ›</a></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="state">
-    <h2>Collapsed (click to expand)</h2>
-    <div class="pills">
-      <span class="hfgs-pill s-waiting" data-countdown="91"><span class="dot"></span><b>HG</b> <span class="time">01:31</span></span>
-      <span class="hfgs-pill s-recharging" data-countdown="2530"><span class="dot"></span><b>HG</b> <span class="time">42:10</span></span>
-      <span class="hfgs-pill s-locked" data-countdown="372"><span class="dot"></span><b>HG</b> <span class="time">06:12</span></span>
-      <span class="hfgs-pill s-playing"><span class="dot"></span><b>HG</b> Playing</span>
-      <span class="hfgs-pill s-error"><span class="dot"></span><b>HG</b> Stopped</span>
-    </div>
-  </div>
-</div>
-
-<!-- How it sits on a page -->
-<div class="hfgs-card fixed" data-countdown="91">
-  <div class="hfgs-card-head">
-    <span class="hfgs-card-title">Hack Game</span>
-    <span class="hfgs-chip s-waiting">Waiting</span>
-    <button class="hfgs-icon-btn" title="Minimize">–</button>
-  </div>
-  <div class="hfgs-card-body">
-    <div class="hfgs-big"><span class="label">Next job in</span><span class="time s-waiting">01:31</span></div>
-    <div class="hfgs-detail">at 10:12 PM · Waiting for the cooldown</div>
-    <div class="hfgs-last">Last: Cracking a Public Wi-Fi Password · <span class="ok">Success</span> · $0.44 · 0.24 xp</div>
-    <div class="hfgs-row hfgs-muted"><span>This run: 3 jobs · 3 succeeded</span><span>$1.32</span></div>
-    <div class="hfgs-actions"><button class="hfgs-btn">Stop</button><a href="#">Open game ›</a></div>
-  </div>
-</div>
-
-<script>
-  // Live countdowns, in HF's mm:ss / hh:mm:ss style
-  const fmt = (s) => {
-    s = Math.max(0, s);
-    const p = (n) => String(n).padStart(2, "0");
-    const mm = p(Math.floor(s / 60) % 60), ss = p(s % 60);
-    return s >= 3600 ? `${p(Math.floor(s / 3600))}:${mm}:${ss}` : `${mm}:${ss}`;
-  };
-  const start = Date.now();
-  const tick = () => {
-    const gone = Math.floor((Date.now() - start) / 1000);
-    document.querySelectorAll("[data-countdown]").forEach((card) => {
-      const left = Number(card.dataset.countdown) - gone;
-      const t = card.querySelector(".time");
-      if (t) t.textContent = left > 0 ? fmt(left) : "Any moment…";
-    });
-  };
-  setInterval(tick, 1000);
-</script>
-</body>
+    <script>
+      // Live countdowns, in HF's mm:ss / hh:mm:ss style
+      const fmt = (s) => {
+        s = Math.max(0, s);
+        const p = (n) => String(n).padStart(2, "0");
+        const mm = p(Math.floor(s / 60) % 60),
+          ss = p(s % 60);
+        return s >= 3600
+          ? `${p(Math.floor(s / 3600))}:${mm}:${ss}`
+          : `${mm}:${ss}`;
+      };
+      const start = Date.now();
+      const tick = () => {
+        const gone = Math.floor((Date.now() - start) / 1000);
+        document.querySelectorAll("[data-countdown]").forEach((card) => {
+          const left = Number(card.dataset.countdown) - gone;
+          const t = card.querySelector(".time");
+          if (t) t.textContent = left > 0 ? fmt(left) : "Any moment…";
+        });
+      };
+      setInterval(tick, 1000);
+    </script>
+  </body>
 </html>
