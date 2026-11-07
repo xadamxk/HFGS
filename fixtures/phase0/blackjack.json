@@ -1,0 +1,83 @@
+{
+  "url": "https://hackforums.net/blackjack.php",
+  "page": "blackjack",
+  "shared": {
+    "my_post_key in <head>": true,
+    "window.my_post_key": "string",
+    "#balanceCounterBalance": {
+      "found": 1,
+      "sample": "<div class=\"counter\" id=\"balanceCounterBalance\">2880</div>"
+    },
+    "#PageContainer": {
+      "found": 1,
+      "sample": "<div id=\"PageContainer\">\n\t\t\t\t<div id=\"PageContainerInner\">\n\n\t\t\t\t\t<div id=\"instructions\">\n\t\t\t\t\t\t<p>The classic card game 21 pits you against the dealer. Try to g"
+    },
+    "#PageContainerInner": {
+      "found": 1,
+      "sample": "<div id=\"PageContainerInner\">\n\n\t\t\t\t\t<div id=\"instructions\">\n\t\t\t\t\t\t<p>The classic card game 21 pits you against the dealer. Try to get as close to 21 without goi"
+    },
+    "text \"Risk your Bytes for a chance to win more!\"": 0
+  },
+  "game": {
+    "text \"Disclaimer:  This blackjack table uses HF Bytes\"": 0,
+    "text \"This blackjack table uses HF Bytes\" (single space)": 0,
+    "#playerHand1": {
+      "found": 1,
+      "sample": "<div id=\"playerHand1\" class=\"playerHand\">\n\t\t\t\t\t\t\t<div class=\"betContainer\"></div>\n\t\t\t\t\t\t\t<div class=\"betValueSign\" style=\"display: none;\"></div>\n\t\t\t\t\t\t\t<div cla"
+    },
+    "#playerHand2": {
+      "found": 1,
+      "sample": "<div id=\"playerHand2\" class=\"playerHand\" style=\"display: none;\">\n\t\t\t\t\t\t\t<div class=\"betContainer\"></div>\n\t\t\t\t\t\t\t<div class=\"betValueSign\" style=\"display: none;\""
+    },
+    "#dealerHand": {
+      "found": 1,
+      "sample": "<div id=\"dealerHand\" class=\"dealerHand\">\n\t\t\t\t\t\t\t<div class=\"cardsContainer\"></div>\n\t\t\t\t\t\t\t<div class=\"cardsValueSign\" style=\"display: none;\"></div>\n\t\t\t\t\t\t</div>"
+    },
+    "#playerHand1 .cardsContainer": {
+      "found": 1,
+      "sample": "<div class=\"cardsContainer\"></div>"
+    },
+    "#playerHand1 .cardsValueSign": {
+      "found": 1,
+      "sample": "<div class=\"cardsValueSign\" style=\"display: none;\"></div>"
+    },
+    "#playerHand1 .cardsOutcomeSign": {
+      "found": 1,
+      "sample": "<div class=\"cardsOutcomeSign outcomeSign\" style=\"display: none;\"></div>"
+    },
+    "#playerHand1 .handOutcomeSign": {
+      "found": 1,
+      "sample": "<div class=\"handOutcomeSign outcomeSign\" style=\"display: none;\"></div>"
+    },
+    "#playerHand1 .betValueSign": {
+      "found": 1,
+      "sample": "<div class=\"betValueSign\" style=\"display: none;\"></div>"
+    },
+    "#dealerHand .cardsValueSign": {
+      "found": 1,
+      "sample": "<div class=\"cardsValueSign\" style=\"display: none;\"></div>"
+    },
+    "#rules > ul": {
+      "found": 1,
+      "sample": "<ul>\n\t\t\t\t\t\t\t<li>Blackjack pays 3 to 2</li>\n\t\t\t\t\t\t\t<li>Surrender gives 50% back</li>\n\t\t\t\t\t\t\t<li>Dealer must hit soft 17</li>\n\t\t\t\t\t\t\t<li>Double any two cards</li>"
+    },
+    "rules text": "Blackjack pays 3 to 2\nSurrender gives 50% back\nDealer must hit soft 17\nDouble any two cards\nSplit up to 2 hands",
+    ".card sprite background": "url(\"https://hackforums.net/images/blackjack/cards.png\")",
+    "inline scripts mentioning blackjack_action": 0,
+    "external scripts": [
+      "https://hackforums.net/jscripts/jquery.js#ver=1814",
+      "https://hackforums.net/jscripts/jquery.plugins.min.js#ver=1814",
+      "https://hackforums.net/jscripts/general.js#ver=1814",
+      "https://hackforums.net/jscripts/response.js",
+      "https://hackforums.net/jscripts/util.js?v=1.1a",
+      "https://hackforums.net/jscripts/markdown-it.min.js",
+      "https://hackforums.net/jscripts/blackjack/jquery-ui-1.8.17.custom.min.js",
+      "https://hackforums.net/jscripts/blackjack/jquery.moveto-1.1.0.min.js",
+      "https://hackforums.net/jscripts/blackjack/soundmanager2.js",
+      "https://hackforums.net/jscripts/blackjack/blackjack.js",
+      "https://hackforums.net/jscripts/hfnotify-legacy-renderer.js",
+      "https://hackforums.net/jscripts/hfnotify.js?v=5.3",
+      "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092"
+    ]
+  }
+}

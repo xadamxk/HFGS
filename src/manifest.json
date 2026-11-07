@@ -1,0 +1,77 @@
+{
+  "manifest_version": 3,
+  "name": "HF Gaming Suite",
+  "short_name": "HFGS",
+  "version": "2.0.0",
+  "description": "Bots, stats and history for HF's βytes games (blackjack and slots), plus Hack Game auto-play.",
+  "homepage_url": "https://github.com/xadamxk/HFGS",
+  "incognito": "spanning",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "run_at": "document_idle",
+      "matches": [
+        "https://hackforums.net/blackjack.php*",
+        "https://hackforums.net/slots.php*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    },
+    {
+      "run_at": "document_idle",
+      "world": "MAIN",
+      "matches": [
+        "https://hackforums.net/blackjack.php*",
+        "https://hackforums.net/slots.php*"
+      ],
+      "js": [
+        "page-bridge.js"
+      ]
+    },
+    {
+      "run_at": "document_idle",
+      "matches": [
+        "https://hackforums.net/gamecp.php*"
+      ],
+      "js": [
+        "hackgame.js"
+      ]
+    },
+    {
+      "run_at": "document_idle",
+      "matches": [
+        "https://hackforums.net/*"
+      ],
+      "js": [
+        "statuscard.js"
+      ]
+    }
+  ],
+  "action": {
+    "default_title": "HF Gaming Suite settings",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "permissions": [
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://hackforums.net/*"
+  ]
+}

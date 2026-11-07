@@ -1,1 +1,14 @@
 .vscode/*
+node_modules/
+dist/
+coverage/
+releases/
+*.log
+# Chrome for Testing and its profile (holds sign-in cookies) for `npm run browser`
+.chrome-for-testing/
+.browser-profile/
+# Firefox equivalents for `npm run browser:firefox`
+.firefox-for-testing/
+.browser-profile-firefox/
+.firefox-build/
+.firefox-endpoint

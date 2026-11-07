@@ -1,0 +1,64 @@
+import { GameDefinition } from "../types";
+import { STOP_GROUP } from "../../settings/definitions";
+import { botSettings, BotSettings } from "../botSettings";
+
+export interface SlotsSettings extends BotSettings {
+  bet: number;
+  gamesPerSession: number;
+  runUntilStopped: boolean;
+}
+
+/**
+ * The bets HF's own bet buttons can produce (slots.js change_bet: 1, 2, 3, 5,
+ * 10, 20, 25, 50, 100, then steps of 100 up to maxBet 1000), checked 2026-11-05.
+ */
+export const SLOTS_BETS = [
+  1, 2, 3, 5, 10, 20, 25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000,
+];
+
+export const slots: GameDefinition<SlotsSettings> = {
+  id: "slots",
+  name: "Slots",
+  description: "Spins HF's slot machine at a fixed bet.",
+  path: "/slots.php",
+  describeResult: (details) =>
+    Array.isArray(details.reels) ? `Reels ${details.reels.join(" ")}` : "",
+  settings: [
+    {
+      type: "number",
+      id: "bet",
+      label: "Bet",
+      description:
+        "The bet for each spin. HF's machine takes 1, 2, 3, 5, 10, 20, 25, 50, 100, then hundreds up to 1000; other amounts snap to the nearest.",
+      default: 1,
+      min: 1,
+      max: 1000,
+      step: 1,
+      unit: "βytes",
+      allowed: SLOTS_BETS,
+    },
+    {
+      type: "number",
+      id: "gamesPerSession",
+      group: STOP_GROUP,
+      disabledBy: "runUntilStopped",
+      label: "Spins",
+      description: "How many spins to play each time you start the bot.",
+      default: 25,
+      min: 1,
+      max: 10000,
+      step: 1,
+    },
+    {
+      type: "checkbox",
+      id: "runUntilStopped",
+      group: STOP_GROUP,
+      label: "Run until stopped",
+      description:
+        "Ignore Spins and keep spinning until you press Stop or the stop-loss or take-profit is hit. With both at 0, only Stop (or HF refusing a spin) ends the run.",
+      default: false,
+    },
+    ...botSettings<SlotsSettings>().stop,
+    ...botSettings<SlotsSettings>().display,
+  ],
+};

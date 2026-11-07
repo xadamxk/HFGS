@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Blackjack strategy assistant</title>
+<link rel="stylesheet" href="page.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1280px; height: 800px; overflow: hidden; background: #000; font-family: Verdana, "Segoe UI", sans-serif; color: #e6e6e6; }
+  .sk { background: #2a2a2a; border-radius: 6px; }
+  .bar { height: 10px; border-radius: 5px; background: #444; }
+
+  /* HF page skeleton (same look as Convo Anywhere's store shots) */
+  .logo { position: absolute; left: 377px; top: 25px; width: 526px; height: 110px; background: #1c1c1c; border-radius: 12px; }
+  .logo i { position: absolute; left: 92px; top: 34px; width: 342px; height: 41px; background: #2b2b2b; border-radius: 6px; }
+  .crumb { position: absolute; left: 105px; top: 155px; width: 252px; height: 10px; border-radius: 5px; background: #4a4a4a; }
+  .nav { position: absolute; left: 37px; top: 178px; width: 1206px; height: 39px; background: #1f1f1f; border-radius: 4px; }
+  .nav b { position: absolute; top: 11px; width: 18px; height: 18px; background: #3a3a3a; border-radius: 4px; }
+  .nav s { position: absolute; top: 15px; height: 9px; width: 60px; background: #3a3a3a; border-radius: 5px; }
+
+  /* HF's blackjack table, made small */
+  /* height is set to match the assistant's by the script at the end */
+  .tbl { position: absolute; left: 37px; top: 238px; width: 720px; height: 466px; background: #1a1a1a; border-radius: 0 0 6px 6px; }
+  .thead { height: 42px; background: #4b2e5f; display: flex; align-items: center; padding: 0 18px; font-weight: bold; font-size: 15px; color: #f1e8f7; }
+  .tcat { height: 30px; background: #222; display: flex; align-items: center; padding: 0 18px; font-size: 12px; color: #9a9a9a; }
+  .felt { position: absolute; left: 22px; top: 88px; width: 676px; height: 300px; border-radius: 22px; background: radial-gradient(ellipse at 50% 40%, #2f8a4a, #1f6a35 70%); border: 10px solid #5a3b26; box-shadow: inset 0 0 0 3px #3e2817, 0 6px 18px rgba(0,0,0,.5); }
+  .who { position: absolute; left: 0; right: 0; text-align: center; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.75); }
+  .row { position: absolute; left: 0; right: 0; display: flex; justify-content: center; gap: 12px; }
+  .card { width: 62px; height: 86px; background: #fff; border-radius: 8px; box-shadow: 0 3px 8px rgba(0,0,0,.35); position: relative; font-family: Georgia, serif; font-weight: bold; }
+  .card .c { position: absolute; left: 7px; top: 5px; font-size: 20px; line-height: 1; text-align: center; }
+  .card .c small { display: block; font-size: 16px; }
+  .card .m { position: absolute; right: 7px; bottom: 5px; font-size: 30px; line-height: 1; }
+  .red { color: #c8202d; } .blk { color: #1a1a1a; }
+  .card.back { background: repeating-linear-gradient(45deg, #6b3c8a 0 6px, #573070 6px 12px); border: 4px solid #fff; }
+  .total { position: absolute; left: 0; right: 0; text-align: center; }
+  .total span { display: inline-block; background: rgba(0,0,0,.45); color: #fff; font-size: 13px; padding: 3px 10px; border-radius: 10px; }
+  .btns { position: absolute; left: 22px; right: 22px; bottom: 22px; display: flex; gap: 10px; justify-content: center; }
+  .btn { width: 120px; height: 38px; border-radius: 4px; background: #3a3a3a; color: #ddd; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+
+  /* HF footer skeleton */
+  .foot { position: absolute; left: 37px; top: 728px; width: 1206px; height: 72px; background: #1f1f1f; border-radius: 6px 6px 0 0; }
+  .foot s { position: absolute; height: 9px; background: #3a3a3a; border-radius: 5px; }
+  .foot b { position: absolute; width: 18px; height: 18px; background: #3a3a3a; border-radius: 4px; }
+
+  /* HFGS strategy assistant */
+  .assist { position: absolute; left: 790px; top: 238px; width: 452px; background: #202020; border: 1px solid #3a3a3a; border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.6); overflow: hidden; }
+  .ahead { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #2a2a2a; border-bottom: 1px solid #3a3a3a; }
+  .ahead img { width: 26px; height: 26px; }
+  .ahead b { font-size: 16px; }
+  .ahead em { margin-left: auto; font-style: normal; font-size: 12px; color: #aaa; border: 1px solid #555; padding: 2px 8px; border-radius: 10px; }
+  .abody { padding: 16px 18px 18px; }
+  .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #8f8f8f; margin-bottom: 6px; }
+  .hand { display: flex; gap: 22px; font-size: 14px; color: #cfcfcf; margin-bottom: 16px; }
+  .hand strong { color: #fff; font-size: 16px; }
+  .best { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+  .best .play { font-size: 34px; font-weight: bold; letter-spacing: .04em; color: #fff; }
+  .best .why { font-size: 13px; color: #b9b9b9; }
+  .opt { display: grid; grid-template-columns: 92px 1fr 74px; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 6px; font-size: 16px; }
+  .opt + .opt { margin-top: 4px; }
+  .opt.top { background: #2f2538; box-shadow: inset 0 0 0 1px #6b4a85; font-weight: bold; color: #fff; }
+  .opt .name { color: inherit; }
+  .opt:not(.top) { color: #c9c9c9; }
+  .track { position: relative; height: 10px; background: #2c2c2c; border-radius: 5px; }
+  .track .zero { position: absolute; left: 20%; top: -4px; bottom: -4px; width: 2px; background: #555; }
+  .fill { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+  .pos { background: #3fb36b; } .neg { background: #d0574f; }
+  .pct { text-align: right; font-variant-numeric: tabular-nums; }
+  .pct.p { color: #57d184; } .pct.n { color: #e87a72; }
+  .note { font-size: 12px; color: #8f8f8f; margin: 8px 0 16px; }
+  .odds { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .odd { background: #272727; border-radius: 8px; padding: 10px 12px; }
+  .odd .v { font-size: 22px; font-weight: bold; color: #fff; }
+  .odd .k { font-size: 12px; color: #9a9a9a; margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="logo"><i></i></div>
+  <div class="crumb"></div>
+  <div class="nav">
+    <b style="left:20px"></b><b style="left:59px"></b><b style="left:98px"></b><b style="left:137px"></b>
+    <s style="left:194px"></s><s style="left:274px"></s><s style="left:354px"></s>
+    <b style="left:928px"></b><b style="left:967px"></b><b style="left:1006px"></b><b style="left:1045px"></b><b style="left:1084px"></b><b style="left:1123px"></b><b style="left:1162px"></b>
+  </div>
+
+  <div class="tbl">
+    <div class="thead">βytes Blackjack</div>
+    <div class="tcat">Risk your βytes for a chance to win more!</div>
+    <div class="felt">
+      <div class="who" style="top:10px">Dealer</div>
+      <div class="row" style="top:30px">
+        <div class="card"><div class="c red">6<small>♦</small></div><div class="m red">♦</div></div>
+        <div class="card back"></div>
+      </div>
+      <div class="total" style="top:122px"><span>6</span></div>
+      <div class="row" style="top:152px">
+        <div class="card"><div class="c blk">6<small>♠</small></div><div class="m blk">♠</div></div>
+        <div class="card"><div class="c red">5<small>♥</small></div><div class="m red">♥</div></div>
+      </div>
+      <div class="total" style="top:246px"><span>You: 11 · Bet 10 βytes</span></div>
+    </div>
+    <div class="btns">
+      <div class="btn">Hit</div>
+      <div class="btn">Stand</div>
+      <div class="btn">Double</div>
+    </div>
+  </div>
+
+  <div class="assist">
+    <div class="ahead">
+      <img src="../icons/purple/48_1.png" alt="">
+      <b>Strategy assistant</b>
+      <em>HF Gaming Suite</em>
+    </div>
+    <div class="abody">
+      <div class="hand">
+        <div><div class="lbl">Your hand</div><strong>6♠ 5♥</strong> · Hard 11</div>
+        <div><div class="lbl">Dealer shows</div><strong>6♦</strong></div>
+      </div>
+
+      <div class="lbl">Best play</div>
+      <div class="best"><span class="play">DOUBLE</span><span class="why">beats hit by 0.332 per βyte</span></div>
+
+      <!-- Real output of getAdvice(6♠ 5♥ vs 6♦). Zero line at 20% of the track; scale: 80% of track = +66.5% -->
+      <div class="opt top">
+        <span class="name">Double</span>
+        <div class="track"><div class="zero"></div><div class="fill pos" style="left:20%;width:80%"></div></div>
+        <span class="pct p">+66.5%</span>
+      </div>
+      <div class="opt">
+        <span class="name">Hit</span>
+        <div class="track"><div class="zero"></div><div class="fill pos" style="left:20%;width:40%"></div></div>
+        <span class="pct p">+33.2%</span>
+      </div>
+      <div class="opt">
+        <span class="name">Stand</span>
+        <div class="track"><div class="zero"></div><div class="fill neg" style="left:5.4%;width:14.6%"></div></div>
+        <span class="pct n">−12.1%</span>
+      </div>
+      <div class="note">Expected return on your bet for each option.</div>
+
+      <div class="lbl">Odds</div>
+      <div class="odds">
+        <div class="odd"><div class="v">43.9%</div><div class="k">Dealer busts with a 6</div></div>
+        <div class="odd"><div class="v">0%</div><div class="k">Chance you bust on a hit</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">
+    <s style="left:24px;top:20px;width:110px"></s><s style="left:150px;top:20px;width:70px"></s><s style="left:236px;top:20px;width:90px"></s><s style="left:342px;top:20px;width:60px"></s>
+    <s style="left:24px;top:44px;width:260px;background:#2e2e2e"></s>
+    <b style="left:1086px;top:22px"></b><b style="left:1118px;top:22px"></b><b style="left:1150px;top:22px"></b>
+  </div>
+  <script src="page.js"></script>
+</body>
+</html>

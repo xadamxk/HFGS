@@ -1,0 +1,60 @@
+{
+  "url": "https://hackforums.net/slots.php",
+  "page": "slots",
+  "shared": {
+    "my_post_key in <head>": true,
+    "window.my_post_key": "string",
+    "#balanceCounterBalance": {
+      "found": 0,
+      "sample": null
+    },
+    "#PageContainer": {
+      "found": 1,
+      "sample": "<div id=\"PageContainer\">\n\t\t\t\t<div id=\"PageContainerInner\">\n\n\t\t\t\t\t<div id=\"prizes_list\">\n\t\t\t\t\t\t\n<div id=\"trPrize_1\" class=\"trPrize\">\n\t<div class=\"tdReels\">\n\t\t<di"
+    },
+    "#PageContainerInner": {
+      "found": 1,
+      "sample": "<div id=\"PageContainerInner\">\n\n\t\t\t\t\t<div id=\"prizes_list\">\n\t\t\t\t\t\t\n<div id=\"trPrize_1\" class=\"trPrize\">\n\t<div class=\"tdReels\">\n\t\t<div class=\"reel1 reelIcon prize"
+    },
+    "text \"Risk your Bytes for a chance to win more!\"": 0
+  },
+  "game": {
+    "#bet": {
+      "found": 1,
+      "sample": "<span id=\"bet\">1</span>"
+    },
+    "#credits": {
+      "found": 1,
+      "sample": "<span id=\"credits\">2880</span>"
+    },
+    "#reel1": {
+      "found": 1,
+      "sample": "<div id=\"reel1\" class=\"reel\"></div>"
+    },
+    "#reel2": {
+      "found": 1,
+      "sample": "<div id=\"reel2\" class=\"reel\"></div>"
+    },
+    "#reel3": {
+      "found": 1,
+      "sample": "<div id=\"reel3\" class=\"reel\"></div>"
+    },
+    "window.windowID": "number",
+    "trPrize_ rows": 9,
+    "inline scripts mentioning spin.php": 0,
+    "external scripts": [
+      "https://hackforums.net/jscripts/jquery.js#ver=1814",
+      "https://hackforums.net/jscripts/jquery.plugins.min.js#ver=1814",
+      "https://hackforums.net/jscripts/general.js#ver=1814",
+      "https://hackforums.net/jscripts/response.js",
+      "https://hackforums.net/jscripts/util.js?v=1.1a",
+      "https://hackforums.net/jscripts/markdown-it.min.js",
+      "https://hackforums.net/jscripts/slots/jquery-ui-1.8.17.custom.min.js",
+      "https://hackforums.net/jscripts/slots/soundmanager2.js",
+      "https://hackforums.net/jscripts/slots/slots.js?ver=1",
+      "https://hackforums.net/jscripts/hfnotify-legacy-renderer.js",
+      "https://hackforums.net/jscripts/hfnotify.js?v=5.3",
+      "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092"
+    ]
+  }
+}

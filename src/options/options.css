@@ -1,0 +1,352 @@
+:root {
+  color-scheme: dark;
+  --bg: #1d1d1d;
+  --panel: #262626;
+  --border: #383838;
+  --text: #e6e6e6;
+  --muted: #9a9a9a;
+  --accent: #7b5bd6;
+  --error: #ff6b6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    14px/1.45 system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+h2 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.row {
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  margin: 0;
+}
+
+.settings .row:last-child,
+section > .row:last-child {
+  border-bottom: 0;
+}
+
+.row label,
+.row legend,
+.row strong {
+  font-weight: 600;
+}
+
+legend {
+  padding: 0;
+  float: left;
+  width: 100%;
+}
+
+.description {
+  margin: 2px 0 0;
+  color: var(--muted);
+  clear: both;
+}
+
+.checkbox {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.checkbox input {
+  margin-top: 3px;
+}
+
+.choices {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: normal !important;
+}
+
+/* The themes: a grid of choices, each with its colors */
+.choices.swatched {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px 16px;
+}
+
+.choices.swatched .choice {
+  white-space: nowrap;
+}
+
+.swatches {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+}
+
+.number input {
+  margin-top: 8px;
+  width: 80px;
+}
+
+.storage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+input,
+button {
+  accent-color: var(--accent);
+  font: inherit;
+}
+
+input[type="number"] {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+
+button {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+.settings + button {
+  margin-top: 12px;
+}
+
+.status {
+  min-height: 1.45em;
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.status.error {
+  color: var(--error);
+}
+
+/* HFGS additions */
+.intro {
+  margin: -4px 0 4px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.field input {
+  margin-top: 0;
+}
+
+.row.disabled label,
+.row.disabled .description {
+  opacity: 0.5;
+}
+
+main > button {
+  margin-bottom: 8px;
+}
+
+/* Phase 5: history */
+h2.group {
+  margin: 24px 0 8px;
+  color: var(--text);
+  font-size: 17px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.totals strong {
+  color: var(--text);
+}
+
+.results {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.results table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.results th,
+.results td {
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.results th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.results .num {
+  text-align: right;
+}
+
+.results .details {
+  white-space: normal;
+  color: var(--muted);
+}
+
+.pos {
+  color: #3fb950;
+}
+
+.neg {
+  color: var(--error);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+button.danger:hover {
+  border-color: var(--error);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.totals strong.pos {
+  color: #3fb950;
+}
+
+.totals strong.neg {
+  color: var(--error);
+}
+
+/* Tabs: one per game */
+.tab-list {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.tab {
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 8px 14px;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab[aria-selected="true"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.history-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.page-actions {
+  margin-top: 8px;
+}
