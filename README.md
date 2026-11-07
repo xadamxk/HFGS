@@ -3,7 +3,7 @@
   A blackjack strategy assistant, slots auto-spin and a Hack Game card on every page, for Hack Forums' games
   <br>
   <br>
-  <img src="https://github.com/xadamxk/HFGS/blob/master/assets/banners/banner-large.png?raw=true" title="Logo" />
+  <img src="https://github.com/xadamxk/HFGS/blob/main/assets/banners/banner-large.png?raw=true" title="Logo" />
   <br>
   <a href="https://chrome.google.com/webstore/detail/hf-gaming-suite/gkncdlncbppkmojddfcncglmelgljcal">
     <img src="https://github.com/xadamxk/HF-Userscripts/blob/master/Avatars-Signatures/browser%20icons/chrome.png?raw=true" title="Download for Chrome" />

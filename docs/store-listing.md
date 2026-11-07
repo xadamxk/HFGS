@@ -55,7 +55,7 @@ Chrome: Fun. AMO: Games & Entertainment.
 ## Links
 
 - Homepage / support: https://github.com/xadamxk/HFGS
-- Privacy policy: https://github.com/xadamxk/HFGS/blob/master/PRIVACY.md
+- Privacy policy: https://github.com/xadamxk/HFGS/blob/main/PRIVACY.md
 
 ## Chrome Web Store: privacy practices
 
