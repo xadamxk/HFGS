@@ -1,53 +1,176 @@
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>Header: three game panels</title>
-<link rel="stylesheet" href="banner-thread.css">
-<style>
-  /* The purple shows through the gaps between the panels */
-  body { background: #7a52a0; }
-  .p { position: absolute; inset: 0; overflow: hidden; }
-  .p iframe { position: absolute; width: 1280px; height: 800px; border: 0; transform-origin: 0 0; background: transparent; }
-  /* Fade the top (under the title) and the bottom (under the labels) */
-  .p::after { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(0,0,0,.55), transparent 30%, transparent 64%, rgba(0,0,0,.82)); pointer-events: none; }
-  .bj { clip-path: polygon(0 0, 486px 0, 406px 560px, 0 560px); }
-  .sl { clip-path: polygon(494px 0, 1006px 0, 926px 560px, 414px 560px); background: radial-gradient(ellipse at 50% 55%, #3d2552, #1d1129 75%); }
-  .hg { clip-path: polygon(1014px 0, 1400px 0, 1400px 560px, 934px 560px); background: radial-gradient(ellipse at 60% 55%, #262626, #0e0e0e 75%); }
-  .bj iframe { transform: scale(.62); left: -32px; top: -42px; }
-  .sl iframe { transform: scale(.86); left: 368px; top: -122px; }
-  .hg iframe { transform: scale(.8); left: 384px; top: -108px; }
+  <head>
+    <meta charset="utf-8" />
+    <title>Header: three game panels</title>
+    <link rel="stylesheet" href="banner-thread.css" />
+    <style>
+      /* The purple shows through the gaps between the panels */
+      body {
+        background: #7a52a0;
+      }
+      .p {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+      .p iframe {
+        position: absolute;
+        width: 1280px;
+        height: 800px;
+        border: 0;
+        transform-origin: 0 0;
+        background: transparent;
+      }
+      /* Fade the top (under the title) and the bottom (under the labels) */
+      .p::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          rgba(0, 0, 0, 0.55),
+          transparent 30%,
+          transparent 64%,
+          rgba(0, 0, 0, 0.82)
+        );
+        pointer-events: none;
+      }
+      .bj {
+        clip-path: polygon(0 0, 486px 0, 406px 560px, 0 560px);
+      }
+      .sl {
+        clip-path: polygon(494px 0, 1006px 0, 926px 560px, 414px 560px);
+        background: radial-gradient(ellipse at 50% 55%, #3d2552, #1d1129 75%);
+      }
+      .hg {
+        clip-path: polygon(1014px 0, 1400px 0, 1400px 560px, 934px 560px);
+        background: radial-gradient(ellipse at 60% 55%, #262626, #0e0e0e 75%);
+      }
+      .bj iframe {
+        transform: scale(0.62);
+        left: -32px;
+        top: -42px;
+      }
+      .sl iframe {
+        transform: scale(0.86);
+        left: 368px;
+        top: -122px;
+      }
+      .hg iframe {
+        transform: scale(0.8);
+        left: 384px;
+        top: -108px;
+      }
 
-  /* A small HFGS readout on each game */
-  .tagout { position: absolute; display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; background: rgba(32,32,32,.95); border: 1px solid #6b4a85; border-radius: 18px; font-size: 15px; box-shadow: 0 6px 18px rgba(0,0,0,.5); white-space: nowrap; }
-  .tagout img { width: 20px; height: 20px; }
-  .tagout b { color: #fff; }
-  .tagout .g { color: #57d184; font-weight: 700; }
+      /* A small HFGS readout on each game */
+      .tagout {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px 6px 8px;
+        background: rgba(32, 32, 32, 0.95);
+        border: 1px solid #6b4a85;
+        border-radius: 18px;
+        font-size: 15px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+        white-space: nowrap;
+      }
+      .tagout img {
+        width: 20px;
+        height: 20px;
+      }
+      .tagout b {
+        color: #fff;
+      }
+      .tagout .g {
+        color: #57d184;
+        font-weight: 700;
+      }
 
-  .lbl { position: absolute; bottom: 24px; font-size: 28px; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,.8); }
-  .lbl small { display: block; font-size: 16px; font-weight: 600; color: #e2e2e2; margin-top: 2px; }
+      .lbl {
+        position: absolute;
+        bottom: 24px;
+        font-size: 28px;
+        font-weight: 800;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+      }
+      .lbl small {
+        display: block;
+        font-size: 16px;
+        font-weight: 600;
+        color: #e2e2e2;
+        margin-top: 2px;
+      }
 
-  .plaque { position: absolute; left: 50%; top: 22px; transform: translateX(-50%); display: flex; align-items: center; gap: 18px; padding: 14px 30px 14px 18px; background: rgba(30,18,40,.94); border: 2px solid #8a5bb0; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.6); white-space: nowrap; }
-  .plaque img { width: 70px; height: 70px; }
-  .plaque .title { font-size: 50px; }
-  .plaque .tag { font-size: 18px; margin-top: 2px; }
-</style>
-</head>
-<body>
-  <div class="p bj felt"><iframe src="../screenshots/1-blackjack.html#bare"></iframe></div>
-  <div class="p sl"><iframe src="../screenshots/2-slots.html#bare"></iframe></div>
-  <div class="p hg"><iframe src="../screenshots/4-hackgame.html#bare-card"></iframe></div>
+      .plaque {
+        position: absolute;
+        left: 50%;
+        top: 22px;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 14px 30px 14px 18px;
+        background: rgba(30, 18, 40, 0.94);
+        border: 2px solid #8a5bb0;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        white-space: nowrap;
+      }
+      .plaque img {
+        width: 70px;
+        height: 70px;
+      }
+      .plaque .title {
+        font-size: 50px;
+      }
+      .plaque .tag {
+        font-size: 18px;
+        margin-top: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="p bj felt">
+      <iframe src="../screenshots/1-blackjack.html#bare"></iframe>
+    </div>
+    <div class="p sl">
+      <iframe src="../screenshots/2-slots.html#bare"></iframe>
+    </div>
+    <div class="p hg">
+      <iframe src="../screenshots/4-hackgame.html#bare-card"></iframe>
+    </div>
 
-  <div class="tagout" style="left:48px;top:392px"><img src="../icons/purple/48_1.png" alt=""><span>Best play <b>DOUBLE</b></span><span class="g">+66.5%</span></div>
-  <div class="tagout" style="left:540px;top:392px"><img src="../icons/purple/48_1.png" alt=""><span>Spinning <b>37 / 100</b></span><span class="g">+60 βytes</span></div>
+    <div class="tagout" style="left: 48px; top: 392px">
+      <img src="../icons/purple/48_1.png" alt="" /><span
+        >Best play <b>DOUBLE</b></span
+      ><span class="g">+66.5%</span>
+    </div>
+    <div class="tagout" style="left: 540px; top: 392px">
+      <img src="../icons/purple/48_1.png" alt="" /><span
+        >Spinning <b>37 / 100</b></span
+      ><span class="g">+60 βytes</span>
+    </div>
 
-  <div class="lbl" style="left:34px">Blackjack<small>Strategy Assistant and stats</small></div>
-  <div class="lbl" style="left:462px">Slots<small>Auto-spin bot with limits</small></div>
-  <div class="lbl" style="left:982px">Hack Game<small>Status card on every HF page</small></div>
+    <div class="lbl" style="left: 34px">
+      Blackjack<small>Strategy Assistant and stats</small>
+    </div>
+    <div class="lbl" style="left: 462px">
+      Slots<small>Auto-spin bot with limits</small>
+    </div>
+    <div class="lbl" style="left: 982px">
+      Hack Game<small>Status card on every HF page</small>
+    </div>
 
-  <div class="plaque">
-    <img src="../icons/purple/128_1.png" alt="">
-    <div><div class="title">HF GAMING SUITE</div><div class="tag">Blackjack, Slots and the Hack Game, played smarter</div></div>
-  </div>
-</body>
+    <div class="plaque">
+      <img src="../icons/purple/128_1.png" alt="" />
+      <div>
+        <div class="title">HF GAMING SUITE</div>
+        <div class="tag">
+          Blackjack, Slots and the Hack Game, played smarter
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

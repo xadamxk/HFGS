@@ -1,11 +1,40 @@
 /* Shared look for the release-thread headers (1400x560). */
-* { box-sizing: border-box; }
-html, body { margin: 0; width: 1400px; height: 560px; overflow: hidden; font-family: "Segoe UI", Verdana, sans-serif; color: #fff; }
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  width: 1400px;
+  height: 560px;
+  overflow: hidden;
+  font-family: "Segoe UI", Verdana, sans-serif;
+  color: #fff;
+}
 /* Green felt with a faint card-suit pattern, like the promo art */
 .felt {
   background-color: #3e6c3a;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='170' height='170'><g fill='%23396535' font-family='Segoe UI Symbol, sans-serif' font-size='54' text-anchor='middle'><text x='42' y='62'>♠</text><text x='127' y='62'>♥</text><text x='42' y='147'>♦</text><text x='127' y='147'>♣</text></g></svg>");
 }
-.title { font-weight: 800; font-size: 76px; line-height: 1.02; letter-spacing: .01em; text-shadow: 0 3px 0 rgba(0,0,0,.25); }
-.tag { font-size: 22px; font-weight: 600; color: #e9f3e6; }
-.chip { display: inline-block; font-size: 16px; font-weight: 700; padding: 4px 12px; border-radius: 14px; background: #4b2e5f; color: #fff; border: 2px solid #8a5bb0; }
+.title {
+  font-weight: 800;
+  font-size: 76px;
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+}
+.tag {
+  font-size: 22px;
+  font-weight: 600;
+  color: #e9f3e6;
+}
+.chip {
+  display: inline-block;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 14px;
+  background: #4b2e5f;
+  color: #fff;
+  border: 2px solid #8a5bb0;
+}

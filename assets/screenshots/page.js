@@ -10,5 +10,6 @@ foot.style.height = Math.max(72, 800 - bottom - 24) + "px";
 // "#bare-card" also drops HF's game box, leaving just the HFGS card.
 if (location.hash.startsWith("#bare")) {
   document.documentElement.classList.add("bare");
-  if (location.hash === "#bare-card") document.documentElement.classList.add("bare-card");
+  if (location.hash === "#bare-card")
+    document.documentElement.classList.add("bare-card");
 }
