@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Signature: three game panels</title>
+    <!-- The thread header's three panels as a forum signature strip. Laid out
+     at 1400x350 and rendered at 600x150. -->
+    <link rel="stylesheet" href="../banners/banner-thread.css" />
+    <style>
+      html,
+      body {
+        width: 1400px;
+        height: 350px;
+      }
+      /* The purple shows through the gaps between the panels */
+      body {
+        background: #7a52a0;
+      }
+      .p {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+      .p iframe {
+        position: absolute;
+        width: 1280px;
+        height: 800px;
+        border: 0;
+        transform-origin: 0 0;
+        background: transparent;
+      }
+      /* Fade the top (under the title) and the bottom (under the labels) */
+      .p::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          rgba(0, 0, 0, 0.5),
+          transparent 34%,
+          transparent 58%,
+          rgba(0, 0, 0, 0.85)
+        );
+        pointer-events: none;
+      }
+      .bj {
+        clip-path: polygon(0 0, 476px 0, 426px 350px, 0 350px);
+      }
+      .sl {
+        clip-path: polygon(484px 0, 996px 0, 946px 350px, 434px 350px);
+        background: radial-gradient(ellipse at 50% 55%, #3d2552, #1d1129 75%);
+      }
+      .hg {
+        clip-path: polygon(1004px 0, 1400px 0, 1400px 350px, 954px 350px);
+        background: radial-gradient(ellipse at 60% 55%, #262626, #0e0e0e 75%);
+      }
+      .bj iframe {
+        transform: scale(0.62);
+        left: -32px;
+        top: -96px;
+      }
+      .sl iframe {
+        transform: scale(0.86);
+        left: 360px;
+        top: -186px;
+      }
+      .hg iframe {
+        transform: scale(0.8);
+        left: 384px;
+        top: -186px;
+      }
+
+      .lbl {
+        position: absolute;
+        bottom: 18px;
+        font-size: 38px;
+        font-weight: 800;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+      }
+
+      .plaque {
+        position: absolute;
+        left: 50%;
+        top: 16px;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 28px 10px 14px;
+        background: rgba(30, 18, 40, 0.95);
+        border: 3px solid #8a5bb0;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        white-space: nowrap;
+      }
+      .plaque img {
+        width: 72px;
+        height: 72px;
+      }
+      .plaque .title {
+        font-size: 58px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="p bj felt">
+      <iframe src="../screenshots/1-blackjack.html#bare"></iframe>
+    </div>
+    <div class="p sl">
+      <iframe src="../screenshots/2-slots.html#bare"></iframe>
+    </div>
+    <div class="p hg">
+      <iframe src="../screenshots/4-hackgame.html#bare-card"></iframe>
+    </div>
+
+    <div class="lbl" style="left: 30px">Blackjack</div>
+    <div class="lbl" style="left: 470px">Slots</div>
+    <div class="lbl" style="left: 994px">Hack Game</div>
+
+    <div class="plaque">
+      <img src="../icons/purple/128_1.png" alt="" />
+      <div class="title">HF GAMING SUITE</div>
+    </div>
+  </body>
+</html>

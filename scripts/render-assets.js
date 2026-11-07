@@ -5,6 +5,8 @@
 //                                    to match the buttons' width)
 //   assets/buttons/button.html    -> assets/buttons/button-<browser>.png
 //                                    (1200x132, transparent corners)
+//   assets/signatures/signature-*.html -> assets/signatures/<same>.png
+//                                    (forum signatures, 600x150)
 // Needs `npm run browser` running (it draws in that Chrome on 127.0.0.1:9222).
 // Run with `npm run assets:png`, or name sources to render only those:
 //   npm run assets:png -- assets/screenshots/2-slots.html
@@ -51,6 +53,23 @@ function jobs() {
       height: 132,
       transparent: true,
     });
+  list.push(
+    {
+      source: "assets/signatures/signature-banner.html",
+      out: "assets/signatures/signature-banner.png",
+      width: 1400,
+      height: 350,
+      scale: 600 / 1400,
+    },
+    {
+      source: "assets/signatures/signature-card.html",
+      out: "assets/signatures/signature-card.png",
+      width: 1200,
+      height: 300,
+      scale: 0.5,
+      transparent: true,
+    }
+  );
   return list;
 }
 

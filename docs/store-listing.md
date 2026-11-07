@@ -78,10 +78,11 @@ Chrome: Fun. AMO: Games & Entertainment.
 
 Laid out like HF Convo Anywhere's:
 
-- `store/`: what gets uploaded or posted. `store/screenshots/` holds the store screenshots (1280×800: `1-blackjack`, `2-slots`, `3-slots-totals`, `4-hackgame`); next to it are the release thread's `title.txt` and `layout.txt` (BBCode).
+- `store/`: what gets uploaded or posted. `store/screenshots/` holds the store screenshots (1280×800: `1-blackjack`, `2-slots`, `3-slots-totals`, `4-hackgame`); next to it are the release thread's `title.txt` and `layout.txt` (BBCode), and `signature.txt` (BBCode for the forum signature; `THREAD_URL` is the release thread once posted).
 - `assets/banners/`: promo tiles (`banner-small` 440×280, with `banner-small-alt`; `banner-large` 920×680; `banner-marquee` 1400×560; `banner-screenshot` 1280×800) and the release thread's header (`banner-thread`, with `banner-thread-alt`; 1200×480, the buttons' width).
 - `assets/buttons/`: the thread's Chrome and Firefox download buttons (1200×132).
+- `assets/signatures/`: forum signatures (600×150): `signature-card` (status-card style, transparent corners) and `signature-banner` (the thread header's three panels).
 - `assets/screenshots/`: the HTML mockups the store screenshots are rendered from.
 - `assets/icons/`: icon variants (black and purple). The extension's own icons are in `src/assets/icons/` (16, 32, 48, 128).
 
-The screenshots, thread header and buttons are HTML (next to their PNGs, or in `assets/screenshots/`). With `npm run browser` running, `npm run assets:png` renders them all again; name source files after `--` to render only those.
+The screenshots, thread header, buttons and signatures are HTML (next to their PNGs, or in `assets/screenshots/`). With `npm run browser` running, `npm run assets:png` renders them all again; name source files after `--` to render only those.

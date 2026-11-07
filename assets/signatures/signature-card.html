@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Signature: status card</title>
+    <!-- A forum signature in the download buttons' status-card style. Laid out
+     at 1200x300 and rendered at 600x150 on a transparent background. -->
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1200px;
+        height: 300px;
+        background: transparent;
+        font-family: "Segoe UI", Verdana, sans-serif;
+      }
+      .card {
+        position: absolute;
+        left: 3px;
+        top: 3px;
+        width: 1194px;
+        height: 294px;
+        display: flex;
+        background: #1f1f1f;
+        border: 3px solid #3a3a3a;
+        border-radius: 32px;
+        overflow: hidden;
+      }
+      .logo {
+        width: 270px;
+        flex: none;
+        background: #3d2a4b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      /* The extension's chip icon, recolored light purple */
+      .logo span {
+        width: 180px;
+        height: 180px;
+        background: #b79cf5;
+        mask: url("../../src/assets/icons/icon128.png") center / contain
+          no-repeat;
+      }
+      .text {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 10px;
+        padding: 0 40px;
+        min-width: 0;
+      }
+      .top {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        margin-bottom: 4px;
+      }
+      .name {
+        font-size: 60px;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1.05;
+      }
+      .chip {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 2px 16px;
+        border-radius: 20px;
+        border: 3px solid currentColor;
+        color: #4ad635;
+      }
+      .feature {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 32px;
+        color: #d6d6d6;
+        white-space: nowrap;
+      }
+      .feature i {
+        width: 36px;
+        font-style: normal;
+        text-align: center;
+        color: #b79cf5;
+      }
+      .feature b {
+        color: #fff;
+        font-weight: 600;
+      }
+      .get {
+        flex: none;
+        align-self: center;
+        margin-right: 40px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        height: 96px;
+        padding: 0 36px;
+        border-radius: 16px;
+        background: #4b2e5f;
+        border: 3px solid #8a5bb0;
+        color: #fff;
+        font-size: 40px;
+        font-weight: 700;
+      }
+      .get span {
+        font-size: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="logo"><span></span></div>
+      <div class="text">
+        <div class="top">
+          <span class="name">HF Gaming Suite</span><span class="chip">2.0</span>
+        </div>
+        <div class="feature">
+          <i>♠</i><span>Blackjack <b>Strategy Assistant</b></span>
+        </div>
+        <div class="feature">
+          <i>★</i><span>Slots <b>Auto-Spin</b></span>
+        </div>
+        <div class="feature">
+          <i>◷</i><span>Hack Game <b>card on every page</b></span>
+        </div>
+      </div>
+      <div class="get"><span>▶</span>Get it</div>
+    </div>
+  </body>
+</html>
