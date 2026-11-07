@@ -1,0 +1,46 @@
+[align=center]
+[img]https://github.com/xadamxk/HFGS/blob/master/assets/banners/banner-thread.png?raw=true[/img]
+
+[url=https://chrome.google.com/webstore/detail/hf-gaming-suite/gkncdlncbppkmojddfcncglmelgljcal][img]https://github.com/xadamxk/HFGS/blob/master/assets/buttons/button-chrome.png?raw=true[/img][/url]
+[url=FIREFOX_ADDONS_URL][img]https://github.com/xadamxk/HFGS/blob/master/assets/buttons/button-firefox.png?raw=true[/img][/url]
+[/align]
+
+[b]HF Gaming Suite[/b] is back, rebuilt from the ground up. Version 2.0 brings three tools for HF's games: a [b]Strategy Assistant[/b] that shows the best play for every blackjack hand, [b]Auto-Spin[/b] for Slots, and a [b]Hack Game card[/b] on every HF page so you can hack without keeping the game open. Each game also gets live stats and your history.
+
+No setup: install it, open a game, and it's there.
+
+[size=x-large]Features[/size]
+[list]
+[*][size=large]Strategy Assistant[/size]
+Beside the blackjack table: your cards and the dealer's upcard go in, and the best play comes out, with every option's expected return, bust odds and the strategy chart row. It's built for HF's table rules, updates live as you play, and checks each decision against the table.
+[spoiler=Strategy Assistant][img]https://github.com/xadamxk/HFGS/blob/master/store/screenshots/1-blackjack.png?raw=true[/img][/spoiler]
+[*][size=large]Slots Auto-Spin[/size]
+Set your bet and how many spins, press Start, and it plays. It uses HF's own bet steps, never bets more than your credits, and stops by itself at your take-profit or stop-loss. Headless Mode spins without HF's reel animations, or turn it off to watch every spin.
+[spoiler=Slots Auto-Spin][img]https://github.com/xadamxk/HFGS/blob/master/store/screenshots/2-slots.png?raw=true[/img][/spoiler]
+[*][size=large]Hack Game, From Any Page[/size]
+A status card on every HF page counts down your cooldown and gives you a Hack button, so you never need the game tab open. Pick a Small Hack Job in HF's list once and HFGS remembers it. Turn on Run in background and it plays by itself, pausing to recharge when power runs low. The card shrinks to a small pill, and moves aside for HF Convo Anywhere's chat dock.
+[spoiler=Hack Game][img]https://github.com/xadamxk/HFGS/blob/master/store/screenshots/4-hackgame.png?raw=true[/img][/spoiler]
+[*][size=large]Stats and History[/size]
+Live totals under Blackjack and Slots (win rate, net, biggest win and loss, streaks) and a chart of your βytes over recent results. Every result is kept in your browser, with history per game on the settings page and CSV or JSON export.
+[spoiler=Totals][img]https://github.com/xadamxk/HFGS/blob/master/store/screenshots/3-slots-totals.png?raw=true[/img][/spoiler]
+[*][size=large]And More[/size]
+Settings right on each game page or on the settings page (one tab per game), a confirmation before Slots starts spinning, and requests kept at least 2 seconds apart so HF never sees it as flooding.
+[/list]
+
+[size=x-large]About βytes[/size]
+βytes are Hack Forums' own points. They can't be bought, withdrawn or exchanged for money, so this isn't real-money gambling. The Strategy Assistant follows basic strategy, which loses the least on average, but no strategy beats the house over time.
+
+[size=x-large]Privacy[/size]
+HF Gaming Suite only talks to Hack Forums, using your existing login, the same way the games do. Your settings and history stay in your browser, and nothing is sent to me or anyone else. The full source is on [url=https://github.com/xadamxk/HFGS]GitHub[/url], along with the [url=https://github.com/xadamxk/HFGS/blob/master/PRIVACY.md]privacy policy[/url].
+
+[size=x-large]FAQ[/size]
+[b]Where are the settings?[/b] In the Settings section of each game's panel, or right-click the extension's icon and choose Options.
+[b]Does the Hack Game need a tab open?[/b] No. The Hack button works from any HF page, and Run in background plays with no HF tab open as long as the browser is running.
+[b]Does it work on mobile?[/b] No, it's for desktop Chrome and Firefox.
+[b]Does it work with HF Convo Anywhere?[/b] Yes. The status card moves to the other corner when the chat dock is on the same side.
+
+[size=x-large]Show Your Support[/size]
+Enjoying it? A review in the [url=https://chrome.google.com/webstore/detail/hf-gaming-suite/gkncdlncbppkmojddfcncglmelgljcal]Chrome Web Store[/url] or on [url=FIREFOX_ADDONS_URL]Firefox Add-ons[/url] goes a long way.
+
+[size=x-large]Found a Bug?[/size]
+Open a [url=https://github.com/xadamxk/HFGS/issues]GitHub issue[/url] or post in this thread. Please include your browser, the game you were playing and the steps to make it happen.
