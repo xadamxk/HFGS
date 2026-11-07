@@ -3,12 +3,13 @@
  * Forums page. While auto-play runs, it shows what it's doing and a countdown
  * to its next step, from stored state only. With "Run in background" off and
  * nothing running, it's a manual control instead: a Hack button that plays the
- * picked job once, the result, and the time until HF allows the next job. Drawn in a
- * shadow root so HF's styles can't reach it. Design: docs/mocks/. It sits in
+ * picked job once, and the time until HF allows the next job. Either way, a
+ * job's result shows for a few seconds once it's played (RESULT_SHOW_MS), and
+ * the header shows the battery (power as last read). Drawn in a shadow root so HF's styles can't reach it. Design: docs/mocks/. It sits in
  * the bottom-right corner, or the bottom-left one when HF Convo Anywhere's chat
  * dock is on the right.
  */
-import { el } from "../core/Dom";
+import { appendChildren, el } from "../core/Dom";
 import { STORAGE_KEYS } from "../core/storage";
 import { loadSettings } from "../settings";
 import { extensionAlive, formatCountdown } from "./countdown";
@@ -21,6 +22,7 @@ import {
   HACKGAME_KEYS,
   loadChoice,
   HackState,
+  LastJob,
   loadCardPrefs,
   loadState,
   saveCardPrefs,
@@ -38,10 +40,28 @@ export const CARD_CSS = `
 :host { all: initial; position: fixed; right: 16px; bottom: 16px; z-index: 9000; font: 12px/1.4 Verdana, Arial, sans-serif; color: #ddd; }
 * { box-sizing: border-box; }
 .card { width: 280px; background: #1f1f1f; border: 1px solid #2b2b2b; border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.55); overflow: hidden; }
-.card.compact { width: 220px; }
+.card.compact { width: 244px; }
 .head { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 10px; background: #3d2a4b; }
 .compact .head { padding: 4px 6px 4px 8px; }
-.title { font-weight: bold; flex: 1; color: #fff; text-decoration: none; }
+.title { font-weight: bold; color: #fff; text-decoration: none; }
+.head .chip { margin-left: auto; }
+.batt { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #ccc; font-variant-numeric: tabular-nums; }
+.batt .cell { position: relative; width: 17px; height: 9px; border: 1px solid currentColor; border-radius: 2px; padding: 1px; }
+.batt .cell::after { content: ""; position: absolute; right: -3px; top: 2px; width: 2px; height: 3px; background: currentColor; border-radius: 0 1px 1px 0; }
+.batt .lvl { display: block; height: 100%; background: currentColor; border-radius: 1px; }
+.batt.high .cell { color: #4AD635; } .batt.mid .cell { color: #e0a000; } .batt.low .cell { color: #ff2121; }
+.batt.low { color: #ff8080; }
+.title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
+.head .chip, .head .icon, .batt { flex: none; }
+.compact .head { gap: 5px; }
+.compact .batt { gap: 2px; }
+.compact .batt .cell { width: 12px; height: 7px; }
+.compact .batt .cell::after { right: -2px; top: 1.5px; width: 1px; height: 2px; }
+.compact .chip { letter-spacing: 0; padding: 1px 5px; }
+.compact .icon { padding: 2px 3px; }
+.pill .batt { font-size: inherit; }
+.pill .batt .cell { width: 14px; height: 8px; }
+.pill .batt .cell::after { top: 1.5px; }
 .title:hover { text-decoration: underline; }
 .chip { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 9px; border: 1px solid currentColor; }
 .icon { background: none; border: 0; color: #bbb; cursor: pointer; font: 14px/1 Verdana, Arial, sans-serif; padding: 2px 4px; }
@@ -81,6 +101,10 @@ export const CARD_CSS = `
 .pill-btn { background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .pill .play { background: #2d2d2d; border: 1px solid #3a3a3a; border-radius: 10px; color: #ddd; font: 10px/1 Verdana, Arial, sans-serif; padding: 3px 6px; cursor: pointer; }
 .pill .play:disabled { opacity: .45; cursor: default; }
+.big.result { gap: 6px; }
+.result .time { font-size: 17px; }
+.compact .result .time { font-size: 14px; }
+.result .earn { color: #ddd; }
 `;
 
 /** What the card needs to draw itself. */
@@ -100,6 +124,114 @@ export function isManual(data: CardData): boolean {
   );
 }
 
+/** How long the card shows a played job's result before its usual status. */
+export const RESULT_SHOW_MS = 12_000;
+
+/** The job result to show now: one that came in less than RESULT_SHOW_MS ago. */
+export function freshResult(state: HackState, now: number): LastJob | null {
+  const last = state.last;
+  if (!last) return null;
+  const age = now - (last.doneAt ?? last.at);
+  return age > -5000 && age < RESULT_SHOW_MS ? last : null;
+}
+
+/** When a shown result goes away (for the redraw). */
+const resultUntil = (last: LastJob) =>
+  (last.doneAt ?? last.at) + RESULT_SHOW_MS;
+
+/** What a job earned, when HF said: "+$0.44 · +0.24 xp", or "". */
+export function earnedText(last: LastJob): string {
+  if (!last.success) return "";
+  return [
+    last.money > 0 ? `+$${last.money.toFixed(2)}` : "",
+    last.xp > 0 ? `+${last.xp.toFixed(2)} xp` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** The tooltip for a result: the job, its rate, and HF's words. */
+function resultTitle(last: LastJob): string {
+  const earned = earnedText(last);
+  return `${last.job} (${last.rate}%): ${last.success ? "Success" : "Fail"}${
+    earned ? `, ${earned}` : ""
+  }${last.reason ? `\n${last.reason}` : ""}`;
+}
+
+/** The big row for a fresh result: Success and what it earned, or Fail and the job. */
+function resultRow(
+  last: LastJob,
+  extra: HTMLElement | null = null
+): HTMLElement {
+  return el(
+    "div",
+    {
+      class: "big result",
+      "data-until": resultUntil(last),
+      title: resultTitle(last),
+    },
+    [
+      el(
+        "span",
+        { class: `time ${last.success ? "ok" : "bad"}` },
+        last.success ? "Success" : "Fail"
+      ),
+      el(
+        "span",
+        { class: `label${last.success ? " earn" : ""}` },
+        last.success ? earnedText(last) : last.job
+      ),
+      extra,
+    ]
+  );
+}
+
+/** The pill's short form of a result. */
+const pillResult = (last: LastJob) =>
+  last.success
+    ? last.money > 0
+      ? `+$${last.money.toFixed(2)}`
+      : "Success"
+    : "Fail";
+
+/** Power below this shows red (and on the pill). */
+const lowPower = (settings: HackGameSettings) =>
+  Math.max(20, settings.pauseBelow);
+
+/** The header's battery (power as last read), or null when it's unknown. */
+export function batteryBadge(
+  power: number | null,
+  settings: HackGameSettings
+): HTMLElement | null {
+  if (power === null) return null;
+  const level = Math.max(0, Math.min(100, power));
+  const tone = power < lowPower(settings) ? "low" : power < 50 ? "mid" : "high";
+  return el(
+    "span",
+    {
+      class: `batt ${tone}`,
+      title: `Power ${power}%`,
+      "aria-label": `Power ${power}%`,
+    },
+    [
+      el(
+        "span",
+        { class: "cell" },
+        el("span", { class: "lvl", style: `width: ${level}%` })
+      ),
+      `${power}%`,
+    ]
+  );
+}
+
+/** The pill shows the battery only when power is low; its tooltip always says. */
+const pillBattery = (power: number | null, settings: HackGameSettings) =>
+  power !== null && power < lowPower(settings)
+    ? batteryBadge(power, settings)
+    : null;
+const powerLine = (power: number | null) =>
+  power === null ? "" : `\nPower ${power}%`;
+
 interface ManualStatus {
   chip: string;
   tone: string;
@@ -109,6 +241,8 @@ interface ManualStatus {
   canPlay: boolean;
   /** Tooltip with the last result or why it didn't play. */
   title: string;
+  /** A job result that just came in, shown for a while instead of the label. */
+  result: LastJob | null;
 }
 
 /** What the manual card shows: the last result, or why it didn't play, and the timer. */
@@ -130,17 +264,21 @@ export function manualStatus(state: HackState, now: number): ManualStatus {
       cooling: false,
       canPlay: false,
       title: "",
+      result: null,
     };
+  // A job just played: its result for a while, then Ready or the countdown
+  const result = state.note ? null : freshResult(state, now);
   const [chip, tone] = state.note
     ? ["Not played", "s-error"]
-    : last
-      ? last.success
+    : result
+      ? result.success
         ? ["Success", "s-playing"]
         : ["Fail", "s-error"]
       : cooling
         ? ["Cooldown", "s-waiting"]
         : ["Ready", "s-playing"];
   return {
+    result,
     chip,
     tone,
     label: state.note ?? (cooling ? "Next job in" : "Ready"),
@@ -209,9 +347,28 @@ export function renderCard(
     stopped || state.phase === "idle" || state.phase === "stopped"
       ? null
       : PHASES[state.phase];
-  const tone = stopped ? (error ? "s-error" : "s-stopped") : `s-${state.phase}`;
   const stalled = stalledReason(state, now);
-  const chipText = stalled ? "Overdue" : (phase?.chip ?? "Stopped");
+  // A job just played: its result for a while, then the countdown again
+  const result =
+    !stopped && !stalled && state.phase !== "playing"
+      ? freshResult(state, now)
+      : null;
+  const tone = result
+    ? result.success
+      ? "s-playing"
+      : "s-error"
+    : stopped
+      ? error
+        ? "s-error"
+        : "s-stopped"
+      : `s-${state.phase}`;
+  const chipText = result
+    ? result.success
+      ? "Success"
+      : "Fail"
+    : stalled
+      ? "Overdue"
+      : (phase?.chip ?? "Stopped");
 
   const button = (text: string, onClick: () => void, cls = "btn") => {
     const b = el("button", { type: "button", class: cls }, text);
@@ -223,20 +380,25 @@ export function renderCard(
 
   if (prefs.collapsed) {
     const pill = button("", () => actions.collapse(false), `pill ${tone}`);
-    pill.title = "Hack Game auto-play: click to expand";
-    pill.append(
+    pill.title = `Hack Game auto-play: click to expand${
+      result ? `\n${resultTitle(result)}` : ""
+    }${powerLine(state.power)}`;
+    appendChildren(pill, [
       el("span", { class: "dot" }),
       el("b", null, "HG"),
-      stalled
-        ? el("span", null, "Overdue")
-        : phase && phase.label
-          ? el(
-              "span",
-              { class: "time", "data-next": state.nextAt ?? "" },
-              countdownText(state.nextAt, now)
-            )
-          : el("span", null, chipText)
-    );
+      pillBattery(state.power, settings),
+      result
+        ? el("span", { "data-until": resultUntil(result) }, pillResult(result))
+        : stalled
+          ? el("span", null, "Overdue")
+          : phase && phase.label
+            ? el(
+                "span",
+                { class: "time", "data-next": state.nextAt ?? "" },
+                countdownText(state.nextAt, now)
+              )
+            : el("span", null, chipText),
+    ]);
     return pill;
   }
 
@@ -255,6 +417,8 @@ export function renderCard(
         el("span", { class: `time ${tone}` }, "Playing now…")
       )
     );
+  } else if (result) {
+    body.push(resultRow(result));
   } else if (stalled) {
     body.push(
       el(
@@ -321,6 +485,7 @@ export function renderCard(
           { class: "title", href: GAME_URL, title: "Open Small Hack Jobs" },
           "Hack Game"
         ),
+        batteryBadge(state.power, settings),
         el("span", { class: `chip ${tone}` }, chipText),
         stopped
           ? button("×", actions.dismiss, "icon")
@@ -364,14 +529,21 @@ function renderManual(
 
   if (prefs.collapsed) {
     const expand = button("", () => actions.collapse(false), "pill-btn");
-    expand.title = "Hack Game: click to expand";
-    expand.append(
+    expand.title = `Hack Game: click to expand${powerLine(state.power)}`;
+    appendChildren(expand, [
       el("span", { class: "dot" }),
       el("b", null, "HG"),
-      status.cooling && !isBusy(state, now)
-        ? time()
-        : el("span", null, status.chip)
-    );
+      pillBattery(state.power, settings),
+      status.result
+        ? el(
+            "span",
+            { "data-until": resultUntil(status.result) },
+            pillResult(status.result)
+          )
+        : status.cooling && !isBusy(state, now)
+          ? time()
+          : el("span", null, status.chip),
+    ]);
     return el(
       "div",
       {
@@ -399,6 +571,7 @@ function renderManual(
           { class: "title", href: GAME_URL, title: "Open Small Hack Jobs" },
           "Hack Game"
         ),
+        batteryBadge(state.power, settings),
         el(
           "span",
           { class: `chip ${status.tone}`, title: status.title || null },
@@ -407,11 +580,13 @@ function renderManual(
         button("–", () => actions.collapse(true), "icon"),
       ]),
       el("div", { class: "body" }, [
-        el("div", { class: "big", title: status.title || null }, [
-          el("span", { class: "label" }, status.label),
-          status.cooling ? time() : null,
-          play("btn play", "Hack"),
-        ]),
+        status.result
+          ? resultRow(status.result, play("btn play", "Hack"))
+          : el("div", { class: "big", title: status.title || null }, [
+              el("span", { class: "label" }, status.label),
+              status.cooling ? time() : null,
+              play("btn play", "Hack"),
+            ]),
       ]),
     ]
   );
@@ -570,7 +745,11 @@ export function mountStatusCard(doc: Document = document): () => void {
         return next > 0 && (manual ? late >= 0 : late >= STALLED_AFTER_MS);
       }
     );
-    if (due) draw().catch(() => undefined);
+    // ...and when a played job's result has been up long enough
+    const shown = [
+      ...shadow.querySelectorAll<HTMLElement>("[data-until]"),
+    ].some((node) => Date.now() >= Number(node.dataset.until));
+    if (due || shown) draw().catch(() => undefined);
   }, 1000);
   return () => {
     clearInterval(timer);

@@ -111,8 +111,8 @@ describe("runCycle", () => {
   it("plays a ticked job when ready, records it and waits for the next cooldown", async () => {
     await setup();
     const hf = fakeHF({
-      [SMALL]: smallhacks,
-      post: withCooldown(smallhacks, 180),
+      [SMALL]: withPower(smallhacks, 87),
+      post: withPower(withCooldown(smallhacks, 180), 82),
       [LOGS]: withCooldown(successLogs, 175),
     });
     const outcome = await runCycle(hf.io);
@@ -135,9 +135,13 @@ describe("runCycle", () => {
       phase: "waiting",
       jobsThisRun: 1,
       nextAt: LOGGED_AT + 205_000,
+      // The power the job left, from HF's reply, for the status card
+      power: 82,
       last: {
         // Timed by this computer's clock, not HF's, so it counts in the run
         at: LOGGED_AT,
+        // When the result came in: the status card shows it for a while
+        doneAt: LOGGED_AT,
         job: "Hijacking a Rideshare Driver's Account",
         success: true,
         rate: 50,

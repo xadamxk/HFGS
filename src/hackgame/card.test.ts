@@ -4,12 +4,14 @@ import {
   CardData,
   cardVisible,
   countdownText,
+  freshResult,
   GAME_URL,
   mountStatusCard,
   renderCard,
+  RESULT_SHOW_MS,
   tickCard,
 } from "./card";
-import { idleState, saveState } from "./store";
+import { idleState, saveCardPrefs, saveState } from "./store";
 
 const NOW = new Date(2026, 10, 5, 22, 10, 29).getTime();
 
@@ -212,6 +214,165 @@ describe("status card", () => {
     }
   });
 
+  it("shows the battery next to the title, in the normal and compact card", () => {
+    const card = renderCard(data(), actions(), NOW)!;
+    const batt = card.querySelector(".head .batt") as HTMLElement;
+    expect(batt.textContent).toBe("87%");
+    expect(batt.title).toBe("Power 87%");
+    expect(batt.previousElementSibling?.className).toBe("title");
+    expect(batt.classList.contains("high")).toBe(true);
+
+    const settings = {
+      ...defaultSettings().hackgame,
+      runInBackground: true,
+      compactCard: true,
+    };
+    const compact = renderCard(
+      data({ settings }, { power: 35 }),
+      actions(),
+      NOW
+    )!;
+    expect(compact.querySelector(".head .batt.mid")?.textContent).toBe("35%");
+    const low = renderCard(data({}, { power: 12 }), actions(), NOW)!;
+    expect(low.querySelector(".head .batt.low")?.textContent).toBe("12%");
+    // Stopped cards too
+    const stopped = renderCard(
+      data({}, { running: false, phase: "stopped", message: "No job picked." }),
+      actions(),
+      NOW
+    )!;
+    expect(stopped.querySelector(".head .batt")?.textContent).toBe("87%");
+  });
+
+  it("shows the battery on the pill only when power is low, and always in its tooltip", () => {
+    const collapsed = { prefs: { collapsed: true, dismissedRun: null } };
+    const full = renderCard(data(collapsed), actions(), NOW)!;
+    expect(full.querySelector(".batt")).toBeNull();
+    expect(full.title).toMatch(/\nPower 87%$/);
+    const low = renderCard(
+      data(collapsed, { phase: "recharging", power: 4, nextAt: NOW + 60_000 }),
+      actions(),
+      NOW
+    )!;
+    expect(text(low)).toBe("HG4%01:00");
+  });
+
+  it("shows a played job's result for a while, then the countdown", () => {
+    const last = {
+      at: NOW - 4000,
+      doneAt: NOW - 1000,
+      job: "Hijacking a Rideshare Driver's Account",
+      success: true,
+      rate: 50,
+      money: 3.5,
+      xp: 1.25,
+    };
+    const card = renderCard(data({}, { last }), actions(), NOW)!;
+    expect(card.querySelector(".chip")?.textContent).toBe("Success");
+    expect(card.querySelector(".chip")?.className).toContain("s-playing");
+    expect(big(card)).toBe("Success +$3.50 · +1.25 xp");
+    const row = card.querySelector(".big") as HTMLElement;
+    expect(row.dataset.until).toBe(String(NOW - 1000 + RESULT_SHOW_MS));
+    expect(row.title).toBe(
+      "Hijacking a Rideshare Driver's Account (50%): Success, +$3.50 · +1.25 xp"
+    );
+    // The pill too
+    const pill = renderCard(
+      data({ prefs: { collapsed: true, dismissedRun: null } }, { last }),
+      actions(),
+      NOW
+    )!;
+    expect(text(pill)).toBe("HG+$3.50");
+
+    // A fail names the job; one without amounts just says Success
+    const fail = renderCard(
+      data({}, { last: { ...last, success: false, money: 0, xp: 0 } }),
+      actions(),
+      NOW
+    )!;
+    expect(fail.querySelector(".chip")?.textContent).toBe("Fail");
+    expect(big(fail)).toBe("Fail Hijacking a Rideshare Driver's Account");
+    const unknown = renderCard(
+      data({}, { last: { ...last, money: 0, xp: 0 } }),
+      actions(),
+      NOW
+    )!;
+    expect(big(unknown)).toBe("Success ");
+
+    // Back to the countdown once it's been up long enough
+    const later = renderCard(
+      data({}, { last }),
+      actions(),
+      NOW - 1000 + RESULT_SHOW_MS
+    )!;
+    expect(later.querySelector(".chip")?.textContent).toBe("Waiting");
+    expect(big(later)).toBe("Next job in 01:20");
+  });
+
+  it("doesn't show a result over Playing or a stopped run's reason", () => {
+    const last = {
+      at: NOW - 3000,
+      doneAt: NOW - 1000,
+      job: "Spoofing a Caller ID",
+      success: true,
+      rate: 90,
+      money: 0.44,
+      xp: 0.2,
+    };
+    const playing = renderCard(
+      data({}, { last, phase: "playing" }),
+      actions(),
+      NOW
+    )!;
+    expect(big(playing)).toBe("Playing now…");
+    const stopped = renderCard(
+      data(
+        {},
+        { last, running: false, phase: "stopped", message: "Finished 1 job." }
+      ),
+      actions(),
+      NOW
+    )!;
+    expect(text(stopped.querySelector(".reason"))).toBe("Finished 1 job.");
+    expect(stopped.querySelector(".result")).toBeNull();
+    // Results stored before doneAt was kept go by when the job was played
+    expect(
+      freshResult({ ...idleState(), last: { ...last, doneAt: undefined } }, NOW)
+    ).not.toBeNull();
+    expect(
+      freshResult(
+        { ...idleState(), last: { ...last, doneAt: undefined } },
+        NOW - 3000 + RESULT_SHOW_MS
+      )
+    ).toBeNull();
+  });
+
+  it("puts the countdown back by itself once a result has been up long enough", async () => {
+    await chrome.storage.local.clear();
+    document.body.replaceChildren();
+    const background = defaultSettings();
+    background.hackgame.runInBackground = true;
+    await saveSettings(background);
+    await saveCardPrefs({ collapsed: false });
+    const doneAt = Date.now() - RESULT_SHOW_MS + 1200;
+    await saveState({
+      ...data().state,
+      nextAt: Date.now() + 60_000,
+      last: { ...data().state.last!, at: doneAt - 3000, doneAt },
+    });
+    const stop = mountStatusCard(document);
+    try {
+      await new Promise((r) => setTimeout(r, 60));
+      const shadow = document.getElementById("hfgs-hackgame-card")!.shadowRoot!;
+      expect(shadow.querySelector(".chip")?.textContent).toBe("Success");
+      await new Promise((r) => setTimeout(r, 2100));
+      expect(shadow.querySelector(".chip")?.textContent).toBe("Waiting");
+      expect(shadow.querySelector(".result")).toBeNull();
+    } finally {
+      stop();
+    }
+  });
+
   it("is hidden when the setting is off", () => {
     const settings = {
       ...defaultSettings().hackgame,
@@ -300,28 +461,111 @@ describe("manual status card (Run in background off)", () => {
       money: 0,
       xp: 0,
     };
-    const card = renderCard(
-      manual({ last, readyAt: NOW + 164_000 }),
-      actions(),
-      NOW
-    )!;
+    const state = { last, readyAt: NOW + 164_000 };
+    // Just played: the result first, with the button off for the cooldown
+    const card = renderCard(manual(state), actions(), NOW)!;
     expect(card.querySelector(".chip")?.textContent).toBe("Fail");
-    expect(big(card)).toBe("Next job in 02:44 Hack");
+    expect(big(card)).toBe("Fail Spoofing a Caller ID Hack");
     expect(
       (card.querySelector("button.play") as HTMLButtonElement).disabled
     ).toBe(true);
     expect((card.querySelector(".big") as HTMLElement).title).toBe(
+      "Spoofing a Caller ID (90%): Fail"
+    );
+
+    // Then the countdown, with the result kept in the tooltip
+    const later = NOW + RESULT_SHOW_MS;
+    const cooling = renderCard(manual(state), actions(), later)!;
+    expect(cooling.querySelector(".chip")?.textContent).toBe("Cooldown");
+    expect(big(cooling)).toBe("Next job in 02:32 Hack");
+    expect(
+      (cooling.querySelector("button.play") as HTMLButtonElement).disabled
+    ).toBe(true);
+    expect((cooling.querySelector(".big") as HTMLElement).title).toBe(
       "Last: Spoofing a Caller ID: Fail (90%)"
     );
 
-    const won = { ...last, success: true, money: 0.44, xp: 0.238 };
+    const won = {
+      ...last,
+      success: true,
+      money: 0.44,
+      xp: 0.238,
+      reason: "You got in.",
+      doneAt: NOW - 1000,
+    };
     const ready = renderCard(
       manual({ last: won, readyAt: NOW - 1 }),
       actions(),
       NOW
     )!;
     expect(ready.querySelector(".chip")?.textContent).toBe("Success");
-    expect(big(ready)).toBe("Ready Hack");
+    expect(big(ready)).toBe("Success +$0.44 · +0.24 xp Hack");
+    expect((ready.querySelector(".big") as HTMLElement).title).toBe(
+      "Spoofing a Caller ID (90%): Success, +$0.44 · +0.24 xp\nYou got in."
+    );
+    const after = renderCard(
+      manual({ last: won, readyAt: NOW - 1 }),
+      actions(),
+      NOW + RESULT_SHOW_MS
+    )!;
+    expect(after.querySelector(".chip")?.textContent).toBe("Ready");
+    expect(big(after)).toBe("Ready Hack");
+  });
+
+  it("shows a result's short form on the pill, then the timer again", () => {
+    const pill = (now: number) =>
+      renderCard(
+        manual(
+          {
+            readyAt: NOW + 164_000,
+            last: {
+              at: NOW - 3000,
+              doneAt: NOW,
+              job: "Spoofing a Caller ID",
+              success: true,
+              rate: 90,
+              money: 3.5,
+              xp: 1.25,
+            },
+          },
+          { collapsed: true, dismissedRun: null }
+        ),
+        actions(),
+        now
+      )!;
+    expect(text(pill(NOW + 1000))).toBe("HG+$3.50▶");
+    expect(text(pill(NOW + RESULT_SHOW_MS))).toBe("HG02:32▶");
+  });
+
+  it("shows the battery in the header, and on the pill only when low", () => {
+    const card = renderCard(manual({ power: 64 }), actions(), NOW)!;
+    const batt = card.querySelector(".head .batt") as HTMLElement;
+    expect(batt.textContent).toBe("64%");
+    expect(batt.classList.contains("high")).toBe(true);
+    expect((batt.querySelector(".lvl") as HTMLElement).style.width).toBe("64%");
+    // Right after the title
+    expect(batt.previousElementSibling?.className).toBe("title");
+
+    const collapsed = { collapsed: true, dismissedRun: null };
+    expect(
+      renderCard(
+        manual({ power: 64 }, collapsed),
+        actions(),
+        NOW
+      )!.querySelector(".batt")
+    ).toBeNull();
+    const low = renderCard(manual({ power: 8 }, collapsed), actions(), NOW)!;
+    expect(low.querySelector(".batt.low")?.textContent).toBe("8%");
+    expect(text(low)).toBe("HG8%Ready▶");
+    expect((low.querySelector(".pill-btn") as HTMLElement).title).toMatch(
+      /\nPower 8%$/
+    );
+    // Unknown until a game page or a job has been read
+    expect(
+      renderCard(manual({ power: null }), actions(), NOW)!.querySelector(
+        ".batt"
+      )
+    ).toBeNull();
   });
 
   it("says why a job wasn't played, and shows Playing while it runs", () => {

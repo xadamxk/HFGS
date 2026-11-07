@@ -66,6 +66,8 @@ export interface Attempt {
   last: LastJob | null;
   /** Seconds until HF lets the next job be played. */
   cooldown: number;
+  /** Power (%) after the job, from HF's reply, or null if it doesn't show. */
+  power: number | null;
 }
 
 /**
@@ -87,7 +89,7 @@ export async function attemptJob(
     submit: "",
   });
   if (pageKind(answer) === "flood")
-    return { flood: true, last: null, cooldown: 0 };
+    return { flood: true, last: null, cooldown: 0, power: null };
 
   await io.sleep(REQUEST_GAP_MS);
   const logs = await io.get(LOGS);
@@ -104,6 +106,7 @@ export async function attemptJob(
       rate: result.rate,
       money: result.money,
       xp: result.xp,
+      doneAt: io.now(),
     };
     await recordJob(last);
   }
@@ -111,6 +114,8 @@ export async function attemptJob(
     flood: false,
     last,
     cooldown: cooldownSeconds(logs) || cooldownSeconds(answer),
+    // HF's reply is the Small Hack Jobs page, showing the power the job left
+    power: powerPercent(answer),
   };
 }
 
@@ -281,6 +286,7 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
       );
     }
     const { last } = attempt;
+    if (attempt.power !== null) power = attempt.power;
     const next = attempt.cooldown;
     readyAt = io.now() + next * 1000;
     const jobsThisRun = state.jobsThisRun + 1;

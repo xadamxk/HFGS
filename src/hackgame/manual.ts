@@ -121,6 +121,7 @@ export async function playOnce(io: HackIO, key: string | null): Promise<void> {
       money: outcome.money,
       xp: outcome.xp,
       reason: outcome.message,
+      doneAt: io.now(),
     };
     await recordJob(last);
     result.last = last;

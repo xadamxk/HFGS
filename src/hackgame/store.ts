@@ -38,6 +38,11 @@ export interface LastJob {
   xp: number;
   /** HF's own words about the result, when played with the Hack button. */
   reason?: string;
+  /**
+   * When the result came in (this computer's clock): the status card shows it
+   * for a while from then. Missing on results stored before this was kept.
+   */
+  doneAt?: number;
 }
 
 export interface HackState {
@@ -52,7 +57,7 @@ export interface HackState {
   /** Errors in a row; three stop the bot. */
   errors: number;
   last: LastJob | null;
-  /** Power (%) when last read, for the status card's battery bar. */
+  /** Power (%) when last read, for the status card's battery. */
   power: number | null;
   /** When HF lets the next job be played (from its cooldown timer). */
   readyAt: number | null;

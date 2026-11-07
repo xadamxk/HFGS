@@ -78,6 +78,7 @@ describe("playing a job by hand", () => {
       readyAt: NOW + 296_000,
       power: 95,
       last: {
+        doneAt: NOW,
         job: "Compromising a Crypto Wallet Seed Phrase",
         success: false,
         rate: 10,
