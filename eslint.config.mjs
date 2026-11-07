@@ -52,9 +52,9 @@ export default defineConfig(
     languageOptions: { globals: { ...globals.browser } },
   },
   {
-    // The store and thread image mockups: plain scripts in the mockup pages,
+    // The store screenshot, banner and button sources: plain scripts in their pages,
     // sharing globals between <script> tags (logos.js defines drawLogo, etc.)
-    files: ["store/**/*.js"],
+    files: ["assets/**/*.js"],
     languageOptions: { globals: { ...globals.browser } },
     rules: {
       "no-unused-vars": "off",

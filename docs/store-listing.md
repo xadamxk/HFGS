@@ -82,6 +82,12 @@ Chrome: Fun. AMO: Games & Entertainment.
 
 ## Assets
 
-- Icons: `src/assets/icons/` (16, 32, 48, 128)
-- Promo tiles: `images/promo/` (small 440×280, large 920×680, marquee 1400×560, screenshot 1280×800). These show the old version and should be refreshed.
-- Screenshots (1280×800): take new ones of the blackjack panel, the slots panel and the settings page; the old ones were removed with the MV2 code.
+Laid out like HF Convo Anywhere's:
+
+- `store/`: what gets uploaded or posted. `store/screenshots/` holds the store screenshots (1280×800: `1-blackjack`, `2-slots`, `3-slots-totals`, `4-hackgame`); next to it are the release thread's `title.txt` and `layout.txt` (BBCode).
+- `assets/banners/`: promo tiles (`banner-small` 440×280, with `banner-small-alt`; `banner-large` 920×680; `banner-marquee` 1400×560; `banner-screenshot` 1280×800) and the release thread's header (`banner-thread`, with `banner-thread-alt`; 1400×560).
+- `assets/buttons/`: the thread's Chrome and Firefox download buttons (1200×132).
+- `assets/screenshots/`: the HTML mockups the store screenshots are rendered from.
+- `assets/icons/`: icon variants (black and purple). The extension's own icons are in `src/assets/icons/` (16, 32, 48, 128).
+
+The screenshots, thread header and buttons are HTML (next to their PNGs, or in `assets/screenshots/`). With `npm run browser` running, `npm run assets:png` renders them all again; name source files after `--` to render only those.

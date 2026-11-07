@@ -3,7 +3,7 @@
   Bots, stats and history for Hack Forums' βytes games: blackjack and slots
   <br>
   <br>
-  <img src="https://github.com/xadamxk/HFGS/blob/master/images/promo/large.png?raw=true" title="Logo" />
+  <img src="https://github.com/xadamxk/HFGS/blob/master/assets/banners/banner-large.png?raw=true" title="Logo" />
   <br>
   <a href="https://chrome.google.com/webstore/detail/hf-gaming-suite/gkncdlncbppkmojddfcncglmelgljcal">
     <img src="https://github.com/xadamxk/HF-Userscripts/blob/master/Avatars-Signatures/browser%20icons/chrome.png?raw=true" title="Download for Chrome" />
@@ -43,6 +43,7 @@ npm test             # Jest
 npm run typecheck
 npm run lint
 npm run package      # release zips in releases/ (Chrome, Firefox, Firefox source)
+npm run assets:png   # store screenshots, thread header and buttons from their HTML (needs npm run browser)
 ```
 
 Load `dist/` as an unpacked extension (Chrome: `chrome://extensions`, Developer mode, **Load unpacked**).
