@@ -6,6 +6,7 @@
   --text: #e6e6e6;
   --muted: #9a9a9a;
   --accent: #7b5bd6;
+  --accent-light: #a78bfa;
   --error: #ff6b6b;
 }
 
@@ -36,6 +37,15 @@ header {
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+/* The black toolbar icon, recolored so it shows on the dark page */
+.logo {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  background: var(--accent-light);
+  mask: url("assets/icons/icon128.png") center / contain no-repeat;
 }
 
 h1 {
@@ -306,19 +316,22 @@ button:disabled {
 }
 
 /* Tabs: one per game */
+/* A segmented control: the selected tab is filled purple */
 .tab-list {
-  display: flex;
+  display: inline-flex;
   gap: 4px;
-  border-bottom: 1px solid var(--border);
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
   margin-bottom: 16px;
 }
 
 .tab {
   background: none;
   border: 0;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  padding: 8px 14px;
+  border-radius: 7px;
+  padding: 7px 18px;
   color: var(--muted);
   font: inherit;
   font-weight: 600;
@@ -326,12 +339,13 @@ button:disabled {
 }
 
 .tab:hover {
+  background: #303030;
   color: var(--text);
 }
 
 .tab[aria-selected="true"] {
-  color: var(--text);
-  border-bottom-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 .tab:focus-visible {
