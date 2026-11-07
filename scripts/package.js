@@ -163,7 +163,7 @@ if (manifest.browser_specific_settings) {
 const SOURCE_FILES = [
   /^config\//,
   /^src\//,
-  /^scripts\/(package|generate-strategy-table)\.js$/,
+  /^scripts\/(package|firefox-manifest|generate-strategy-table)\.js$/,
   /^(package\.json|package-lock\.json|tsconfig\.json|tsconfig\.jest\.json|jest\.config\.js|setup-tests\.ts|eslint\.config\.mjs|\.prettierrc\.json|\.prettierignore|\.gitignore|README\.md|BUILDING\.md|LICENSE|PRIVACY\.md)$/,
 ];
 
@@ -196,13 +196,30 @@ function source() {
   }));
 }
 
+/** False when run from an unzipped source package (no git to list files with). */
+function inGitRepo() {
+  try {
+    require("child_process").execFileSync(
+      "git",
+      ["rev-parse", "--is-inside-work-tree"],
+      { cwd: root, stdio: "ignore" }
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const outDir = path.join(root, "releases");
 fs.mkdirSync(outDir, { recursive: true });
 const releases = [
   ["chrome", extension(manifest)],
   ["firefox", extension(firefoxManifest(manifest))],
-  ["firefox-source", source()],
 ];
+// A reviewer rebuilding from the source zip gets the extension zips to
+// compare; only a git checkout can make the source zip itself
+if (inGitRepo()) releases.push(["firefox-source", source()]);
+else console.log("Not a git checkout: skipping the source zip.");
 for (const [target, entries] of releases) {
   const out = path.join(outDir, `hfgs-${version}-${target}.zip`);
   fs.writeFileSync(out, zip(entries));

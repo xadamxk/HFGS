@@ -15,7 +15,9 @@ function firefoxManifest(chrome) {
       : chrome.background,
     browser_specific_settings: {
       gecko: {
-        id: "hfgs@xadamxk",
+        // The ID AMO gave the add-on when 1.x was first uploaded: updates
+        // must keep it
+        id: "{c2c9b5a3-0412-4ebf-ba24-0967feece06a}",
         strict_min_version: "140.0",
         data_collection_permissions: { required: ["none"] },
       },
