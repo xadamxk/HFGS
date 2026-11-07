@@ -62,13 +62,66 @@ function isEnded(state: BjGameState): boolean {
   return state.turn === "ended" || String(state.ended) === "1";
 }
 
+/** The highest bet martingale may place: the bet cap, within HF's table limit. */
+export function betCap(settings: BlackjackSettings): number {
+  return Math.min(settings.maxBet, BLACKJACK_MAX_BET);
+}
+
 /**
- * The next bet: the base bet, or the martingale progression after a loss.
- * `setLoss` is what the set in progress is down so far (0 if it isn't). After
- * a loss the bet is enough to win back the set's losses plus the base bet, and
- * at least double the previous bet. After plain losses the two are the same;
- * a lost double or split costs twice its bet, so it takes the bet past double.
- * (A surrender loses half, so doubling already covers it.)
+ * The bet a martingale set needs after a loss: enough to win back the set's
+ * losses (`setLoss`) plus the base bet, and at least double the previous bet.
+ * After plain losses the two are the same; a lost double or split costs twice
+ * its bet, so it takes the bet past double. (A surrender loses half, so
+ * doubling already covers it.)
+ */
+export function neededBet(
+  settings: BlackjackSettings,
+  previousBet: number,
+  setLoss: number
+): number {
+  return Math.max(
+    BLACKJACK_MIN_BET,
+    settings.baseBet,
+    previousBet * 2,
+    Math.ceil(Math.max(0, setLoss) + settings.baseBet)
+  );
+}
+
+/**
+ * How many plain losses in a row, starting with a hand at `bet`, end the set
+ * at the cap, from what the set is down before that hand. 1 means losing this
+ * hand resets the set.
+ */
+export function lossesToReset(
+  settings: BlackjackSettings,
+  bet: number,
+  setLoss: number
+): number {
+  let losses = 0;
+  let loss = Math.max(0, setLoss);
+  for (let next = bet; losses < 50;) {
+    loss += next;
+    losses++;
+    const needed = neededBet(settings, next, loss);
+    if (needed > betCap(settings)) break;
+    next = needed;
+  }
+  return losses;
+}
+
+/**
+ * Within this many losses of a reset, the bot plays a hand out instead of
+ * surrendering it: a win there saves the set. It costs a little on average
+ * (surrender is only the table's play when it loses less) but means fewer
+ * sets reset.
+ */
+export const NO_SURRENDER_WITHIN = 3;
+
+/**
+ * The next bet: the base bet, or the martingale progression after a loss (see
+ * neededBet). `setLoss` is what the set in progress is down so far. A set
+ * never bets less than it needs: when that's more than the bet cap, the set
+ * ends and the next hand starts over at the base bet.
  */
 export function nextBet(
   settings: BlackjackSettings,
@@ -86,14 +139,17 @@ export function nextBet(
     return base;
   }
   if (previousNet === 0) return Math.max(base, previousBet);
-  const raised = previousBet * 2;
-  const recover = Math.ceil(Math.max(0, setLoss) + base);
-  const cap = Math.min(settings.maxBet, BLACKJACK_MAX_BET);
-  return Math.max(
-    BLACKJACK_MIN_BET,
-    base,
-    Math.min(cap, Math.max(raised, recover))
-  );
+  const needed = neededBet(settings, previousBet, setLoss);
+  return needed > betCap(settings) ? base : needed;
+}
+
+/**
+ * HF's outcome for one hand, as the history shows it. HF calls a bust "FOLD",
+ * which reads like a choice to give up, so it's recorded as "BUST".
+ */
+export function outcomeLabel(outcome: string | null | undefined): string {
+  if (!outcome) return "UNKNOWN";
+  return outcome === "FOLD" ? "BUST" : outcome;
 }
 
 /** What a finished hand cost and paid, from HF's final state. */
@@ -103,9 +159,9 @@ export function settle(state: BjGameState, balance?: number): RoundResult {
   const doubled = !split && state.hand1.action === "DOUBLE";
   const wagered = bet * (split || doubled ? 2 : 1);
   const returned = parseFloat(state.payout ?? "0") || 0;
-  const outcome1 = state.outcome1 || "UNKNOWN";
+  const outcome1 = outcomeLabel(state.outcome1);
   const outcome = split
-    ? `${outcome1} / ${state.outcome2 || "UNKNOWN"}`
+    ? `${outcome1} / ${outcomeLabel(state.outcome2)}`
     : doubled
       ? `${outcome1} (double)`
       : outcome1;
@@ -147,6 +203,8 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
       let state: BjGameState;
       let balance: number | undefined;
       let dealt = false;
+      // Martingale close to a reset: play the hand out instead of surrendering
+      let noSurrender = false;
       const show = context.display?.() ?? null;
 
       // An unfinished game from before the page loaded: finish it first.
@@ -156,12 +214,16 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
         state = open;
         context.status?.("Finishing the hand that was already in progress…");
       } else {
-        const bet = nextBet(
-          settings,
-          previousBet,
-          previousNet,
-          setId === null ? 0 : -setNet
-        );
+        const setLoss = setId === null ? 0 : -setNet;
+        const bet = nextBet(settings, previousBet, previousNet, setLoss);
+        if (settings.martingale) {
+          // A new set (first hand, after a win or a reset) starts from 0
+          const newSet =
+            setId === null || previousNet === null || previousNet > 0;
+          noSurrender =
+            lossesToReset(settings, bet, newSet ? 0 : setLoss) <=
+            NO_SURRENDER_WITHIN;
+        }
         const response = await post("deal", { bet });
         state = response.data;
         balance = response.balance;
@@ -175,7 +237,7 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
         if (++actions > MAX_ACTIONS_PER_HAND) {
           throw new Error("A hand took too many actions; stopped to be safe");
         }
-        const action = decide(state);
+        const action = decide(state, noSurrender);
         context.status?.(
           `${state.turn === "hand2" ? "Hand 2" : "Hand"}: ${formatCards(
             state[state.turn as "hand1" | "hand2"]?.hand_cards ?? []
@@ -193,7 +255,11 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
 
       const result = settle(state, balance);
       const net = result.returned - result.wagered;
+      const bet = parseFloat(state.bet) || 0;
       noteDealerPeek(result, dealt && actions === 0, actions > 0);
+      // A lost hand after which the set would need more than the cap: the set
+      // ends here, and the next hand starts a new one at the base bet
+      let reset = false;
       if (settings.martingale && dealt) {
         if (setId === null || previousNet === null || previousNet > 0) {
           setId = `${Date.now()}-${++setCounter}`;
@@ -203,25 +269,28 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
           step++;
         }
         setNet = Math.round((setNet + net) * 100) / 100;
+        reset = net < 0 && neededBet(settings, bet, -setNet) > betCap(settings);
         runId ??= `${Date.now()}-${++setCounter}`;
         const tag: MartingaleTag = {
           run: runId,
           set: setId,
           step,
-          bet: parseFloat(state.bet) || 0,
-          cap: Math.min(settings.maxBet, BLACKJACK_MAX_BET),
+          bet,
+          cap: betCap(settings),
+          ...(reset ? { reset: true } : {}),
         };
         result.details = { ...result.details, martingale: tag };
       } else {
         setId = null;
         setNet = 0;
       }
-      previousBet = parseFloat(state.bet) || null;
-      previousNet = net;
+      previousBet = bet || null;
+      // After a reset the next hand starts a new set at the base bet
+      previousNet = reset ? null : net;
       // With martingale a round is a whole set: a loss or push keeps it going,
-      // so it doesn't count toward the session's rounds.
+      // so it doesn't count toward the session's rounds. A reset ends it.
       const continues = Boolean(
-        settings.martingale && dealt && previousNet <= 0
+        settings.martingale && dealt && net <= 0 && !reset
       );
       return { ...result, continues };
     },
@@ -229,16 +298,17 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
 }
 
 /** Basic strategy for the hand in play, with what HF offers at this point. */
-function decide(state: BjGameState): Action {
+function decide(state: BjGameState, noSurrender = false): Action {
   const turn = state.turn === "hand2" ? "hand2" : "hand1";
   const hand = state[turn];
   if (!hand) throw new Error(`HF's game state has no ${turn}`);
-  // Only what HF's page offers now (double, split, surrender: hand 1's first decision)
-  const advice = getAdvice(
-    hand.hand_cards,
-    state.dealer.hand_cards,
-    offeredActions(state)
-  );
+  // Only what HF's page offers now (double, split, surrender: hand 1's first
+  // decision), less surrender when the set is close to resetting
+  const offered = offeredActions(state);
+  const advice = getAdvice(hand.hand_cards, state.dealer.hand_cards, {
+    ...offered,
+    surrender: offered.surrender && !noSurrender,
+  });
   return advice?.best ?? "stand";
 }
 
@@ -270,7 +340,7 @@ export const blackjackBot: GameBot = {
       ? "until stopped"
       : `${s.gamesPerSession} ${unit}${s.gamesPerSession === 1 ? "" : "s"}`;
     const martingale = s.martingale
-      ? `, martingale up to ${s.maxBet}. Each set keeps going until a win`
+      ? `, martingale up to ${s.maxBet}. Each set keeps going until a win, or resets if it would need more than ${s.maxBet}`
       : "";
     return `Play ${count} at ${s.baseBet} βytes${martingale}?`;
   },

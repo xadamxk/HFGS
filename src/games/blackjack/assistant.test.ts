@@ -190,6 +190,21 @@ describe("BlackjackAssistant", () => {
     expect([...marked].map((td) => td.textContent)).toEqual(["Rh", "Rh"]);
   });
 
+  it("calls HF's FOLD a bust", () => {
+    const assistant = new BlackjackAssistant();
+    assistant.update(
+      "hit",
+      state(["10s", "6h", "9c"], ["10c", "8h"], {
+        turn: "ended",
+        ended: "1",
+        outcome1: "FOLD",
+        payout: "0",
+      }),
+      "you"
+    );
+    expect(text(assistant)).toContain("Hand over: Bust (-4)");
+  });
+
   it("checks your decisions against the table and keeps a trail of the hand", () => {
     const assistant = new BlackjackAssistant();
     assistant.update("deal", state(["10s", "6h"], ["10c", "XX"]), "you");

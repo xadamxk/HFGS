@@ -23,6 +23,12 @@ function hand(
     clock++
   );
 }
+/** The hand that ended set `set` at the cap (see martingale.ts). */
+function resetHand(set: string, step: number, net: number): HistoryEntry {
+  const entry = hand(set, step, net);
+  (entry.details!.martingale as { reset?: boolean }).reset = true;
+  return entry;
+}
 const manual = () =>
   toEntry({ outcome: "WIN", wagered: 2, returned: 4 }, clock++);
 const newestFirst = (...entries: HistoryEntry[]) => entries.reverse();
@@ -40,6 +46,9 @@ describe("martingaleSets", () => {
       hand("b", 2, -4, 4),
       hand("b", 3, -4, 4),
       hand("b", 4, 4, 4),
+      // lose 2, lose 4, then winning it back would need more than the cap → reset
+      hand("d", 1, -2),
+      resetHand("d", 2, -4),
       // stopped after two losses → abandoned
       hand("c", 1, -2),
       hand("c", 2, -4)
@@ -47,22 +56,24 @@ describe("martingaleSets", () => {
     const sets = martingaleSets(entries);
     expect(sets.map((s) => [s.id, s.result, s.hands, s.net])).toEqual([
       ["c", "abandoned", 2, -6],
+      ["d", "reset", 2, -6],
       ["b", "short", 4, -6],
       ["a", "recovered", 3, 2],
     ]);
-    expect(sets[1]).toMatchObject({ hitCap: true, peakBet: 4, steps: 4 });
-    expect(sets[2]).toMatchObject({ hitCap: false, peakBet: 8, wagered: 14 });
+    expect(sets[2]).toMatchObject({ hitCap: true, peakBet: 4, steps: 4 });
+    expect(sets[3]).toMatchObject({ hitCap: false, peakBet: 8, wagered: 14 });
 
     expect(summarizeSets(sets)).toEqual({
-      sets: 3,
-      finished: 3,
+      sets: 4,
+      finished: 4,
       recovered: 1,
       short: 1,
+      reset: 1,
       abandoned: 1,
-      averageHands: 3,
+      averageHands: 2.75,
       longest: 4,
       worstNet: -6,
-      net: -10,
+      net: -16,
     });
   });
 
@@ -130,7 +141,10 @@ describe("MartingaleView", () => {
     expect(text).toContain(
       "Set in progress: step 3 next, -6 βytes so far over 2 hands. Next bet 8"
     );
-    expect(text).toContain("cap 16: 1 more loss to reach it");
+    // Lose 8 (down 14, needs 16: allowed), lose 16 (would need 32): reset
+    expect(text).toContain(
+      "cap 16: the set resets after 2 more losses in a row"
+    );
     expect(text).toContain("In progress");
   });
 

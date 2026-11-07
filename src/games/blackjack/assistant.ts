@@ -41,7 +41,8 @@ const OUTCOME_TEXT: Record<string, string> = {
   WIN: "Win",
   "WIN-BLACKJACK": "Blackjack",
   LOSE: "Loss",
-  FOLD: "Loss",
+  // HF's word for a bust
+  FOLD: "Bust",
   TIE: "Push",
   SURRENDER: "Surrendered",
 };

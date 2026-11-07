@@ -9,8 +9,8 @@ import { HistoryEntry } from "../../core/history";
 import { formatAmount } from "../../core/ui/format";
 import { SettingValues } from "../../settings/definitions";
 import { HistoryView, HistoryViewContext } from "../engine";
-import { BLACKJACK_MAX_BET, BlackjackSettings } from "./definition";
-import { nextBet } from "./engine";
+import { BlackjackSettings } from "./definition";
+import { betCap, lossesToReset, nextBet, NO_SURRENDER_WITHIN } from "./engine";
 import {
   latestRun,
   MartingaleRun,
@@ -44,27 +44,6 @@ const tone = (n: number) => (n > 0 ? "hfgs-pos" : n < 0 ? "hfgs-neg" : null);
 const pct = (part: number, whole: number) =>
   whole ? `${Math.round((part / whole) * 100)}%` : "–";
 
-/**
- * How many more plain losses until the bet reaches the cap, from the next
- * bet and what the set is down before it.
- */
-function lossesToCap(
-  bet: number,
-  setLoss: number,
-  settings: BlackjackSettings
-): number {
-  const cap = Math.min(settings.maxBet, BLACKJACK_MAX_BET);
-  let losses = 0;
-  let loss = setLoss;
-  for (let next = bet; next < cap && losses < 50; losses++) {
-    loss += next;
-    const raised = nextBet(settings, next, -next, loss);
-    if (raised <= next) break;
-    next = raised;
-  }
-  return losses;
-}
-
 export class MartingaleView implements HistoryView {
   readonly title = "Martingale";
   readonly css = MARTINGALE_CSS;
@@ -88,7 +67,7 @@ export class MartingaleView implements HistoryView {
       el(
         "div",
         { class: "hfgs-mg-note" },
-        "Results start over each time you start the bot. A set runs from your base bet to the win that ends the progression (pushes keep it going). Hands you play yourself aren't part of a set."
+        "Results start over each time you start the bot. A set runs from your base bet to the win that ends the progression (pushes keep it going), or resets once winning it back would take a bet over the cap. Hands you play yourself aren't part of a set."
       )
     );
   }
@@ -108,7 +87,7 @@ export class MartingaleView implements HistoryView {
       );
     }
     const bet = nextBet(settings, open.last.bet, open.lastNet, -open.net);
-    const toCap = lossesToCap(bet, Math.max(0, -open.net), settings);
+    const toReset = lossesToReset(settings, bet, -open.net);
     return el("div", null, [
       el("strong", null, "Set in progress: "),
       `step ${open.last.step + 1} next, `,
@@ -119,9 +98,12 @@ export class MartingaleView implements HistoryView {
       ),
       ` so far over ${open.hands} hand${open.hands === 1 ? "" : "s"}. Next bet `,
       el("strong", null, formatAmount(bet)),
-      toCap > 0
-        ? ` (cap ${formatAmount(Math.min(settings.maxBet, BLACKJACK_MAX_BET))}: ${toCap} more loss${toCap === 1 ? "" : "es"} to reach it).`
-        : " (at the cap: a win here may not cover the set's losses).",
+      toReset === 1
+        ? ` (cap ${formatAmount(betCap(settings))}: if this loses, the set resets).`
+        : ` (cap ${formatAmount(betCap(settings))}: the set resets after ${toReset} more losses in a row).`,
+      toReset <= NO_SURRENDER_WITHIN
+        ? " This close to a reset, the bot plays hands out instead of surrendering."
+        : "",
     ]);
   }
 
@@ -154,6 +136,7 @@ export class MartingaleView implements HistoryView {
       `${s.sets} set${s.sets === 1 ? "" : "s"}: `,
       el("strong", null, `${s.recovered} recovered`),
       ` (${pct(s.recovered, s.finished)} of finished)`,
+      s.reset ? `, ${s.reset} reset at cap` : "",
       s.short ? `, ${s.short} won short` : "",
       `, ${s.abandoned} abandoned · average ${s.averageHands} hands · longest ${s.longest} · worst `,
       el("span", { class: tone(s.worstNet) }, formatAmount(s.worstNet, true)),

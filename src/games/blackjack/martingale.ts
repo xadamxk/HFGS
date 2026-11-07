@@ -1,7 +1,8 @@
 /**
  * Martingale sets, read back from the history. A set is the run of bot hands
  * from a base bet up to the win that ends the progression; pushes keep it
- * going. The engine tags each hand (`details.martingale`); nothing else in the
+ * going. A set also ends when, after a loss, winning it back would take a bet
+ * over the cap (a reset). The engine tags each hand (`details.martingale`); nothing else in the
  * history changes, so the results table and exports stay as they are.
  */
 
@@ -22,13 +23,17 @@ export interface MartingaleTag {
   bet: number;
   /** The bet cap at the time. */
   cap: number;
+  /** This hand ended the set: winning it back would have taken more than the cap. */
+  reset?: boolean;
 }
 
 export type SetResult =
   /** A win ended it and the set is up overall. */
   | "recovered"
-  /** A win ended it, but the cap kept the bet too low to cover the losses. */
+  /** A win ended it, but the set was still down (only if the cap was lowered mid-set). */
   | "short"
+  /** After a loss, winning the set back would have taken more than the cap. */
+  | "reset"
   /** Still being played this session. */
   | "open"
   /** The bot stopped (or hit a limit) before a win; the next start begins a new set. */
@@ -54,6 +59,7 @@ export interface MartingaleSet {
 export const RESULT_LABELS: Record<SetResult, string> = {
   recovered: "Recovered",
   short: "Won, short",
+  reset: "Reset at cap",
   open: "In progress",
   abandoned: "Abandoned",
 };
@@ -109,6 +115,7 @@ export function martingaleSets(
   const sets = [...byId.values()];
   for (const set of sets) {
     if (set.lastNet > 0) set.result = set.net >= 0 ? "recovered" : "short";
+    else if (set.last.reset) set.result = "reset";
     else
       set.result =
         sessionStartedAt !== null && set.endedAt >= sessionStartedAt
@@ -156,6 +163,7 @@ export interface SetSummary {
   finished: number;
   recovered: number;
   short: number;
+  reset: number;
   abandoned: number;
   averageHands: number;
   longest: number;
@@ -172,6 +180,7 @@ export function summarizeSets(sets: MartingaleSet[]): SetSummary {
     finished: finished.length,
     recovered: count("recovered"),
     short: count("short"),
+    reset: count("reset"),
     abandoned: count("abandoned"),
     averageHands: finished.length
       ? cents(finished.reduce((sum, s) => sum + s.hands, 0) / finished.length)
