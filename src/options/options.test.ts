@@ -80,6 +80,46 @@ describe("options page", () => {
     expect(settings.games.slots.runUntilStopped).toBe(false);
   });
 
+  it("puts each game's settings in cards, the display settings first", async () => {
+    const root = await render();
+    const cards = (game: string) =>
+      [
+        ...root.querySelectorAll<HTMLElement>(
+          `section[data-game="${game}"] .card`
+        ),
+      ].map((card) => card.dataset.group);
+    expect(cards("blackjack")).toEqual([
+      "Display and pacing",
+      "Assistant",
+      "Betting",
+      "Stop the bot",
+    ]);
+    expect(cards("slots")).toEqual([
+      "Display and pacing",
+      "Betting",
+      "Stop the bot",
+    ]);
+    // Stop-loss and take-profit side by side, with their detail behind an ⓘ
+    const stopLoss = input(root, "blackjack-stopLoss").closest(".row")!;
+    expect(stopLoss.parentElement!.classList).toContain("cols-2");
+    expect(stopLoss.querySelector(".info")?.getAttribute("title")).toMatch(
+      /checked after each round/
+    );
+  });
+
+  it("nests martingale's settings under it, hidden while it's off", async () => {
+    const root = await render();
+    const nest = input(root, "blackjack-martingaleMultiplier").closest(
+      ".nest"
+    ) as HTMLElement;
+    expect(nest.dataset.nest).toBe("martingale");
+    expect(nest.hidden).toBe(true);
+    const martingale = input(root, "blackjack-martingale");
+    martingale.checked = true;
+    martingale.dispatchEvent(new Event("change"));
+    expect(nest.hidden).toBe(false);
+  });
+
   it("disables settings whose checkbox is off, and enables them when it's on", async () => {
     const root = await render();
     const multiplier = input(root, "blackjack-martingaleMultiplier");

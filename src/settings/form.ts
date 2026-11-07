@@ -21,6 +21,10 @@ export interface SettingsFormOptions {
   compact?: boolean;
   /** Heading for the settings that have no group. */
   title?: string;
+  /** Settings page: a line under a group's heading, by group name. */
+  intros?: Record<string, string>;
+  /** Settings page: these groups come first, in this order. */
+  firstGroups?: string[];
 }
 
 export interface SettingsForm {
@@ -69,10 +73,13 @@ export function settingsForm<T>(
       options
     )
   );
-  const groups = groupRows(form, rows, options);
+  const { groups, nests } = options.compact
+    ? { groups: groupRows(form, rows, options), nests: [] }
+    : pageGroups(form, rows, options);
 
   // Settings that only apply while a checkbox is on are disabled while it's
-  // off, and those a checkbox overrides are disabled while it's on.
+  // off (and on the settings page, hidden when nested under it), and those a
+  // checkbox overrides are disabled while it's on.
   const updateEnabled = () => {
     for (const row of rows) {
       const { enabledBy, disabledBy } = row.definition;
@@ -82,6 +89,8 @@ export function settingsForm<T>(
           (!disabledBy || current[disabledBy] !== true)
       );
     }
+    for (const nest of nests)
+      nest.element.hidden = current[nest.parent] !== true;
   };
   updateEnabled();
 
@@ -101,45 +110,161 @@ export function settingsForm<T>(
   };
 }
 
+/** Rows by group name, in the order the groups first appear. */
+function byGroup(
+  rows: Row[],
+  nameOf: (row: Row) => string
+): Map<string, Row[]> {
+  const members = new Map<string, Row[]>();
+  for (const row of rows) {
+    const name = nameOf(row);
+    if (!members.has(name)) members.set(name, []);
+    members.get(name)!.push(row);
+  }
+  return members;
+}
+
 /**
- * Put the rows in their groups, each under its heading. Returns each group's
- * box by name (the settings without a group are under "").
+ * The game page: the rows in their groups, each under its heading. Returns
+ * each group's box by name (the settings without a group are under "").
  */
 function groupRows(
   form: HTMLFormElement,
   rows: Row[],
-  { compact = false, title }: SettingsFormOptions
+  { title }: SettingsFormOptions
 ): Map<string, HTMLElement> {
-  const order: string[] = [];
-  const members = new Map<string, HTMLElement[]>();
-  for (const row of rows) {
-    const name = row.definition.group ?? "";
-    if (!members.has(name)) {
-      members.set(name, []);
-      order.push(name);
-    }
-    members.get(name)!.push(row.element);
-  }
   const boxes = new Map<string, HTMLElement>();
-  for (const name of order) {
+  for (const [name, members] of byGroup(
+    rows,
+    (row) => row.definition.group ?? ""
+  )) {
     const heading = name || title;
-    const box = compact
-      ? el(
+    const box = el(
+      "div",
+      { class: "hfgs-settings-group", "data-group": name || null },
+      [
+        heading && el("div", { class: "hfgs-settings-title" }, heading),
+        el(
           "div",
-          { class: "hfgs-settings-group", "data-group": name || null },
-          [
-            heading && el("div", { class: "hfgs-settings-title" }, heading),
-            el("div", { class: "hfgs-settings-grid" }, members.get(name)!),
-          ]
-        )
-      : el("div", { class: "group", "data-group": name || null }, [
-          heading && el("h3", { class: "group-title" }, heading),
-          ...members.get(name)!,
-        ]);
+          { class: "hfgs-settings-grid" },
+          members.map((row) => row.element)
+        ),
+      ]
+    );
     boxes.set(name, box);
     form.append(box);
   }
   return boxes;
+}
+
+interface Nest {
+  /** The checkbox setting that shows these settings while it's on. */
+  parent: string;
+  element: HTMLElement;
+}
+
+/**
+ * The settings page: a card per group (its pageGroup, else its group; the
+ * settings without either under the title), with the settings that need a
+ * checkbox nested under it and same-width settings side by side. Returns
+ * each card by name and the nested boxes, to hide while their checkbox is off.
+ */
+function pageGroups(
+  form: HTMLFormElement,
+  rows: Row[],
+  { title = "", intros = {}, firstGroups = [] }: SettingsFormOptions
+): { groups: Map<string, HTMLElement>; nests: Nest[] } {
+  const members = byGroup(
+    rows,
+    (row) => row.definition.pageGroup ?? row.definition.group ?? title
+  );
+  const rank = (name: string) => {
+    const i = firstGroups.indexOf(name);
+    return i < 0 ? firstGroups.length : i;
+  };
+  const order = [...members.keys()].sort((a, b) => rank(a) - rank(b));
+
+  const groups = new Map<string, HTMLElement>();
+  const nests: Nest[] = [];
+  for (const name of order) {
+    const groupRows = members.get(name)!;
+    const byId = new Map<string, Row>(
+      groupRows.map((row) => [row.definition.id, row])
+    );
+    // Nested: needs a checkbox in this card that isn't nested itself
+    const parentOf = (row: Row): Row | undefined => {
+      const enabledBy: string | undefined = row.definition.enabledBy;
+      const parent = enabledBy ? byId.get(enabledBy) : undefined;
+      return parent &&
+        parent !== row &&
+        parent.definition.type === "checkbox" &&
+        !parentOf(parent)
+        ? parent
+        : undefined;
+    };
+    const children = new Map<Row, Row[]>();
+    const top: Row[] = [];
+    for (const row of groupRows) {
+      const parent = parentOf(row);
+      if (parent) children.set(parent, [...(children.get(parent) ?? []), row]);
+      else top.push(row);
+    }
+
+    const items = columns(
+      top.map((row) => {
+        const kids = children.get(row);
+        const { warning, width, id } = row.definition;
+        const note = warning ? el("p", { class: "warning" }, warning) : null;
+        if (!kids && !note) return { width, element: row.element };
+        if (!kids)
+          return { width, element: el("div", null, [row.element, note]) };
+        const nest = el("div", { class: "nest", "data-nest": id }, [
+          ...columns(
+            kids.map((kid) => ({
+              width: kid.definition.width,
+              element: kid.element,
+            }))
+          ),
+          note,
+        ]);
+        nests.push({ parent: id, element: nest });
+        return { width, element: el("div", null, [row.element, nest]) };
+      })
+    );
+    items.forEach((item) => item.classList.add("item"));
+    const card = el("div", { class: "card", "data-group": name || null }, [
+      name && el("h2", null, name),
+      intros[name] && el("p", { class: "description intro" }, intros[name]),
+      ...items,
+    ]);
+    groups.set(name, card);
+    form.append(card);
+  }
+  return { groups, nests };
+}
+
+/** Runs of same-width settings go side by side; the rest stay full width. */
+function columns(
+  items: { width?: "half" | "third"; element: HTMLElement }[]
+): HTMLElement[] {
+  const out: HTMLElement[] = [];
+  let run: HTMLElement[] = [];
+  let runWidth: "half" | "third" | undefined;
+  const flush = () => {
+    if (run.length)
+      out.push(
+        el("div", { class: `cols cols-${runWidth === "half" ? 2 : 3}` }, run)
+      );
+    run = [];
+  };
+  for (const item of items) {
+    if (!item.width || item.width !== runWidth) flush();
+    runWidth = item.width;
+    if (item.width) run.push(item.element);
+    else out.push(item.element);
+  }
+  flush();
+  return out;
 }
 
 function settingRow(
@@ -157,8 +282,27 @@ function settingRow(
         setting.description
       );
   const describedBy = description ? description.id : null;
-  // Compact rows show the description on hover instead
-  const tip = compact ? setting.description : null;
+  // Compact rows show the description (and any detail) on hover instead
+  const tip = compact
+    ? [setting.description, setting.detail, setting.warning]
+        .filter(Boolean)
+        .join(" ")
+    : null;
+  // The settings page shows the detail as an ⓘ beside the label
+  const info =
+    !compact && setting.detail
+      ? el(
+          "span",
+          {
+            class: "info",
+            title: setting.detail,
+            role: "img",
+            "aria-label": setting.detail,
+            tabindex: 0,
+          },
+          "?"
+        )
+      : null;
 
   switch (setting.type) {
     case "checkbox": {
@@ -181,7 +325,10 @@ function settingRow(
         : el("div", { class: "row checkbox" }, [
             input,
             el("div", null, [
-              el("label", { for: inputId }, setting.label),
+              el("div", { class: "label-line" }, [
+                el("label", { for: inputId }, setting.label),
+                info,
+              ]),
               description,
             ]),
           ]);
@@ -214,7 +361,7 @@ function settingRow(
           title: tip,
         },
         [
-          el("legend", null, setting.label),
+          el("legend", null, [setting.label, info]),
           description,
           el(
             "div",
@@ -270,7 +417,13 @@ function settingRow(
             field,
           ])
         : el("div", { class: "row number" }, [
-            el("label", { for: inputId }, label),
+            el("div", { class: "label-line" }, [
+              el("label", { for: inputId }, [
+                setting.label,
+                setting.unit && el("span", { class: "unit" }, setting.unit),
+              ]),
+              info,
+            ]),
             description,
             field,
           ]);
