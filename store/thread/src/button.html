@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Download button</title>
+<!-- The download buttons, styled like the Hack Game status card. Open as
+     button.html#chrome or #firefox. Rendered 1200x132 on a transparent background.
+     The browser logos are the same drawings as HF Convo Anywhere's buttons. -->
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1200px; height: 132px; background: transparent; font-family: "Segoe UI", Verdana, sans-serif; }
+  .card { position: absolute; left: 2px; top: 2px; width: 1196px; height: 128px; display: flex; background: #1f1f1f; border: 2px solid #3a3a3a; border-radius: 20px; overflow: hidden; }
+  .logo { width: 150px; flex: none; background: #3d2a4b; display: flex; align-items: center; justify-content: center; }
+  .text { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 0 30px; min-width: 0; }
+  .top { display: flex; align-items: center; gap: 16px; }
+  .name { font-size: 32px; font-weight: 700; color: #fff; }
+  .chip { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 2px 12px; border-radius: 14px; border: 2px solid currentColor; color: #4AD635; }
+  .line { font-size: 30px; color: #d6d6d6; white-space: nowrap; }
+  .install { flex: none; align-self: center; margin-right: 30px; display: flex; align-items: center; gap: 12px; height: 64px; padding: 0 30px; border-radius: 10px; background: #4b2e5f; border: 2px solid #8a5bb0; color: #fff; font-size: 28px; font-weight: 700; }
+  .install span { font-size: 22px; }
+
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo"><svg width="120" height="120" viewBox="-60 -60 120 120" id="logo"></svg></div>
+    <div class="text">
+      <div class="top"><span class="name" id="name"></span><span class="chip">Ready</span></div>
+      <div class="line" id="line"></div>
+    </div>
+    <div class="install"><span>▶</span>Install</div>
+  </div>
+  <script src="logos.js"></script>
+  <script>
+    const TEXT = {
+      chrome: ["Chrome", "Click to install from the Chrome Web Store"],
+      firefox: ["Firefox", "Click to install from Firefox Add-ons"],
+    };
+    drawLogo(document.getElementById("logo"), .82);
+    document.getElementById("name").textContent = TEXT[BROWSER][0];
+    document.getElementById("line").textContent = TEXT[BROWSER][1];
+  </script>
+</body>
+</html>
