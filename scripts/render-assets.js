@@ -1,6 +1,8 @@
 // Renders the store and release-thread images from their HTML sources:
 //   assets/screenshots/<n>.html   -> store/screenshots/<n>.png   (1280x800)
-//   assets/banners/banner-thread*.html -> assets/banners/<same>.png (1400x560)
+//   assets/banners/banner-thread*.html -> assets/banners/<same>.png
+//                                    (laid out at 1400x560, drawn at 1200x480
+//                                    to match the buttons' width)
 //   assets/buttons/button.html    -> assets/buttons/button-<browser>.png
 //                                    (1200x132, transparent corners)
 // Needs `npm run browser` running (it draws in that Chrome on 127.0.0.1:9222).
@@ -15,7 +17,10 @@ const PORT = Number(process.env.CDP_PORT) || 9222;
 const fileUrl = (file) =>
   "file:///" + path.resolve(root, file).split(path.sep).join("/");
 
-/** Every image: its source page (with any #options), output and size. */
+/**
+ * Every image: its source page (with any #options), output, layout size and
+ * scale (the PNG is width x scale wide).
+ */
 function jobs() {
   const list = [];
   for (const name of fs.readdirSync(path.join(root, "assets/screenshots"))) {
@@ -34,6 +39,7 @@ function jobs() {
         out: `assets/banners/${name.replace(/\.html$/, ".png")}`,
         width: 1400,
         height: 560,
+        scale: 1200 / 1400,
       });
   }
   for (const browser of ["chrome", "firefox"])
@@ -64,7 +70,11 @@ async function main() {
       const page = await browser.newPage();
       try {
         await page.bringToFront();
-        await page.setViewport({ width: job.width, height: job.height });
+        await page.setViewport({
+          width: job.width,
+          height: job.height,
+          deviceScaleFactor: job.scale ?? 1,
+        });
         await page.goto(
           fileUrl(job.source) + (job.hash ? `#${job.hash}` : ""),
           { waitUntil: "load" }
