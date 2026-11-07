@@ -1,5 +1,6 @@
 import { defaultSettings, saveSettings } from "../settings";
 import { idleState } from "./store";
+import { registerHackGame } from "./background";
 
 describe("background wake-up", () => {
   it("follows the stored next step when it changes, in background mode", async () => {
@@ -22,7 +23,6 @@ describe("background wake-up", () => {
       listeners.push(fn);
       realOnChanged(fn);
     }) as never;
-    const { registerHackGame } = await import("./background");
     registerHackGame();
     chrome.storage.onChanged.addListener = realOnChanged;
 

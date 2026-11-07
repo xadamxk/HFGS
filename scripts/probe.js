@@ -33,21 +33,14 @@ async function main() {
           console.log(`${name}: redirected to ${page.url()} (signed out?)`);
           continue;
         }
+        // Only the selector report is saved. The page's own markup is not: it's
+        // the signed-in page (username, uid, avatar, notifications from other
+        // members), and these files are committed.
         const report = await page.evaluate(probeSource);
-        // Full markup, for designing selectors offline. my_post_key is a per-session CSRF token: redact it.
-        const postKey = await page.evaluate(() => globalThis.my_post_key || "");
-        const markup = await page.content();
-        // Also scrub every other token-shaped value (logoutkey, signed URLs, etc.): 32+ hex chars.
-        report.html = (
-          postKey ? markup.split(postKey).join("REDACTED") : markup
-        )
-          .replace(/\b[0-9a-f]{32,}\b/gi, "REDACTED")
-          .replace(/((?:logoutkey|token|key)=)[^&"'\s\\]+/gi, "$1REDACTED");
         const file = path.join(outDir, `${name}.json`);
-        fs.writeFileSync(file, JSON.stringify(report, null, 2));
-        const { html, ...summary } = report;
+        fs.writeFileSync(file, JSON.stringify(report, null, 2) + "\n");
         console.log(
-          `\n=== ${name} (${page.url()})\n` + JSON.stringify(summary, null, 2)
+          `\n=== ${name} (${page.url()})\n` + JSON.stringify(report, null, 2)
         );
         console.log(`Saved ${path.relative(process.cwd(), file)}`);
       } finally {

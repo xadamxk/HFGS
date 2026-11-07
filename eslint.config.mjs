@@ -52,6 +52,16 @@ export default defineConfig(
     languageOptions: { globals: { ...globals.browser } },
   },
   {
+    // The store and thread image mockups: plain scripts in the mockup pages,
+    // sharing globals between <script> tags (logos.js defines drawLogo, etc.)
+    files: ["store/**/*.js"],
+    languageOptions: { globals: { ...globals.browser } },
+    rules: {
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+    },
+  },
+  {
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": "warn",

@@ -1,6 +1,6 @@
 /**
- * One step of Hack Game auto-play, the same whether it runs in the background
- * script or in an open game tab: read the Small Hack Jobs page, then play a
+ * One step of Hack Game auto-play, run by the background script (background.ts)
+ * while "Run in background" is on: read the Small Hack Jobs page, then play a
  * job, or work out how long to wait (cooldown, recharge, lock-out) before the
  * next step. The caller schedules the next step after `nextInMs`.
  */
@@ -70,8 +70,8 @@ export interface Attempt {
 
 /**
  * Play `job` once and read its result from HF's logs (the newest entry, if
- * it's from just now). Records the result. Shared by auto-play and the status
- * card's Hack button.
+ * it's from just now). Records the result. Used by auto-play; the Hack button
+ * (manual.ts) reads the result from HF's reply instead.
  */
 export async function attemptJob(
   io: HackIO,

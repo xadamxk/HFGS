@@ -1,7 +1,7 @@
 # Phase 0 findings: live-site check
 
 Checked 2026-11-05 in Chrome for Testing 157 (`npm run browser`, `npm run probe`), signed in.
-Raw reports and redacted page HTML: `fixtures/phase0/blackjack.json`, `fixtures/phase0/slots.json`.
+Raw reports (selector checks only; the signed-in page HTML was dropped because it named the account): `fixtures/phase0/blackjack.json`, `fixtures/phase0/slots.json`.
 Game logic below is read from HF's own client scripts (`/jscripts/blackjack/blackjack.js`, `/jscripts/slots/slots.js?ver=1`).
 
 ## Selectors

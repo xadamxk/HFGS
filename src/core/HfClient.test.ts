@@ -175,9 +175,9 @@ describe("HfClient flood control", () => {
     });
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect(instance.floodRetriesUsed).toBe(2);
-    // Backoff waits of 2s, then 4s; after the first rejection the resend is
-    // also held to the delay plus the extra 500 ms
-    expect(sleeps).toEqual([2000, 500, 4000]);
+    // First resend: the 2 s delay plus the extra 500 ms. Second: a 2 s backoff,
+    // then the rest of the delay plus the now 1 s extra
+    expect(sleeps).toEqual([2500, 2000, 1000]);
     // The same request is resent each time
     const bodies = fetchImpl.mock.calls.map((call) => call[1].body);
     expect(new Set(bodies).size).toBe(1);
@@ -210,6 +210,41 @@ describe("HfClient flood control", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(error.kind).toBe("nonJson");
     expect(error.message).toBe("HF: Invalid game.");
+  });
+
+  it("times out a reply that stalls after its headers", async () => {
+    jest.useFakeTimers();
+    try {
+      // Headers arrive, then the body never finishes until the request is aborted
+      const fetchImpl = jest.fn(
+        async (_url: string, init: RequestInit) =>
+          ({
+            ok: true,
+            status: 200,
+            text: () =>
+              new Promise<string>((_resolve, reject) =>
+                init.signal?.addEventListener("abort", () =>
+                  reject(
+                    Object.assign(new Error("aborted"), { name: "AbortError" })
+                  )
+                )
+              ),
+          }) as unknown as Response
+      );
+      const instance = new HfClient({
+        postKey: "k",
+        minIntervalMs: 0,
+        timeoutMs: 5000,
+        fetch: fetchImpl as unknown as typeof fetch,
+      });
+      const result = instance.post("/a", {}).catch((e: unknown) => e);
+      await jest.advanceTimersByTimeAsync(5000);
+      const error = (await result) as HfError;
+      expect(error.kind).toBe("network");
+      expect(error.message).toBe("HF didn't answer within 5s");
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("spaces requests from the end of the previous response", async () => {

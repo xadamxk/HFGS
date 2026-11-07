@@ -140,6 +140,21 @@ describe("playing a job by hand", () => {
     expect((await loadState()).note).toBe("Couldn't reach HF (offline).");
   });
 
+  it("spaces a press from the last one in any tab", async () => {
+    await pick();
+    // Another tab sent a job a second ago (successes set no cooldown)
+    await saveState({ ...idleState(), postedAt: NOW - 1000 });
+    const sleeps: number[] = [];
+    const hf = fakeHF(successReply);
+    hf.io.sleep = async (ms) => {
+      sleeps.push(ms);
+    };
+    await playOnce(hf.io, "KEY");
+    expect(sleeps).toEqual([1500]);
+    expect(hf.posts).toHaveLength(1);
+    expect((await loadState()).postedAt).toBe(NOW);
+  });
+
   it("plays even with a run left over from background mode", async () => {
     await pick();
     await saveState({ ...idleState(), running: true, mode: "background" });

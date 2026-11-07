@@ -121,7 +121,10 @@ export class HfClient {
         }
         this.floodRetriesUsed++;
         this.floodPenaltyMs = Math.min(this.floodPenaltyMs + 500, 5000);
-        await this.sleep(Math.max(this.minIntervalMs, 1000) * (attempt + 1));
+        // send() already holds the resend to the delay plus the penalty; later
+        // retries back off further on top of that
+        if (attempt > 0)
+          await this.sleep(Math.max(this.minIntervalMs, 1000) * attempt);
       }
     }
   }
@@ -161,6 +164,9 @@ export class HfClient {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     let response: Response;
+    let text: string;
+    // The timeout covers reading the reply too, not just its headers: a reply
+    // that stalls halfway would otherwise hang the queue with no error.
     try {
       response = await this.fetchImpl(new URL(path, this.origin).toString(), {
         method: "POST",
@@ -173,7 +179,12 @@ export class HfClient {
         body: body.toString(),
         signal: controller.signal,
       });
+      if (!response.ok) {
+        throw new HfError("http", `HF answered ${response.status}`);
+      }
+      text = await response.text();
     } catch (error) {
+      if (error instanceof HfError) throw error;
       const aborted = (error as Error)?.name === "AbortError";
       throw new HfError(
         "network",
@@ -184,11 +195,6 @@ export class HfClient {
     } finally {
       clearTimeout(timer);
     }
-
-    if (!response.ok) {
-      throw new HfError("http", `HF answered ${response.status}`);
-    }
-    const text = await response.text();
     let json: unknown;
     try {
       json = JSON.parse(text);

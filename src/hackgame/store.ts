@@ -60,6 +60,11 @@ export interface HackState {
   busy: boolean;
   /** When that play started: a play cut off (a reload, a closed tab) expires. */
   busyAt?: number | null;
+  /**
+   * When a Hack button last sent a job to HF, from any tab, so presses in
+   * different tabs are spaced too (HF rejects quick repeats).
+   */
+  postedAt?: number | null;
   /** Why the last job played by hand didn't happen, or null. */
   note: string | null;
   /**

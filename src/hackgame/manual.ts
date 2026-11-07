@@ -15,6 +15,7 @@ import {
   isLocked,
   pageKind,
   parseJobs,
+  postKey,
   powerPercent,
   replyResult,
 } from "./parse";
@@ -36,7 +37,6 @@ import {
 const LOCK = "hfgs-hackgame-play";
 /** Two presses closer than this would trip HF's "too quickly" check. */
 const MIN_GAP_MS = REQUEST_GAP_MS;
-let lastPostAt = -Infinity;
 
 /**
  * Play the picked job once. `key` is the post key from the HF page the button
@@ -73,10 +73,12 @@ export async function playOnce(io: HackIO, key: string | null): Promise<void> {
 
   await patchState({ busy: true, busyAt: io.now(), note: null });
   try {
-    const wait = lastPostAt + MIN_GAP_MS - io.now();
+    // Spaced from the last press in any tab (the stored time; the Web Lock in
+    // playOnceLocked keeps two tabs from reading it at once)
+    const wait = (state.postedAt ?? -Infinity) + MIN_GAP_MS - io.now();
     if (wait > 0) await io.sleep(wait);
-    lastPostAt = io.now();
     const playedAt = io.now();
+    await patchState({ postedAt: playedAt });
     const reply = await io.post("gamecp.php", {
       job_id: job.id,
       my_post_key: key,
@@ -145,11 +147,10 @@ export function pagePostKey(doc: Document = document): string | null {
     'input[name="my_post_key"]'
   );
   if (input?.value) return input.value;
+  // Otherwise HF's `var my_post_key = "…"`, read the same way as fetched pages
   for (const script of doc.scripts) {
-    const match = script.textContent?.match(
-      /my_post_key\s*=\s*["']([^"']+)["']/
-    );
-    if (match) return match[1];
+    const key = postKey(script.textContent ?? "");
+    if (key) return key;
   }
   return null;
 }

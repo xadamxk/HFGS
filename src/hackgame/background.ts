@@ -29,7 +29,7 @@ export async function tick(): Promise<void> {
       await chrome.alarms.clear(HACKGAME_ALARM);
       return;
     }
-    // Woken early (an update, or a switch from tab mode): keep the booked time
+    // Woken early (an update or reload, or a settings change): keep the booked time
     if (state.nextAt && state.nextAt > Date.now() + 1000) {
       chrome.alarms.create(HACKGAME_ALARM, { when: state.nextAt });
       return;
@@ -78,7 +78,7 @@ export function registerHackGame(): void {
     if (alarm.name === HACKGAME_ALARM) tick();
   });
 
-  // Start, Stop, or a switch between background and tab mode
+  // Start, Stop, or "Run in background" turned on or off
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
     const stateChange = changes[STORAGE_KEYS.hackgameState];
