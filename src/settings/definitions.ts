@@ -27,7 +27,31 @@ interface BaseDefinition<T, K extends keyof T & string> {
    * form's own title, if it has one.
    */
   group?: string;
-  /** A checkbox setting that must be on for this one to apply (it's disabled otherwise). */
+  /**
+   * The settings page's group (its card) when it differs from `group`, which
+   * the game page keeps using.
+   */
+  pageGroup?: string;
+  /**
+   * Settings page: puts this beside its neighbors of the same width, two
+   * ("half") or three ("third") to a row.
+   */
+  width?: "half" | "third";
+  /**
+   * More detail than the description: an ⓘ tooltip on the settings page,
+   * added to the setting's tooltip on the game page.
+   */
+  detail?: string;
+  /**
+   * Settings page: a warning under this setting, inside the settings nested
+   * under it if it has any (so it shows only while they apply).
+   */
+  warning?: string;
+  /**
+   * A checkbox setting that must be on for this one to apply (it's disabled
+   * otherwise). On the settings page, a setting in the same group as its
+   * checkbox is nested under it and hidden while it's off.
+   */
   enabledBy?: KeysOfType<T, boolean>;
   /** A checkbox setting that makes this one not apply while it's on (disabled then). */
   disabledBy?: KeysOfType<T, boolean>;

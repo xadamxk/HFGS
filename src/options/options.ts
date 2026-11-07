@@ -12,6 +12,11 @@ import { settingsForm } from "../settings/form";
 import { HACKGAME_SETTINGS, HackGameSettings } from "../hackgame/settings";
 import { jobsView, JobsView } from "../hackgame/jobsView";
 import {
+  BET_GROUP,
+  BOT_GROUP_INTROS,
+  DISPLAY_GROUP,
+} from "../games/botSettings";
+import {
   HfgsSettings,
   defaultSettings,
   loadSettings,
@@ -62,17 +67,20 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
             ...settings.games,
             [game.id]: { ...settings.games[game.id], ...change },
           },
-        })
+        }),
+      {
+        // A card per group, the display settings first; the game's rules go
+        // under its bet
+        title: BET_GROUP,
+        firstGroups: [DISPLAY_GROUP],
+        intros: { ...BOT_GROUP_INTROS, [BET_GROUP]: game.description },
+      }
     );
     gameForms.set(game.id, form);
     return form.element;
   };
   const gameSections = GAMES.map((game) =>
-    el("section", { "data-game": game.id }, [
-      el("h2", null, game.name),
-      el("p", { class: "description intro" }, game.description),
-      gameForm(game),
-    ])
+    el("section", { class: "cards", "data-game": game.id }, gameForm(game))
   );
 
   const hackgameForm = settingsForm(
@@ -87,16 +95,22 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
   );
   activeJobs?.dispose();
   activeJobs = jobsView();
-  const hackgameSection = el("section", { "data-game": "hackgame" }, [
-    el("h2", null, "Hack Game"),
-    el(
-      "p",
-      { class: "description intro" },
-      "Plays the Small Hack Job you picked in HF's list whenever the cooldown is over, pauses when power runs low and starts again once the battery has recharged. Start and stop it from the panel on any Hack Game page, or, with Run in background off, play one job at a time from the status card's Hack button."
-    ),
-    activeJobs.element,
-    hackgameForm.element,
-  ]);
+  const hackgameSection = el(
+    "section",
+    { class: "cards", "data-game": "hackgame" },
+    [
+      el("div", { class: "card" }, [
+        el("h2", null, "Hack Game"),
+        el(
+          "p",
+          { class: "description intro" },
+          "Plays the Small Hack Job you picked in HF's list whenever the cooldown is over, pauses when power runs low and starts again once the battery has recharged. Start and stop it from the panel on any Hack Game page, or, with Run in background off, play one job at a time from the status card's Hack button."
+        ),
+        activeJobs.element,
+      ]),
+      hackgameForm.element,
+    ]
+  );
 
   const reset = el("button", { type: "button", class: "secondary" }, [
     "Reset all settings to defaults",
@@ -159,7 +173,7 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
 
   root.replaceChildren(
     el("header", null, [
-      el("img", { src: "assets/icons/icon48.png", alt: "", width: 32 }),
+      el("span", { class: "logo", "aria-hidden": "true" }),
       el("h1", null, "HF Gaming Suite"),
     ]),
     gameTabs(tabs),

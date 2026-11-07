@@ -6,6 +6,7 @@
   --text: #e6e6e6;
   --muted: #9a9a9a;
   --accent: #7b5bd6;
+  --accent-light: #a78bfa;
   --error: #ff6b6b;
 }
 
@@ -36,6 +37,15 @@ header {
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+/* The black toolbar icon, recolored so it shows on the dark page */
+.logo {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  background: var(--accent-light);
+  mask: url("assets/icons/icon128.png") center / contain no-repeat;
 }
 
 h1 {
@@ -69,6 +79,145 @@ section {
 .settings .row:last-child,
 section > .row:last-child {
   border-bottom: 0;
+}
+
+/* The settings: a card per group. The game's section only holds the cards */
+section.cards {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card .row {
+  padding: 0;
+  border: 0;
+}
+
+.card > .item {
+  padding: 12px 0;
+}
+
+.card > .item + .item {
+  border-top: 1px solid var(--border);
+}
+
+.card > .item:last-child {
+  padding-bottom: 0;
+}
+
+.card > .intro + .item,
+.card > h2 + .item {
+  padding-top: 8px;
+}
+
+.label-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.unit {
+  margin-left: 6px;
+  color: var(--muted);
+  font-weight: normal;
+}
+
+/* The detail behind an ⓘ: shown on hover */
+.info {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--muted);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: help;
+}
+
+.info:hover,
+.info:focus-visible {
+  border-color: var(--accent-light);
+  color: var(--accent-light);
+  outline: none;
+}
+
+/* Side by side: two or three to a row */
+.cols {
+  display: grid;
+  gap: 12px 24px;
+}
+
+/* Inputs side by side line up at the bottom, whatever their descriptions */
+.cols > .row.number {
+  display: flex;
+  flex-direction: column;
+}
+
+.cols > .row.number .field {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.cols-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Three checkboxes to a row: small tiles */
+.cols-3 > .row.checkbox {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--bg);
+}
+
+.cols-3 > .row.checkbox .description {
+  font-size: 13px;
+}
+
+/* The settings that need a checkbox, under it while it's on */
+.nest {
+  margin: 12px 0 0 6px;
+  padding: 2px 0 2px 18px;
+  border-left: 2px solid var(--accent);
+}
+
+.nest > .cols + .row,
+.nest > .row + .row,
+.nest > .row + .cols,
+.nest > .cols + .cols {
+  margin-top: 12px;
+}
+
+.warning {
+  margin: 10px 0 0;
+  color: #d6a35b;
+  font-size: 13px;
+}
+
+.warning::before {
+  content: "⚠ ";
+}
+
+@media (max-width: 560px) {
+  .cols-2,
+  .cols-3 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .row label,
@@ -306,19 +455,22 @@ button:disabled {
 }
 
 /* Tabs: one per game */
+/* A segmented control: the selected tab is filled purple */
 .tab-list {
-  display: flex;
+  display: inline-flex;
   gap: 4px;
-  border-bottom: 1px solid var(--border);
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
   margin-bottom: 16px;
 }
 
 .tab {
   background: none;
   border: 0;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  padding: 8px 14px;
+  border-radius: 7px;
+  padding: 7px 18px;
   color: var(--muted);
   font: inherit;
   font-weight: 600;
@@ -326,12 +478,13 @@ button:disabled {
 }
 
 .tab:hover {
+  background: #303030;
   color: var(--text);
 }
 
 .tab[aria-selected="true"] {
-  color: var(--text);
-  border-bottom-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 .tab:focus-visible {

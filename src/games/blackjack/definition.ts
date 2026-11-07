@@ -1,5 +1,5 @@
 import { GameDefinition } from "../types";
-import { botSettings, BotSettings } from "../botSettings";
+import { BET_GROUP, botSettings, BotSettings } from "../botSettings";
 import { STOP_GROUP } from "../../settings/definitions";
 import { describeBlackjack } from "./cards";
 
@@ -30,6 +30,7 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
     {
       type: "checkbox",
       id: "showAssistant",
+      pageGroup: "Assistant",
       label: "Strategy assistant",
       description:
         "Show what the strategy table is given and what it answers for every decision, with the odds, whether the bot or you is playing.",
@@ -50,15 +51,21 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       type: "checkbox",
       id: "martingale",
       group: "Martingale",
+      pageGroup: BET_GROUP,
       label: "Use martingale",
       description:
-        "Multiply the bet after each loss and go back to your bet after a win. Each set (up to that win) counts as one round, so a losing streak can run past your Rounds and grows the bet fast: use a stop-loss.",
+        "Multiply the bet after each loss and go back to your bet after a win.",
+      detail:
+        "Each set (up to that win) counts as one round, so a losing streak can run past your Rounds.",
+      warning: "A losing streak grows the bet fast: use a stop-loss.",
       default: false,
     },
     {
       type: "number",
       id: "martingaleMultiplier",
       group: "Martingale",
+      pageGroup: BET_GROUP,
+      width: "half",
       label: "Multiplier",
       description: "How much the bet grows after each loss.",
       default: 2,
@@ -71,6 +78,8 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       type: "number",
       id: "maxBet",
       group: "Martingale",
+      pageGroup: BET_GROUP,
+      width: "half",
       label: "Bet cap",
       description: "The bet never grows past this.",
       default: 650,
@@ -85,9 +94,11 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       id: "gamesPerSession",
       group: STOP_GROUP,
       disabledBy: "runUntilStopped",
+      width: "half",
       label: "Rounds",
-      description:
-        "How many rounds to play each time you start the bot. A round is one hand, or with martingale betting on, one whole set: from your bet up to the win that ends it.",
+      description: "How many rounds to play each time you start the bot.",
+      detail:
+        "A round is one hand, or with martingale betting on, one whole set: from your bet up to the win that ends it.",
       default: 3,
       min: 1,
       max: 10000,
@@ -97,9 +108,11 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       type: "checkbox",
       id: "runUntilStopped",
       group: STOP_GROUP,
+      width: "half",
       label: "Run until stopped",
       description:
-        "Ignore Rounds and keep playing until you press Stop or the stop-loss or take-profit is hit. With both at 0, only Stop (or HF refusing a bet) ends the run.",
+        "Ignore Rounds and keep playing until you press Stop or the stop-loss or take-profit is hit.",
+      detail: "With both at 0, only Stop (or HF refusing a bet) ends the run.",
       default: false,
     },
     ...botSettings<BlackjackSettings>().stop,

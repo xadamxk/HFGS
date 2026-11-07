@@ -53,6 +53,7 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     type: "number",
     id: "waitMin",
     group: BACKGROUND_GROUP,
+    width: "half",
     enabledBy: "runInBackground",
     label: "Extra wait, shortest (s)",
     description:
@@ -66,6 +67,7 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     type: "number",
     id: "waitMax",
     group: BACKGROUND_GROUP,
+    width: "half",
     enabledBy: "runInBackground",
     label: "Extra wait, longest (s)",
     description:
@@ -79,6 +81,7 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     type: "number",
     id: "pauseBelow",
     group: BACKGROUND_GROUP,
+    width: "half",
     enabledBy: "runInBackground",
     label: "Pause below power (%)",
     description:
@@ -92,6 +95,7 @@ export const HACKGAME_SETTINGS: SettingDefinition<HackGameSettings>[] = [
     type: "number",
     id: "resumeAt",
     group: BACKGROUND_GROUP,
+    width: "half",
     enabledBy: "runInBackground",
     label: "Resume at power (%)",
     description:
