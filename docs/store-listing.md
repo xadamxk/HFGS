@@ -1,4 +1,4 @@
-# Store listing (2.0.1)
+# Store listing (2.0.2)
 
 Text to paste into the Chrome Web Store and Firefox Add-ons (AMO) dashboards.
 

@@ -1,6 +1,6 @@
 {
   "name": "hfgs",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "HF Gaming Suite: bots, stats and history for HF's βytes games.",
   "private": true,
   "scripts": {

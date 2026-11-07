@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "HF Gaming Suite",
   "short_name": "HFGS",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Bots, stats and history for HF's βytes games (blackjack and slots), plus Hack Game auto-play.",
   "homepage_url": "https://github.com/xadamxk/HFGS",
   "incognito": "spanning",
