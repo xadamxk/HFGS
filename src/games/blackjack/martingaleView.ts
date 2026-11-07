@@ -67,7 +67,7 @@ export class MartingaleView implements HistoryView {
       el(
         "div",
         { class: "hfgs-mg-note" },
-        "Results start over each time you start the bot. A set runs from your base bet to the win that ends the progression (pushes keep it going), or resets once winning it back would take a bet over the cap. Hands you play yourself aren't part of a set."
+        "Results start over each time you start the bot. A set runs from your base bet to the win that ends the progression (pushes keep it going), or resets once doubling would go past the cap. Hands you play yourself aren't part of a set."
       )
     );
   }
@@ -86,8 +86,8 @@ export class MartingaleView implements HistoryView {
           : `Start the bot to begin a set at ${formatAmount(settings.baseBet)} βytes.`
       );
     }
-    const bet = nextBet(settings, open.last.bet, open.lastNet, -open.net);
-    const toReset = lossesToReset(settings, bet, -open.net);
+    const bet = nextBet(settings, open.last.bet, open.lastNet);
+    const toReset = lossesToReset(settings, bet);
     return el("div", null, [
       el("strong", null, "Set in progress: "),
       `step ${open.last.step + 1} next, `,

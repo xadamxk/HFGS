@@ -431,35 +431,27 @@ describe("martingale", () => {
   });
 
   it("doubles after a loss, holds on a push, and starts over past the cap", () => {
-    expect(nextBet(on, 2, -2, 2)).toBe(4);
-    expect(nextBet(on, 4, -4, 6)).toBe(8);
-    expect(nextBet(on, 8, 0, 14)).toBe(8);
-    // 16 would be needed, over the cap of 10: back to the base bet
-    expect(nextBet(on, 8, -8, 14)).toBe(2);
+    expect(nextBet(on, 2, -2)).toBe(4);
+    expect(nextBet(on, 4, -4)).toBe(8);
+    expect(nextBet(on, 8, 0)).toBe(8);
+    // Doubling to 16 would go past the cap of 10: back to the base bet
+    expect(nextBet(on, 8, -8)).toBe(2);
     // Exactly the cap is still allowed
-    expect(nextBet({ ...on, maxBet: 16 }, 8, -8, 14)).toBe(16);
+    expect(nextBet({ ...on, maxBet: 16 }, 8, -8)).toBe(16);
   });
 
   it("never drops below the base bet", () => {
     expect(nextBet({ ...on, baseBet: 6, maxBet: 4 }, 6, -6)).toBe(6);
   });
 
-  it("bets enough to win back the set's losses when doubling wouldn't", () => {
+  it("doubles the bet, not what a lost double or split cost", () => {
     const wide = { ...on, baseBet: 10, maxBet: 650 };
-    // A plain losing streak: doubling already covers it
-    expect(nextBet(wide, 160, -160, 310)).toBe(320);
-    // The screenshot's set: the 20 and 160 hands were doubled and lost, so
-    // the set was down 490 before the last hand; 320 would have left it at -170
-    expect(nextBet(wide, 160, -320, 490)).toBe(500);
-    // Over the cap: the set starts over instead of betting less than it needs
-    expect(nextBet({ ...wide, maxBet: 400 }, 160, -320, 490)).toBe(10);
-    // A surrender loses less, so doubling is already enough
-    expect(nextBet(wide, 20, -10, 20)).toBe(40);
-    // Half βytes (a 3:2 blackjack on an odd bet) round up
-    expect(nextBet(wide, 10, -10, 12.5)).toBe(23);
+    // The 160 hand was doubled and lost 320: the next bet is still 320
+    expect(nextBet(wide, 160, -320)).toBe(320);
+    expect(nextBet({ ...wide, maxBet: 300 }, 160, -320)).toBe(10);
   });
 
-  it("raises the next deal past the multiple after a lost double", async () => {
+  it("keeps doubling after a lost double, so a win can leave the set short", async () => {
     const lostDouble = state({
       turn: "ended",
       ended: "1",
@@ -470,51 +462,34 @@ describe("martingale", () => {
       hand1: hand("DOUBLE", ["6c", "5d", "2h"]),
       dealer: hand("START", ["10h", "9c"]),
     });
-    const lost = (bet: number) =>
+    const ended = (outcome: string, bet: number, payout: number) =>
       state({
         turn: "ended",
         ended: "1",
-        outcome1: "LOSE",
+        outcome1: outcome,
         outcome2: "",
-        payout: "0.000000",
+        payout: `${payout}.000000`,
         bet: `${bet}.000000`,
         hand1: hand("STAND", ["10c", "7d"]),
         dealer: hand("START", ["10h", "9c"]),
       });
-    const won = state({
-      turn: "ended",
-      ended: "1",
-      outcome1: "WIN",
-      outcome2: "",
-      payout: "24.000000",
-      bet: "12.000000",
-      hand1: hand("STAND", ["10c", "9d"]),
-      dealer: hand("START", ["10h", "8c"]),
-    });
     const { engine, requests } = engineWith(
       [
         { action: "deal", response: lostDouble },
-        { action: "deal", response: lost(6) },
-        { action: "deal", response: won },
-        { action: "deal", response: lost(2) },
+        { action: "deal", response: ended("LOSE", 4, 0) },
+        { action: "deal", response: ended("WIN", 8, 16) },
+        { action: "deal", response: ended("LOSE", 2, 0) },
       ],
-      {
-        settings: {
-          martingale: true,
-          baseBet: 2,
-          maxBet: 100,
-        },
-      }
+      { settings: { martingale: true, baseBet: 2, maxBet: 100 } }
     );
     const nets = [];
     for (let i = 0; i < 4; i++) {
       const played = await engine.playRound({ stopRequested: false });
       nets.push(played.returned - played.wagered);
     }
-    // Down 4 after the double: 6, not 4. Down 10: 12. The win ends the set
-    // up 2 (the base bet), and the next set starts over at 2
-    expect(requests.map((r) => r.form.bet)).toEqual([2, 6, 12, 2]);
-    expect(nets.slice(0, 3).reduce((a, b) => a + b, 0)).toBe(2);
+    // 2 (doubled, lost 4), 4, then 8 wins: the set ends even, not up 2
+    expect(requests.map((r) => r.form.bet)).toEqual([2, 4, 8, 2]);
+    expect(nets.slice(0, 3).reduce((a, b) => a + b, 0)).toBe(0);
   });
 
   it("raises the next deal after a lost hand", async () => {
@@ -580,31 +555,43 @@ describe("surrender near a martingale reset", () => {
     }),
   });
 
-  it("counts the losses left before a reset", () => {
-    const s = settings({ martingale: true, baseBet: 2, maxBet: 10 });
-    // 2, 4, 8 can be bet; after losing all three the set needs 16
-    expect(lossesToReset(s, 2, 0)).toBe(3);
-    expect(lossesToReset(s, 8, 6)).toBe(1);
-    expect(lossesToReset({ ...s, maxBet: 1000 }, 2, 0)).toBe(9);
-  });
-
-  it("still surrenders 16 vs 10 far from a reset", async () => {
+  it("still surrenders 16 vs 10 further from a reset", async () => {
+    // 2, 4, 8 before a reset: 3 losses left, more than 2
     const { engine, requests } = engineWith(
       [deal, ended("surrender", "SURRENDER", "1.000000")],
-      { settings: { martingale: true, baseBet: 2, maxBet: 1000 } }
+      { settings: { martingale: true, baseBet: 2, maxBet: 10 } }
     );
     await engine.playRound({ stopRequested: false });
     expect(requests.map((r) => r.action)).toEqual(["deal", "surrender"]);
   });
 
-  it("plays 16 vs 10 out (hits) within 3 losses of a reset", async () => {
+  it("plays 16 vs 10 out (hits) on the last 2 hands before a reset", async () => {
+    // 2, 4 before a reset: the first hand is already within 2 losses
     const { engine, requests } = engineWith(
       [deal, ended("hit", "WIN", "4.000000")],
-      // 2, 4, 8 then a reset: the first hand is already within 3 losses
-      { settings: { martingale: true, baseBet: 2, maxBet: 10 } }
+      { settings: { martingale: true, baseBet: 2, maxBet: 4 } }
     );
     await engine.playRound({ stopRequested: false });
     expect(requests.map((r) => r.action)).toEqual(["deal", "hit"]);
+  });
+
+  it("surrenders as usual with martingale off", async () => {
+    const { engine, requests } = engineWith(
+      [deal, ended("surrender", "SURRENDER", "1.000000")],
+      { settings: { martingale: false, baseBet: 2, maxBet: 4 } }
+    );
+    await engine.playRound({ stopRequested: false });
+    expect(requests.map((r) => r.action)).toEqual(["deal", "surrender"]);
+  });
+});
+
+describe("losses left before a martingale reset", () => {
+  it("counts them from a bet", () => {
+    const s = settings({ martingale: true, baseBet: 2, maxBet: 10 });
+    // 2, 4, 8 can be bet; doubling past 8 would go over the cap of 10
+    expect(lossesToReset(s, 2)).toBe(3);
+    expect(lossesToReset(s, 8)).toBe(1);
+    expect(lossesToReset({ ...s, maxBet: 1000 }, 2)).toBe(9);
   });
 });
 
@@ -779,12 +766,12 @@ describe("blackjack bot", () => {
         })
       )
     ).toBe(
-      "Play until stopped at 2 βytes, martingale up to 50. Each set keeps going until a win, or resets if it would need more than 50?"
+      "Play until stopped at 2 βytes, martingale up to 50. Each set keeps going until a win, or resets if doubling would go past 50?"
     );
     expect(
       blackjackBot.summarize(values({ gamesPerSession: 1, martingale: true }))
     ).toBe(
-      "Play 1 set at 2 βytes, martingale up to 650. Each set keeps going until a win, or resets if it would need more than 650?"
+      "Play 1 set at 2 βytes, martingale up to 650. Each set keeps going until a win, or resets if doubling would go past 650?"
     );
   });
 

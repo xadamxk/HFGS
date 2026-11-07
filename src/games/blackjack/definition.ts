@@ -53,11 +53,11 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       pageGroup: BET_GROUP,
       label: "Use martingale",
       description:
-        "After each loss, bet enough to win back the set's losses plus your bet. A win ends the set and goes back to your bet; so does a loss that would need a bet over the cap.",
+        "Double the bet after each loss. A win ends the set and goes back to your bet; so does a loss when doubling would go past the bet cap.",
       detail:
-        "After plain losses that doubles the bet; a lost double or split raises it more, since it cost twice the bet. Within 3 losses of a reset, the bot plays a hand out instead of surrendering it, so a win can still save the set. Each set counts as one round, so a losing streak can run past your Rounds.",
+        'A win after plain losses wins back the set plus your bet. After a lost double or split the set can end slightly down ("won short"), since those cost twice the bet. On the last 2 hands before a reset, the bot plays a hand out instead of surrendering it, so a win can still save the set. Each set counts as one round, so a losing streak can run past your Rounds.',
       warning:
-        "A set can lose about twice the bet cap before it resets: set the cap to what you're willing to lose.",
+        "A set can lose about twice the bet cap before it resets, more if it lost doubles or splits: set the cap to what you're willing to lose.",
       default: false,
     },
     {
@@ -67,9 +67,9 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       pageGroup: BET_GROUP,
       label: "Bet cap",
       description:
-        "The most a set bets on one hand. When winning a set back would take more, the set resets to your bet.",
+        "The most a set bets on one hand. When doubling would go past it, the set resets to your bet.",
       detail:
-        "After plain losses a set loses less than twice the cap before it resets. If its last hand is a lost double or split, that hand alone can cost up to twice the cap.",
+        "After plain losses a set loses less than twice the cap before it resets. A doubled or split hand stakes twice its bet, so a lost one near the cap can cost up to twice the cap on its own.",
       default: 650,
       min: BLACKJACK_MIN_BET,
       max: BLACKJACK_MAX_BET,

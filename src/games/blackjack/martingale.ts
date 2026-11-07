@@ -1,8 +1,8 @@
 /**
  * Martingale sets, read back from the history. A set is the run of bot hands
  * from a base bet up to the win that ends the progression; pushes keep it
- * going. A set also ends when, after a loss, winning it back would take a bet
- * over the cap (a reset). The engine tags each hand (`details.martingale`); nothing else in the
+ * going. A set also ends when, after a loss, doubling the bet would go past
+ * the cap (a reset). The engine tags each hand (`details.martingale`); nothing else in the
  * history changes, so the results table and exports stay as they are.
  */
 
@@ -23,16 +23,16 @@ export interface MartingaleTag {
   bet: number;
   /** The bet cap at the time. */
   cap: number;
-  /** This hand ended the set: winning it back would have taken more than the cap. */
+  /** This hand ended the set: doubling the bet would have gone past the cap. */
   reset?: boolean;
 }
 
 export type SetResult =
   /** A win ended it and the set is up overall. */
   | "recovered"
-  /** A win ended it, but the set was still down (only if the cap was lowered mid-set). */
+  /** A win ended it, but the set was still down (after a lost double or split). */
   | "short"
-  /** After a loss, winning the set back would have taken more than the cap. */
+  /** After a loss, doubling the bet would have gone past the cap. */
   | "reset"
   /** Still being played this session. */
   | "open"
