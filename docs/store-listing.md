@@ -8,47 +8,41 @@ HF Gaming Suite
 
 ## Summary (132 characters max)
 
-Bots, stats and history for Hack Forums' βytes games: blackjack by basic strategy, slots, limits and CSV export.
+A blackjack strategy assistant, slots auto-spin and a Hack Game card on every HF page, plus stats and history for each.
 
 ## Description
 
-HF Gaming Suite adds a panel under Hack Forums' βytes blackjack and slots games with a bot, session and overall totals, and your recent results.
+HF Gaming Suite adds three tools to Hack Forums' games: a strategy assistant for βytes Blackjack, auto-spin for Slots, and a Hack Game card on every Hack Forums page. Each game also gets live stats and your history.
 
 βytes are Hack Forums' internal reward points. They can't be bought, deposited, withdrawn or exchanged for money; this extension does not involve real-money gambling.
 
-Blackjack
-• Plays each hand by basic strategy for HF's table rules (dealer hits soft 17, double any two cards, one split, late surrender), from a strategy table built into the extension
-• Finishes a hand that was already in progress instead of dealing over it
-• Optional martingale betting with a bet cap
-
-Slots
-• Spins at a fixed bet using HF's bet steps, and never bets more than your credits
-
-Hack Game
-• Plays the Small Hack Job you pick in HF's list (remembered and kept selected) whenever the cooldown is over
-• A random extra wait after each cooldown, so it doesn't play like clockwork
-• Pauses when power runs low and starts again by itself once the battery has recharged
-• Plays automatically in the background with no Hack Forums tab open, or one job at a time with a Hack button: your choice
-• A status card on every Hack Forums page shows what it's doing and counts down to its next step, or gives you a Hack button to play one job at a time
-
-Strategy assistant (blackjack)
+Blackjack: Strategy Assistant
 • Beside the table: your cards, the dealer's upcard and what HF offers go in; the best play and each option's expected value come out
 • Bust odds, the dealer's final-total odds and the strategy chart row, highlighted
-• Works while you play by hand too, and checks your decisions against the table
+• Built for HF's table rules (dealer hits soft 17, double any two cards, one split, late surrender), from a strategy table in the extension
+• Updates live as you play and checks each decision against the table
 
-Every session
-• A set number of hands or spins, or run until you stop it
-• Stop-loss and take-profit
-• Asks before any bet is placed (can be turned off)
-• Gentle on Hack Forums: one request at a time, 2 seconds apart by default
-• Headless Mode plays in the background; turn it off to watch the bot play with HF's own card and reel animations
+Slots: Auto-Spin
+• Spins at a fixed bet using HF's bet steps, and never bets more than your credits
+• A set number of spins, or until you stop it
+• Stops by itself at your stop-loss or take-profit
+• Asks before it starts spinning (can be turned off)
+• Headless Mode spins in the background; turn it off to watch HF's own reel animations
+
+Hack Game: A Card on Every Page
+• A status card on every Hack Forums page counts down your cooldown and gives you a Hack button, so you can play without the game open
+• Plays the Small Hack Job you pick in HF's list (remembered and kept selected)
+• Run in background plays automatically with no Hack Forums tab open: a random extra wait after each cooldown, pausing when power runs low and starting again once the battery has recharged
+• The card can be made compact, shrunk to a small pill or turned off, and moves aside for HF Convo Anywhere's chat dock
 
 Stats and history
 • Live stats under each game: win rate, net, biggest win and loss, streaks
 • A chart of your βytes over your recent results
-• Hands and spins you play yourself are counted too
+• Hands and spins you play yourself are counted
 • Totals and recent results per game on the settings page
 • Export to CSV or JSON
+
+Gentle on Hack Forums: one request at a time, 2 seconds apart by default.
 
 Privacy: the extension only talks to hackforums.net and keeps everything in your browser. No analytics, no tracking, no servers of its own.
 
@@ -65,7 +59,7 @@ Chrome: Fun. AMO: Games & Entertainment.
 
 ## Chrome Web Store: privacy practices
 
-- **Single purpose:** Playing and tracking Hack Forums' games (βytes blackjack and slots, and the Hack Game's Small Hack Jobs) on Hack Forums.
+- **Single purpose:** Helping play and tracking Hack Forums' games on Hack Forums: a βytes blackjack strategy assistant, slots auto-spin, and the Hack Game's Small Hack Jobs.
 - **storage:** Saves the user's settings and their game history (totals and recent results) locally in the browser.
 - **alarms:** Wakes the extension when the Hack Game's cooldown or battery recharge is over, so auto-play can continue in the background.
 - **Host permission (hackforums.net):** Lets the background script load and submit Hack Forums' Hack Game pages (gamecp.php) with the user's session while "Run in background" is on.
@@ -85,7 +79,7 @@ Chrome: Fun. AMO: Games & Entertainment.
 Laid out like HF Convo Anywhere's:
 
 - `store/`: what gets uploaded or posted. `store/screenshots/` holds the store screenshots (1280×800: `1-blackjack`, `2-slots`, `3-slots-totals`, `4-hackgame`); next to it are the release thread's `title.txt` and `layout.txt` (BBCode).
-- `assets/banners/`: promo tiles (`banner-small` 440×280, with `banner-small-alt`; `banner-large` 920×680; `banner-marquee` 1400×560; `banner-screenshot` 1280×800) and the release thread's header (`banner-thread`, with `banner-thread-alt`; 1400×560).
+- `assets/banners/`: promo tiles (`banner-small` 440×280, with `banner-small-alt`; `banner-large` 920×680; `banner-marquee` 1400×560; `banner-screenshot` 1280×800) and the release thread's header (`banner-thread`, with `banner-thread-alt`; 1200×480, the buttons' width).
 - `assets/buttons/`: the thread's Chrome and Firefox download buttons (1200×132).
 - `assets/screenshots/`: the HTML mockups the store screenshots are rendered from.
 - `assets/icons/`: icon variants (black and purple). The extension's own icons are in `src/assets/icons/` (16, 32, 48, 128).
