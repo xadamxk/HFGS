@@ -145,6 +145,23 @@ const FLOOD_PAGE = `<!DOCTYPE html><html><head><title>Hack Forums</title></head>
 </body></html>`;
 
 describe("HfClient flood control", () => {
+  it("spaces later requests further apart after HF says too quickly", async () => {
+    let calls = 0;
+    const fetchImpl = jest.fn(async () => {
+      calls++;
+      return calls === 1
+        ? jsonResponse(FLOOD_PAGE)
+        : jsonResponse({ success: true });
+    });
+    const { instance, sleeps } = client(fetchImpl);
+    await instance.post("/x", {});
+    expect(instance.floodPenaltyMs).toBe(500);
+    // The next request waits the 1000 ms delay plus the extra 500 ms
+    sleeps.length = 0;
+    await instance.post("/y", {});
+    expect(sleeps).toEqual([1500]);
+  });
+
   it("retries a flood-rejected request after growing waits, then succeeds", async () => {
     const fetchImpl = jest
       .fn()
@@ -158,8 +175,9 @@ describe("HfClient flood control", () => {
     });
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect(instance.floodRetriesUsed).toBe(2);
-    // Backoff waits (which also cover the normal interval): 2s, then 4s
-    expect(sleeps).toEqual([2000, 4000]);
+    // Backoff waits of 2s, then 4s; after the first rejection the resend is
+    // also held to the delay plus the extra 500 ms
+    expect(sleeps).toEqual([2000, 500, 4000]);
     // The same request is resent each time
     const bodies = fetchImpl.mock.calls.map((call) => call[1].body);
     expect(new Set(bodies).size).toBe(1);

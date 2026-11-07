@@ -91,9 +91,9 @@ export const BOT_DISPLAY_SETTINGS: SettingDefinition<BotSettings>[] = [
     group: DISPLAY_GROUP,
     label: "Action delay",
     description:
-      "Wait this long between requests to HF. HF rejects actions sent about a second apart as too quick, so keep this at 2 seconds or more.",
+      "Wait this long between requests to HF. HF rejects actions sent about a second apart as too quick (and each rejected one has to be sent again), so this is at least 2 seconds.",
     default: 2000,
-    min: 1000,
+    min: 2000,
     max: 10000,
     step: 100,
     unit: "ms",

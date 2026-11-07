@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Slots totals</title>
+<link rel="stylesheet" href="page.css">
+<style>
+  .head2 { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+  .net { font-size: 34px; font-weight: bold; font-variant-numeric: tabular-nums; }
+  .net small { font-size: 16px; font-weight: normal; color: #b9b9b9; margin-left: 6px; }
+  .seg { display: flex; background: #2a2a2a; border-radius: 6px; padding: 2px; font-size: 12px; }
+  .seg span { padding: 4px 10px; border-radius: 4px; color: #aaa; }
+  .seg span.on { background: #4b2e5f; color: #fff; }
+  svg { display: block; margin: 6px 0 14px; }
+  .legend { display: flex; gap: 14px; font-size: 11px; color: #9a9a9a; margin: -6px 0 14px; }
+  .legend i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 5px; }
+</style>
+</head>
+
+<body>
+  <div class="logo"><i></i></div>
+  <div class="crumb"></div>
+  <div class="nav">
+    <b style="left:20px"></b><b style="left:59px"></b><b style="left:98px"></b><b style="left:137px"></b>
+    <s style="left:194px"></s><s style="left:274px"></s><s style="left:354px"></s>
+    <b style="left:928px"></b><b style="left:967px"></b><b style="left:1006px"></b><b style="left:1045px"></b><b style="left:1084px"></b><b style="left:1123px"></b><b style="left:1162px"></b>
+  </div>
+
+  <div class="tbl">
+    <div class="thead">βytes Slots</div>
+    <div class="tcat">Spin the reels for a chance to win βytes!</div>
+    <div class="machine">
+      <div class="marquee">★ SLOTS ★</div>
+      <div class="reels">
+        <div class="reel"><span>🔔</span><span class="mid">🍒</span><span>🍋</span></div>
+        <div class="reel"><span>⭐</span><span class="mid">🍒</span><span>🔔</span></div>
+        <div class="reel"><span>🍋</span><span class="mid">7️⃣</span><span>🍒</span></div>
+      </div>
+      <div class="payline"></div>
+      <div class="win">Win: 20 βytes</div>
+    </div>
+    <div class="btns">
+      <div class="bet"><i>−</i><span>Bet 10</span><i>+</i></div>
+      <div class="btn spin">Spin</div>
+    </div>
+  </div>
+
+  <div class="assist">
+    <div class="ahead">
+      <img src="../../images/icons/purple/48_1.png" alt="">
+      <b>Totals</b>
+      <em>HF Gaming Suite</em>
+    </div>
+    <div class="abody">
+      <div class="lbl">Net this run</div>
+      <div class="head2"><div class="net up">+120<small>βytes</small></div>
+        <div class="seg"><span class="on">This run</span><span>All time</span></div></div>
+      <svg id="chart" width="414" height="200" viewBox="0 0 414 200"></svg>
+      <div class="legend"><span><i style="border-color:#57d184"></i>Net βytes</span><span><i style="border-color:#57d184;border-top-style:dashed;opacity:.7"></i>Take-profit</span><span><i style="border-color:#e87a72;border-top-style:dashed;opacity:.7"></i>Stop-loss</span></div>
+      <div class="tiles">
+        <div class="tile"><div class="v">250</div><div class="k">Spins</div></div>
+        <div class="tile"><div class="v">61</div><div class="k">Wins</div></div>
+        <div class="tile"><div class="v up">+400</div><div class="k">Biggest win</div></div>
+        <div class="tile"><div class="v down">−210</div><div class="k">Lowest point</div></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // A made-up but believable run: 250 spins at 10 βytes, dips to −210, a +400 win, ends +120.
+    const W = 414, H = 200, padL = 34, padB = 18, lo = -350, hi = 550;
+    const x = (i) => padL + (i / 250) * (W - padL - 4);
+    const y = (v) => 6 + (hi - v) / (hi - lo) * (H - padB - 6);
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const pts = [0]; let net = 0;
+    for (let i = 1; i <= 250; i++) {
+      let d = -10;
+      if (i === 150) d = 400;
+      else if (rnd() < 0.24) d = [20, 20, 30, 40, 50][Math.floor(rnd() * 5)];
+      net += d; pts.push(net);
+    }
+    // Shape it: bend the walk so it bottoms near −210 and ends at +120
+    const end = pts[250];
+    const adj = pts.map((v, i) => Math.round(v + (120 - end) * (i / 250)));
+    const min = Math.min(...adj), k = min < 0 ? -210 / min : 1;
+    const shaped = adj.map((v, i) => i < 150 ? Math.round(v * k) : v);
+    const fix = 120 - shaped[250];
+    const final = shaped.map((v, i) => i < 150 ? v : v + fix);
+    const svg = document.getElementById("chart");
+    const line = (v, c, dash) => `<line x1="${padL}" x2="${W - 4}" y1="${y(v)}" y2="${y(v)}" stroke="${c}" stroke-width="${dash ? 1.5 : 1}" ${dash ? 'stroke-dasharray="5 4" opacity=".7"' : ""}/>`;
+    const label = (v, t) => `<text x="${padL - 6}" y="${y(v) + 4}" fill="#8f8f8f" font-size="10" text-anchor="end">${t}</text>`;
+    const d = final.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+    const area = d + `L${x(250)},${y(0)}L${x(0)},${y(0)}Z`;
+    svg.innerHTML =
+      `<defs><clipPath id="above"><rect x="0" y="0" width="${W}" height="${y(0)}"/></clipPath><clipPath id="below"><rect x="0" y="${y(0)}" width="${W}" height="${H}"/></clipPath></defs>` +
+      line(0, "#444") + line(500, "#57d184", 1) + line(-300, "#e87a72", 1) +
+      label(500, "+500") + label(0, "0") + label(-300, "−300") +
+      `<path d="${area}" fill="rgba(87,209,132,.14)" clip-path="url(#above)"/>` +
+      `<path d="${area}" fill="rgba(232,122,114,.14)" clip-path="url(#below)"/>` +
+      `<path d="${d}" fill="none" stroke="#57d184" stroke-width="2" stroke-linejoin="round" clip-path="url(#above)"/>` +
+      `<path d="${d}" fill="none" stroke="#e87a72" stroke-width="2" stroke-linejoin="round" clip-path="url(#below)"/>` +
+      `<circle cx="${x(250)}" cy="${y(final[250])}" r="4" fill="#57d184" stroke="#202020" stroke-width="2"/>` +
+      `<text x="${padL}" y="${H - 3}" fill="#8f8f8f" font-size="10">Spin 1</text><text x="${W - 4}" y="${H - 3}" fill="#8f8f8f" font-size="10" text-anchor="end">250</text>`;
+    window.__final = final;
+  </script>
+  <div class="foot">
+    <s style="left:24px;top:20px;width:110px"></s><s style="left:150px;top:20px;width:70px"></s><s style="left:236px;top:20px;width:90px"></s><s style="left:342px;top:20px;width:60px"></s>
+    <s style="left:24px;top:44px;width:260px;background:#2e2e2e"></s>
+    <b style="left:1086px;top:22px"></b><b style="left:1118px;top:22px"></b><b style="left:1150px;top:22px"></b>
+  </div>
+  <script src="page.js"></script>
+</body>
+</html>

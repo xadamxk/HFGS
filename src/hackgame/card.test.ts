@@ -198,7 +198,7 @@ describe("status card", () => {
     await saveSettings(background);
     await saveState({ ...data().state, nextAt: Date.now() + 60_000 });
     const stop = mountStatusCard(document);
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((r) => setTimeout(r, 60));
     expect(document.getElementById("hfgs-hackgame-card")).not.toBeNull();
     const runtime = chrome.runtime as { id?: string };
     const id = runtime.id;
@@ -237,17 +237,17 @@ describe("status card", () => {
     background.hackgame.runInBackground = true;
     await saveSettings(background);
     const stop = mountStatusCard(document);
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((r) => setTimeout(r, 60));
     expect(document.getElementById("hfgs-hackgame-card")).toBeNull();
 
     await saveState({ ...data().state, nextAt: Date.now() + 60_000 });
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((r) => setTimeout(r, 60));
     const host = document.getElementById("hfgs-hackgame-card")!;
     // Collapsed to a pill by default, until it's expanded
     const pill = host.shadowRoot?.querySelector(".pill") as HTMLElement;
     expect(pill.textContent).toMatch(/^HG\d\d:\d\d$/);
     pill.click();
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((r) => setTimeout(r, 60));
     expect(host.shadowRoot?.querySelector(".chip")?.textContent).toBe(
       "Waiting"
     );
@@ -258,7 +258,7 @@ describe("status card", () => {
       phase: "stopped",
       message: "Stopped.",
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((r) => setTimeout(r, 60));
     expect(document.getElementById("hfgs-hackgame-card")).toBeNull();
     stop();
   });

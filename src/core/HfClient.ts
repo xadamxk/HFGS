@@ -76,6 +76,12 @@ export class HfClient {
   minIntervalMs: number;
   /** How many flood rejections were retried (for diagnostics). */
   floodRetriesUsed = 0;
+  /**
+   * Extra spacing added after each flood rejection, for the rest of this
+   * client's life, so a too-short delay doesn't keep getting actions rejected
+   * (each rejection costs a request that has to be sent again).
+   */
+  floodPenaltyMs = 0;
 
   constructor(options: HfClientOptions) {
     this.postKey = options.postKey;
@@ -114,6 +120,7 @@ export class HfClient {
           throw error;
         }
         this.floodRetriesUsed++;
+        this.floodPenaltyMs = Math.min(this.floodPenaltyMs + 500, 5000);
         await this.sleep(Math.max(this.minIntervalMs, 1000) * (attempt + 1));
       }
     }
@@ -126,7 +133,11 @@ export class HfClient {
         "No post key on the page. Are you signed in?"
       );
     }
-    const wait = this.lastRequestAt + this.minIntervalMs - this.now();
+    const wait =
+      this.lastRequestAt +
+      this.minIntervalMs +
+      this.floodPenaltyMs -
+      this.now();
     if (wait > 0) await this.sleep(wait);
     this.lastRequestAt = this.now();
     try {
