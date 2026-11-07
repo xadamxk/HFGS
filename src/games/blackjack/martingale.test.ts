@@ -117,7 +117,6 @@ describe("MartingaleView", () => {
     martingale: true,
     baseBet: 2,
     maxBet: 16,
-    martingaleMultiplier: 2,
   });
 
   it("shows the set in progress with the next bet and the distance to the cap", () => {

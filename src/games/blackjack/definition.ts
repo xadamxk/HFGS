@@ -8,7 +8,6 @@ export interface BlackjackSettings extends BotSettings {
   gamesPerSession: number;
   runUntilStopped: boolean;
   martingale: boolean;
-  martingaleMultiplier: number;
   maxBet: number;
   showAssistant: boolean;
 }
@@ -54,32 +53,17 @@ export const blackjack: GameDefinition<BlackjackSettings> = {
       pageGroup: BET_GROUP,
       label: "Use martingale",
       description:
-        "Multiply the bet after each loss and go back to your bet after a win.",
+        "After each loss, bet enough to win back the set's losses plus your bet; go back to your bet after a win.",
       detail:
-        "Each set (up to that win) counts as one round, so a losing streak can run past your Rounds.",
+        "After plain losses that doubles the bet; a lost double or split raises it more, since it cost twice the bet. Each set (up to that win) counts as one round, so a losing streak can run past your Rounds.",
       warning: "A losing streak grows the bet fast: use a stop-loss.",
       default: false,
-    },
-    {
-      type: "number",
-      id: "martingaleMultiplier",
-      group: "Martingale",
-      pageGroup: BET_GROUP,
-      width: "half",
-      label: "Multiplier",
-      description: "How much the bet grows after each loss.",
-      default: 2,
-      min: 1.5,
-      max: 3,
-      step: 0.05,
-      enabledBy: "martingale",
     },
     {
       type: "number",
       id: "maxBet",
       group: "Martingale",
       pageGroup: BET_GROUP,
-      width: "half",
       label: "Bet cap",
       description: "The bet never grows past this.",
       default: 650,

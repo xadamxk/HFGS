@@ -44,12 +44,21 @@ const tone = (n: number) => (n > 0 ? "hfgs-pos" : n < 0 ? "hfgs-neg" : null);
 const pct = (part: number, whole: number) =>
   whole ? `${Math.round((part / whole) * 100)}%` : "–";
 
-/** How many more losses until the bet reaches the cap. */
-function lossesToCap(bet: number, settings: BlackjackSettings): number {
+/**
+ * How many more plain losses until the bet reaches the cap, from the next
+ * bet and what the set is down before it.
+ */
+function lossesToCap(
+  bet: number,
+  setLoss: number,
+  settings: BlackjackSettings
+): number {
   const cap = Math.min(settings.maxBet, BLACKJACK_MAX_BET);
   let losses = 0;
+  let loss = setLoss;
   for (let next = bet; next < cap && losses < 50; losses++) {
-    const raised = nextBet(settings, next, -next);
+    loss += next;
+    const raised = nextBet(settings, next, -next, loss);
     if (raised <= next) break;
     next = raised;
   }
@@ -98,8 +107,8 @@ export class MartingaleView implements HistoryView {
           : `Start the bot to begin a set at ${formatAmount(settings.baseBet)} βytes.`
       );
     }
-    const bet = nextBet(settings, open.last.bet, open.lastNet);
-    const toCap = lossesToCap(bet, settings);
+    const bet = nextBet(settings, open.last.bet, open.lastNet, -open.net);
+    const toCap = lossesToCap(bet, Math.max(0, -open.net), settings);
     return el("div", null, [
       el("strong", null, "Set in progress: "),
       `step ${open.last.step + 1} next, `,

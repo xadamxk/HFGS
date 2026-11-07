@@ -59,14 +59,16 @@ describe("options page", () => {
 
   it("clamps and rounds number input to the setting's limits", async () => {
     const root = await render();
-    const multiplier = input(root, "blackjack-martingaleMultiplier");
-    multiplier.value = "2.33";
-    multiplier.dispatchEvent(new Event("change"));
+    const delay = input(root, "blackjack-actionDelayMs");
+    delay.value = "2349";
+    delay.dispatchEvent(new Event("change"));
     await flush();
-    expect(multiplier.value).toBe("2.35");
-    expect((await loadSettings()).games.blackjack.martingaleMultiplier).toBe(
-      2.35
-    );
+    expect(delay.value).toBe("2300");
+    expect((await loadSettings()).games.blackjack.actionDelayMs).toBe(2300);
+    delay.value = "50000";
+    delay.dispatchEvent(new Event("change"));
+    await flush();
+    expect(delay.value).toBe("10000");
   });
 
   it("keeps the same setting id in different games apart", async () => {
@@ -109,7 +111,7 @@ describe("options page", () => {
 
   it("nests martingale's settings under it, hidden while it's off", async () => {
     const root = await render();
-    const nest = input(root, "blackjack-martingaleMultiplier").closest(
+    const nest = input(root, "blackjack-maxBet").closest(
       ".nest"
     ) as HTMLElement;
     expect(nest.dataset.nest).toBe("martingale");
@@ -122,13 +124,13 @@ describe("options page", () => {
 
   it("disables settings whose checkbox is off, and enables them when it's on", async () => {
     const root = await render();
-    const multiplier = input(root, "blackjack-martingaleMultiplier");
-    expect(multiplier.disabled).toBe(true);
+    const cap = input(root, "blackjack-maxBet");
+    expect(cap.disabled).toBe(true);
 
     const martingale = input(root, "blackjack-martingale");
     martingale.checked = true;
     martingale.dispatchEvent(new Event("change"));
-    expect(multiplier.disabled).toBe(false);
+    expect(cap.disabled).toBe(false);
   });
 
   it("has a tab per game with its settings, then its history; reset comes after the tabs", async () => {

@@ -62,11 +62,19 @@ function isEnded(state: BjGameState): boolean {
   return state.turn === "ended" || String(state.ended) === "1";
 }
 
-/** The next bet: the base bet, or the martingale progression after a loss. */
+/**
+ * The next bet: the base bet, or the martingale progression after a loss.
+ * `setLoss` is what the set in progress is down so far (0 if it isn't). After
+ * a loss the bet is enough to win back the set's losses plus the base bet, and
+ * at least double the previous bet. After plain losses the two are the same;
+ * a lost double or split costs twice its bet, so it takes the bet past double.
+ * (A surrender loses half, so doubling already covers it.)
+ */
 export function nextBet(
   settings: BlackjackSettings,
   previousBet: number | null,
-  previousNet: number | null
+  previousNet: number | null,
+  setLoss = 0
 ): number {
   const base = settings.baseBet;
   if (
@@ -78,9 +86,14 @@ export function nextBet(
     return base;
   }
   if (previousNet === 0) return Math.max(base, previousBet);
-  const raised = Math.round(previousBet * settings.martingaleMultiplier);
+  const raised = previousBet * 2;
+  const recover = Math.ceil(Math.max(0, setLoss) + base);
   const cap = Math.min(settings.maxBet, BLACKJACK_MAX_BET);
-  return Math.max(BLACKJACK_MIN_BET, base, Math.min(cap, raised));
+  return Math.max(
+    BLACKJACK_MIN_BET,
+    base,
+    Math.min(cap, Math.max(raised, recover))
+  );
 }
 
 /** What a finished hand cost and paid, from HF's final state. */
@@ -120,6 +133,8 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
   // first hand and after each win (see martingale.ts).
   let setId: string | null = null;
   let step = 0;
+  // The set's net so far, so the next bet can win back what it's down
+  let setNet = 0;
   // One engine per bot run, so this marks which run each set belongs to.
   let runId: string | null = null;
 
@@ -141,7 +156,12 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
         state = open;
         context.status?.("Finishing the hand that was already in progress…");
       } else {
-        const bet = nextBet(settings, previousBet, previousNet);
+        const bet = nextBet(
+          settings,
+          previousBet,
+          previousNet,
+          setId === null ? 0 : -setNet
+        );
         const response = await post("deal", { bet });
         state = response.data;
         balance = response.balance;
@@ -172,14 +192,17 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
       }
 
       const result = settle(state, balance);
+      const net = result.returned - result.wagered;
       noteDealerPeek(result, dealt && actions === 0, actions > 0);
       if (settings.martingale && dealt) {
         if (setId === null || previousNet === null || previousNet > 0) {
           setId = `${Date.now()}-${++setCounter}`;
           step = 1;
+          setNet = 0;
         } else {
           step++;
         }
+        setNet = Math.round((setNet + net) * 100) / 100;
         runId ??= `${Date.now()}-${++setCounter}`;
         const tag: MartingaleTag = {
           run: runId,
@@ -191,9 +214,10 @@ export function createBlackjackEngine(context: EngineContext): GameEngine {
         result.details = { ...result.details, martingale: tag };
       } else {
         setId = null;
+        setNet = 0;
       }
       previousBet = parseFloat(state.bet) || null;
-      previousNet = result.returned - result.wagered;
+      previousNet = net;
       // With martingale a round is a whole set: a loss or push keeps it going,
       // so it doesn't count toward the session's rounds.
       const continues = Boolean(
@@ -246,7 +270,7 @@ export const blackjackBot: GameBot = {
       ? "until stopped"
       : `${s.gamesPerSession} ${unit}${s.gamesPerSession === 1 ? "" : "s"}`;
     const martingale = s.martingale
-      ? `, martingale ×${s.martingaleMultiplier} up to ${s.maxBet}. Each set keeps going until a win`
+      ? `, martingale up to ${s.maxBet}. Each set keeps going until a win`
       : "";
     return `Play ${count} at ${s.baseBet} βytes${martingale}?`;
   },

@@ -52,7 +52,7 @@ describe("normalizeSettings", () => {
         blackjack: {
           baseBet: 5000,
           martingale: "yes",
-          martingaleMultiplier: 2.5,
+          maxBet: 700,
         },
         retired: { anything: 1 },
       },
@@ -65,7 +65,7 @@ describe("normalizeSettings", () => {
     }
     expect(settings.games.blackjack.baseBet).toBe(1000);
     expect(settings.games.blackjack.martingale).toBe(false);
-    expect(settings.games.blackjack.martingaleMultiplier).toBe(2.5);
+    expect(settings.games.blackjack.maxBet).toBe(700);
     expect(settings.games).not.toHaveProperty("retired");
   });
 });
