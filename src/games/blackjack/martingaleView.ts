@@ -19,8 +19,6 @@ import {
   summarizeSets,
 } from "./martingale";
 
-const SHOWN = 20;
-
 const time = (at: number) =>
   new Date(at).toLocaleTimeString([], {
     hour: "2-digit",
@@ -32,6 +30,10 @@ const plural = (n: number, word: string, many = word + "s") =>
 
 export const MARTINGALE_CSS = `
 .hfgs-mg { display: flex; flex-direction: column; gap: 6px; }
+.hfgs-mg-scroll { max-height: 240px; overflow-y: auto; }
+/* Sticky headings take HF's row background, inherited down from the cell. */
+.hfgs-mg, .hfgs-mg-scroll, .hfgs-mg-table, .hfgs-mg-table thead, .hfgs-mg-table thead tr { background: inherit; }
+.hfgs-mg-table thead th { position: sticky; top: 0; background: inherit; }
 .hfgs-mg-table { width: 100%; border-collapse: collapse; }
 .hfgs-mg-table th, .hfgs-mg-table td { padding: 2px 8px; text-align: right; }
 .hfgs-mg-table th:first-child, .hfgs-mg-table td:first-child,
@@ -62,7 +64,7 @@ export class MartingaleView implements HistoryView {
     this.element.replaceChildren(
       this.current(open, settings, running),
       this.summary(run, running),
-      sets.length ? this.table(sets.slice(0, SHOWN)) : "",
+      sets.length ? this.table(sets) : "",
       this.whyAbandoned(sets[0]),
       el(
         "div",
@@ -145,8 +147,9 @@ export class MartingaleView implements HistoryView {
     ]);
   }
 
+  /** Every set of the run, newest first, scrolling inside its own box. */
   private table(sets: MartingaleSet[]): HTMLElement {
-    return el("table", { class: "hfgs-mg-table" }, [
+    const table = el("table", { class: "hfgs-mg-table" }, [
       el(
         "thead",
         null,
@@ -193,5 +196,6 @@ export class MartingaleView implements HistoryView {
         )
       ),
     ]);
+    return el("div", { class: "hfgs-mg-scroll" }, table);
   }
 }

@@ -29,7 +29,12 @@ ${COLLAPSE_CSS}
 .hfgs-panel .hfgs-stats { width: 100%; border-collapse: collapse; }
 .hfgs-panel .hfgs-stats td, .hfgs-panel .hfgs-stats th { padding: 3px 8px; text-align: right; }
 .hfgs-panel .hfgs-stats th:first-child, .hfgs-panel .hfgs-stats td:first-child { text-align: left; }
-.hfgs-panel .hfgs-history { max-height: 240px; overflow-y: auto; }
+.hfgs-panel .hfgs-history { height: 240px; overflow-y: auto; }
+/* Keep the column headings in view while the list scrolls; their background
+   comes down from HF's row cell so it matches the theme. */
+.hfgs-panel .hfgs-history, .hfgs-panel .hfgs-history table, .hfgs-panel .hfgs-history thead,
+.hfgs-panel .hfgs-history thead tr { background: inherit; }
+.hfgs-panel .hfgs-history thead th { position: sticky; top: 0; background: inherit; }
 .hfgs-panel .hfgs-pos { color: #00b500; }
 .hfgs-panel .hfgs-neg { color: #ff2121; }
 .hfgs-panel .hfgs-empty { opacity: 0.7; }
@@ -60,6 +65,9 @@ ${COLLAPSE_CSS}
 body.hfgs-running #buttonsContainer, body.hfgs-running #chipsContainer,
 body.hfgs-running #spinButton, body.hfgs-running #betSpinUp, body.hfgs-running #betSpinDown { pointer-events: none; opacity: 0.4; }
 `;
+
+/** How many results the Recent results list holds (it scrolls in its box). */
+export const RECENT_RESULTS = 100;
 
 const STAT_ROWS: {
   label: string;
@@ -378,7 +386,7 @@ export class BotPanel {
     this.renderStats();
   }
 
-  setHistory(entries: HistoryEntry[], limit = 25): void {
+  setHistory(entries: HistoryEntry[], limit = RECENT_RESULTS): void {
     this.chart.setEntries(entries);
     if (!entries.length) {
       this.historyBody.replaceChildren(

@@ -176,6 +176,21 @@ describe("MartingaleView", () => {
     expect(text).toContain("Recovered");
   });
 
+  it("lists every set of the run in a scrolling box", () => {
+    const view = new MartingaleView();
+    const sets = Array.from({ length: 45 }, (_, i) => hand(`s${i}`, 1, 2));
+    view.render(newestFirst(...sets), {
+      sessionStartedAt: null,
+      gameSettings: settings(),
+    });
+    const scroll = view.element.querySelector(".hfgs-mg-scroll")!;
+    expect(scroll.querySelectorAll("tbody tr")).toHaveLength(45);
+    expect(view.css).toMatch(
+      /\.hfgs-mg-scroll \{ max-height: \d+px; overflow-y: auto; \}/
+    );
+    expect(view.css).toMatch(/thead th \{ position: sticky; top: 0;/);
+  });
+
   it("is only shown with martingale on", () => {
     const view = new MartingaleView();
     expect(view.visible({ martingale: true })).toBe(true);
