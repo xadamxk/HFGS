@@ -24,6 +24,7 @@ import {
   LastJob,
   loadChoice,
   loadState,
+  powerReading,
   recordJob,
   saveState,
   updateJobs,
@@ -68,6 +69,8 @@ export interface Attempt {
   cooldown: number;
   /** Power (%) after the job, from HF's reply, or null if it doesn't show. */
   power: number | null;
+  /** When that reply came. */
+  powerAt: number | null;
 }
 
 /**
@@ -89,7 +92,8 @@ export async function attemptJob(
     submit: "",
   });
   if (pageKind(answer) === "flood")
-    return { flood: true, last: null, cooldown: 0, power: null };
+    return { flood: true, last: null, cooldown: 0, power: null, powerAt: null };
+  const answeredAt = io.now();
 
   await io.sleep(REQUEST_GAP_MS);
   const logs = await io.get(LOGS);
@@ -116,6 +120,7 @@ export async function attemptJob(
     cooldown: cooldownSeconds(logs) || cooldownSeconds(answer),
     // HF's reply is the Small Hack Jobs page, showing the power the job left
     power: powerPercent(answer),
+    powerAt: answeredAt,
   };
 }
 
@@ -150,6 +155,7 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
   const settings = (await loadSettings()).hackgame;
 
   let power: number | null | undefined;
+  let powerAt: number | null = null;
   let readyAt: number | undefined;
   const save = async (
     patch: Partial<HackState>,
@@ -157,7 +163,7 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
   ): Promise<CycleOutcome> => {
     state = {
       ...(await loadState()),
-      ...(power === undefined ? {} : { power }),
+      ...(power === undefined ? {} : { power, powerAt }),
       ...(readyAt === undefined ? {} : { readyAt }),
       ...patch,
       nextAt: nextInMs === null ? null : io.now() + nextInMs,
@@ -220,6 +226,7 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
 
     // Power: pause below the threshold, and once paused, wait for resumeAt
     power = powerPercent(page);
+    powerAt = power === null ? null : io.now();
     const recharging = state.phase === "recharging";
     if (
       power !== null &&
@@ -227,6 +234,11 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
     ) {
       await io.sleep(REQUEST_GAP_MS);
       const battery = await io.get(BATTERY);
+      const rate = powerReading(
+        battery,
+        io.now(),
+        state.msPerPercent
+      ).msPerPercent;
       const wait = rechargeWait(
         power,
         settings.resumeAt,
@@ -238,6 +250,8 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
           phase: "recharging",
           message: `Recharging (power ${power}%, resumes at ${settings.resumeAt}%).`,
           errors: 0,
+          // How fast the battery charges, so the card can count power up
+          ...(rate ? { msPerPercent: rate } : {}),
         },
         clampWait(wait)
       );
@@ -286,7 +300,10 @@ export async function runCycle(io: HackIO): Promise<CycleOutcome> {
       );
     }
     const { last } = attempt;
-    if (attempt.power !== null) power = attempt.power;
+    if (attempt.power !== null) {
+      power = attempt.power;
+      powerAt = attempt.powerAt;
+    }
     const next = attempt.cooldown;
     readyAt = io.now() + next * 1000;
     const jobsThisRun = state.jobsThisRun + 1;

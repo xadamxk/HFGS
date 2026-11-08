@@ -16,7 +16,6 @@ import {
   pageKind,
   parseJobs,
   postKey,
-  powerPercent,
   replyResult,
 } from "./parse";
 import { loadSettings } from "../settings";
@@ -30,6 +29,7 @@ import {
   loadJobCache,
   loadState,
   patchState,
+  powerReading,
   recordJob,
   updateJobs,
 } from "./store";
@@ -105,8 +105,7 @@ export async function playOnce(io: HackIO, key: string | null): Promise<void> {
     // The reply is the Small Hack Jobs page: keep what it shows
     await updateJobs(parseJobs(reply), io.now());
     result.readyAt = io.now() + cooldownSeconds(reply) * 1000;
-    const power = powerPercent(reply);
-    if (power !== null) result.power = power;
+    Object.assign(result, powerReading(reply, io.now()));
 
     const outcome = replyResult(reply);
     if (!outcome) {

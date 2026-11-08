@@ -5,7 +5,13 @@
  */
 import { recordRound, toEntry } from "../core/history";
 import { getItem, setItem, STORAGE_KEYS } from "../core/storage";
-import { HackJob, sameJobs } from "./parse";
+import {
+  chargeRate,
+  HackJob,
+  powerCapacity,
+  powerPercent,
+  sameJobs,
+} from "./parse";
 
 export const HACKGAME_ID = "hackgame";
 
@@ -59,6 +65,13 @@ export interface HackState {
   last: LastJob | null;
   /** Power (%) when last read, for the status card's battery. */
   power: number | null;
+  /** When `power` was read (this computer's clock). */
+  powerAt?: number | null;
+  /**
+   * How fast the battery charges (ms per 1%), from the last Power Center page
+   * read, so the card can count up from `power` in between reads.
+   */
+  msPerPercent?: number | null;
   /** When HF lets the next job be played (from its cooldown timer). */
   readyAt: number | null;
   /** A job is being played by hand from a status card. */
@@ -125,6 +138,55 @@ export function idleState(): HackState {
 
 /** A Hack press still "playing" after this long was cut off. */
 export const BUSY_EXPIRES_MS = 90_000;
+
+/**
+ * A Power Center read with less than this much power missing (%) is too
+ * coarse to replace a known charge speed: HF rounds the kWh it shows.
+ */
+export const RATE_MIN_MISSING = 5;
+
+/**
+ * What an HF game page says about power: the percent (and when it was read),
+ * and on the Power Center page the charge speed. `known` is the stored speed,
+ * kept when this page's reading would be too coarse. Empty when the page
+ * doesn't show the battery.
+ */
+export function powerReading(
+  html: string,
+  now: number,
+  known: number | null = null
+): Partial<HackState> {
+  const power = powerPercent(html);
+  if (power === null) return {};
+  const patch: Partial<HackState> = { power, powerAt: now };
+  const rate = chargeRate(html, now);
+  const capacity = powerCapacity(html);
+  if (
+    rate !== null &&
+    capacity &&
+    (!known ||
+      ((capacity.capacity - capacity.current) / capacity.capacity) * 100 >=
+        RATE_MIN_MISSING)
+  )
+    patch.msPerPercent = rate;
+  return patch;
+}
+
+/**
+ * Power now: the last reading plus what the battery has charged since, at the
+ * speed last read from the Power Center (whole percents, like HF's, up to
+ * 100). Just the last reading until a Power Center page has been read.
+ */
+export function estimatePower(
+  state: Pick<HackState, "power" | "powerAt" | "msPerPercent">,
+  now = Date.now()
+): number | null {
+  const { power, powerAt, msPerPercent } = state;
+  if (power === null) return null;
+  if (powerAt == null || !msPerPercent || now <= powerAt || power >= 100)
+    return power;
+  return Math.min(100, Math.floor(power + (now - powerAt) / msPerPercent));
+}
 
 /** Whether a Hack press is playing a job right now. */
 export function isBusy(state: HackState, now = Date.now()): boolean {

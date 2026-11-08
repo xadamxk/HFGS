@@ -186,6 +186,10 @@ describe("runCycle", () => {
     expect(await loadState()).toMatchObject({
       phase: "recharging",
       message: "Recharging (power 4%, resumes at 100%).",
+      power: 4,
+      powerAt: LOGGED_AT,
+      // The Power Center's 5 kWh of 100 missing, full in 3000 s: 10 min per 1%
+      msPerPercent: 600_000,
     });
 
     // Above the pause level but short of the resume level: keeps waiting

@@ -29,6 +29,7 @@ import {
   startRun,
   runActive,
   isBusy,
+  estimatePower,
   stalledReason,
   STALLED_AFTER_MS,
   stopRun,
@@ -341,6 +342,7 @@ export function renderCard(
 ): HTMLElement | null {
   if (!cardVisible(data)) return null;
   const { state, settings, prefs } = data;
+  const power = estimatePower(state, now);
   const stopped = !state.running;
   const error = stopped && ERROR.test(state.message);
   const phase =
@@ -382,11 +384,11 @@ export function renderCard(
     const pill = button("", () => actions.collapse(false), `pill ${tone}`);
     pill.title = `Hack Game auto-play: click to expand${
       result ? `\n${resultTitle(result)}` : ""
-    }${powerLine(state.power)}`;
+    }${powerLine(power)}`;
     appendChildren(pill, [
       el("span", { class: "dot" }),
       el("b", null, "HG"),
-      pillBattery(state.power, settings),
+      pillBattery(power, settings),
       result
         ? el("span", { "data-until": resultUntil(result) }, pillResult(result))
         : stalled
@@ -438,18 +440,18 @@ export function renderCard(
         ),
       ])
     );
-    if (state.phase === "recharging" && state.power !== null) {
+    if (state.phase === "recharging" && power !== null) {
       body.push(
         el(
           "div",
           {
             class: "bar",
-            title: `Power ${state.power}% → resumes at ${settings.resumeAt}% (${state.nextAt ? clock(state.nextAt) : "soon"})`,
+            title: `Power ${power}% → resumes at ${settings.resumeAt}% (${state.nextAt ? clock(state.nextAt) : "soon"})`,
           },
           [
             el("div", {
               class: "fill",
-              style: `width: ${Math.min(100, state.power)}%`,
+              style: `width: ${Math.min(100, power)}%`,
             }),
             el("div", {
               class: "goal",
@@ -485,7 +487,7 @@ export function renderCard(
           { class: "title", href: GAME_URL, title: "Open Small Hack Jobs" },
           "Hack Game"
         ),
-        batteryBadge(state.power, settings),
+        batteryBadge(power, settings),
         el("span", { class: `chip ${tone}` }, chipText),
         stopped
           ? button("×", actions.dismiss, "icon")
@@ -510,6 +512,7 @@ function renderManual(
   now: number
 ): HTMLElement {
   const { state, settings, prefs, job } = data;
+  const power = estimatePower(state, now);
   const status = manualStatus(state, now);
   const playTitle = job
     ? `Play "${job.name}" once`
@@ -529,11 +532,11 @@ function renderManual(
 
   if (prefs.collapsed) {
     const expand = button("", () => actions.collapse(false), "pill-btn");
-    expand.title = `Hack Game: click to expand${powerLine(state.power)}`;
+    expand.title = `Hack Game: click to expand${powerLine(power)}`;
     appendChildren(expand, [
       el("span", { class: "dot" }),
       el("b", null, "HG"),
-      pillBattery(state.power, settings),
+      pillBattery(power, settings),
       status.result
         ? el(
             "span",
@@ -571,7 +574,7 @@ function renderManual(
           { class: "title", href: GAME_URL, title: "Open Small Hack Jobs" },
           "Hack Game"
         ),
-        batteryBadge(state.power, settings),
+        batteryBadge(power, settings),
         el(
           "span",
           { class: `chip ${status.tone}`, title: status.title || null },
@@ -691,6 +694,8 @@ export function mountStatusCard(doc: Document = document): () => void {
     },
   };
 
+  // The battery as drawn: redrawn when the estimate moves on a percent
+  let drawn: { state: HackState; power: number | null } | null = null;
   const draw = async () => {
     const data = await loadCardData();
     // A run left over from the other mode (Run in background was switched)
@@ -706,7 +711,9 @@ export function mountStatusCard(doc: Document = document): () => void {
       );
       return; // the stored change draws the card again
     }
-    const card = renderCard(data, actions);
+    const now = Date.now();
+    const card = renderCard(data, actions, now);
+    drawn = { state: data.state, power: estimatePower(data.state, now) };
     slot.replaceChildren(...(card ? [card] : []));
     if (card && !host.isConnected) doc.body.append(host);
     if (!card) host.remove();
@@ -749,7 +756,10 @@ export function mountStatusCard(doc: Document = document): () => void {
     const shown = [
       ...shadow.querySelectorAll<HTMLElement>("[data-until]"),
     ].some((node) => Date.now() >= Number(node.dataset.until));
-    if (due || shown) draw().catch(() => undefined);
+    // ...and when the battery has charged another percent
+    const charged =
+      drawn !== null && estimatePower(drawn.state) !== drawn.power;
+    if (due || shown || charged) draw().catch(() => undefined);
   }, 1000);
   return () => {
     clearInterval(timer);

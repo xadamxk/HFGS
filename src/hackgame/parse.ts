@@ -139,6 +139,37 @@ export function fullChargeAt(html: string, now = Date.now()): number | null {
   return now + Number(inText[1]) * unit;
 }
 
+/** The Power Center's "Power Capacity: 95 / 100 kWh", or null. */
+export function powerCapacity(
+  html: string
+): { current: number; capacity: number } | null {
+  const match = textOf(html).match(
+    /Power Capacity:\s*([\d.,]+)\s*\/\s*([\d.,]+)\s*kWh/i
+  );
+  if (!match) return null;
+  const current = Number(match[1].replace(/,/g, ""));
+  const capacity = Number(match[2].replace(/,/g, ""));
+  return capacity > 0 ? { current, capacity } : null;
+}
+
+/**
+ * How fast the battery charges, in ms per 1% of its capacity, from the Power
+ * Center page: the power still missing over the time HF says it takes to be
+ * full. Both already include any Charge Rate or Battery Capacity upgrade
+ * (a bigger battery takes longer per percent). Null when the page can't tell:
+ * the battery is full, or HF gives no exact full-charge time.
+ */
+export function chargeRate(html: string, now = Date.now()): number | null {
+  const section = html.match(/Full Charge:([\s\S]{0,400})/)?.[1];
+  const stamp = section?.match(/data-timestamp="(\d+)"/);
+  const power = powerCapacity(html);
+  if (!stamp || !power) return null;
+  const missing = ((power.capacity - power.current) / power.capacity) * 100;
+  const left = Number(stamp[1]) * 1000 - now;
+  if (missing <= 0 || left <= 0) return null;
+  return left / missing;
+}
+
 /** The newest Small Hack Job on the Logs page, or null. */
 export function latestJobResult(html: string): JobResult | null {
   const start = html.indexOf("game_content_currentpage");

@@ -373,6 +373,54 @@ describe("status card", () => {
     }
   });
 
+  it("counts the battery up between reads at the stored charge speed", () => {
+    const charging = {
+      phase: "recharging",
+      power: 40,
+      powerAt: NOW - 25 * 60_000,
+      msPerPercent: 10 * 60_000,
+      nextAt: NOW + 3600_000,
+    };
+    const card = renderCard(data({}, charging), actions(), NOW)!;
+    expect(card.querySelector(".head .batt")?.textContent).toBe("42%");
+    const bar = card.querySelector(".bar") as HTMLElement;
+    expect((bar.querySelector(".fill") as HTMLElement).style.width).toBe("42%");
+    expect(bar.title).toMatch(/^Power 42% → /);
+    // The pill's tooltip too
+    const pill = renderCard(
+      data({ prefs: { collapsed: true, dismissedRun: null } }, charging),
+      actions(),
+      NOW
+    )!;
+    expect(pill.title).toMatch(/\nPower 42%$/);
+  });
+
+  it("redraws by itself when the battery has charged another percent", async () => {
+    await chrome.storage.local.clear();
+    document.body.replaceChildren();
+    const background = defaultSettings();
+    background.hackgame.runInBackground = true;
+    await saveSettings(background);
+    await saveCardPrefs({ collapsed: false });
+    await saveState({
+      ...data().state,
+      nextAt: Date.now() + 600_000,
+      power: 50,
+      powerAt: Date.now() - 60_000 + 1200,
+      msPerPercent: 60_000,
+    });
+    const stop = mountStatusCard(document);
+    try {
+      await new Promise((r) => setTimeout(r, 60));
+      const shadow = document.getElementById("hfgs-hackgame-card")!.shadowRoot!;
+      expect(shadow.querySelector(".batt")?.textContent).toBe("50%");
+      await new Promise((r) => setTimeout(r, 2100));
+      expect(shadow.querySelector(".batt")?.textContent).toBe("51%");
+    } finally {
+      stop();
+    }
+  });
+
   it("is hidden when the setting is off", () => {
     const settings = {
       ...defaultSettings().hackgame,

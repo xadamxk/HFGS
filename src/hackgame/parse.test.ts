@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import {
+  chargeRate,
   cooldownSeconds,
   decodeEntities,
   errorMessage,
@@ -10,6 +11,7 @@ import {
   pageKind,
   parseJobs,
   postKey,
+  powerCapacity,
   powerPercent,
   replyResult,
   sameJobs,
@@ -88,6 +90,28 @@ describe("Hack Game page readers", () => {
       )
     ).toBe(1000 + 2 * 3600_000);
     expect(fullChargeAt("<p>Power Center</p>")).toBeNull();
+  });
+
+  it("reads the power capacity and how fast the battery charges", () => {
+    expect(powerCapacity(battery)).toEqual({ current: 95, capacity: 100 });
+    const full = 1793937411 * 1000;
+    // 5% missing, full in 44 minutes: 8.8 minutes per 1%
+    expect(chargeRate(battery, full - 2640_000)).toBe(528_000);
+    // A bigger battery (a Battery Capacity upgrade) takes longer per percent
+    const bigger = battery.replace("95 / 100 kWh", "145 / 150 kWh");
+    expect(chargeRate(bigger, full - 2640_000)).toBeCloseTo(792_000);
+    // Full, or no exact time: can't tell
+    expect(
+      chargeRate(battery.replace("95 / 100 kWh", "100 / 100 kWh"), full - 1000)
+    ).toBeNull();
+    expect(chargeRate(battery, full + 1000)).toBeNull();
+    expect(
+      chargeRate(
+        "<span>Full Charge: <span>In 2 hours</span></span> Power Capacity: 50 / 100 kWh",
+        0
+      )
+    ).toBeNull();
+    expect(chargeRate(smallhacks, 0)).toBeNull();
   });
 
   it("reads the newest Small Hack Job from the logs", () => {

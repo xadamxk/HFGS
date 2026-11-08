@@ -8,8 +8,8 @@ import { migrateStorage } from "../core/storage";
 import { BotPanel } from "../core/ui/BotPanel";
 import { HackGamePanel, HACKGAME_CSS } from "./panel";
 import { rememberPickedJob } from "./jobsView";
-import { cooldownSeconds, parseJobs, powerPercent } from "./parse";
-import { patchState, updateJobs } from "./store";
+import { cooldownSeconds, parseJobs } from "./parse";
+import { loadState, patchState, powerReading, updateJobs } from "./store";
 
 async function main(): Promise<void> {
   const current = document.getElementById("game_content_currentpage");
@@ -24,10 +24,13 @@ async function main(): Promise<void> {
     await updateJobs(jobs);
     await rememberPickedJob(document, jobs);
   }
-  // Every game page shows HF's cooldown: the status card counts down to it
+  // Every game page shows HF's cooldown and power: the status card counts
+  // down to one and shows the other, and the Power Center page (where the
+  // battery upgrades are bought) also gives how fast the battery charges
+  const now = Date.now();
   await patchState({
-    readyAt: Date.now() + cooldownSeconds(html) * 1000,
-    power: powerPercent(html),
+    readyAt: now + cooldownSeconds(html) * 1000,
+    ...powerReading(html, now, (await loadState()).msPerPercent),
   });
 
   BotPanel.injectStyles();
